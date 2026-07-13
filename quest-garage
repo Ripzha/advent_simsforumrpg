@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acis Garage</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --nacht: #0a1428; --nacht-tief: #060d1c; --panel-rand: #3a4a6a;
+    --gold: #c89248; --gold-hell: #f4d484; --glut: #f4c870;
+    --cream: #f4ead0; --cream-tief: #d8c89a; --tinte: #2a1a0a; --tinte-hell: #8a6840;
+    --himmel-text: #a8b8d5;
+    --serif: "Fraunces", Georgia, serif; --sans: "Karla", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--nacht); color: var(--cream); font-family: var(--sans); height: 100%; }
+  .buehne { position: relative; width: 100%; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ---------- Raum ---------- */
+  .raum { position: relative; flex: 1; overflow: hidden; background: #0c1220; }
+  .raum-bild { position: absolute; inset: 0; }
+  .raum-bild svg, .raum-bild img { width: 100%; height: 100%; display: block; object-fit: cover; }
+  /* Hotspots: in % positioniert — funktionieren mit SVG-Platzhalter UND späterem Screenshot */
+  .hotspot { position: absolute; cursor: pointer; border-radius: 8px; }
+  .hotspot:hover { box-shadow: inset 0 0 0 2px rgba(244, 212, 132, 0.5); background: rgba(244, 212, 132, 0.08); }
+  .hotspot.deaktiviert { pointer-events: none; }
+  /* Dunkle Ecke: eigenes Overlay das mit der Taschenlampe verschwindet */
+  .dunkel-overlay { position: absolute; background: radial-gradient(ellipse at center, rgba(2, 5, 12, 0.97) 40%, rgba(2, 5, 12, 0.75) 100%); border-radius: 12px; transition: opacity 1s ease; pointer-events: none; }
+  .dunkel-overlay.erhellt { opacity: 0; }
+
+  /* ---------- Dialog-Zeile (Aci) ---------- */
+  .dialog { position: absolute; bottom: 86px; left: 50%; transform: translateX(-50%); max-width: min(560px, 92vw); background: rgba(10, 20, 40, 0.92); border: 1px solid var(--panel-rand); border-radius: 12px; padding: 12px 18px; font-size: 14px; line-height: 1.55; z-index: 8; opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
+  .dialog.zeig { opacity: 1; }
+  .dialog .wer { font-family: var(--serif); font-style: italic; color: var(--gold-hell); margin-right: 6px; }
+
+  /* ---------- Inventar ---------- */
+  .inventar { display: flex; gap: 8px; padding: 10px 14px; background: #0c1828; border-top: 1px solid #1a2a45; min-height: 74px; align-items: center; z-index: 9; }
+  .inventar-label { font-size: 11px; color: var(--himmel-text); letter-spacing: 0.1em; text-transform: uppercase; margin-right: 6px; }
+  .inv-slot { width: 54px; height: 54px; border: 1px solid var(--panel-rand); border-radius: 8px; background: #101f38; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+  .inv-slot svg { width: 34px; height: 34px; }
+  .inv-slot.gewaehlt { border-color: var(--gold-hell); box-shadow: 0 0 10px rgba(244, 212, 132, 0.4); background: #1a2a45; }
+  .inv-slot .tooltip { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); background: var(--cream); color: var(--tinte); font-size: 11px; padding: 4px 9px; border-radius: 5px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s ease; }
+  .inv-slot:hover .tooltip { opacity: 1; }
+  .ziel-hinweis { margin-left: auto; font-size: 12px; color: var(--himmel-text); font-style: italic; max-width: 40%; text-align: right; }
+
+  /* ---------- Screens ---------- */
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; z-index: 20; text-align: center; background: rgba(6, 13, 28, 0.82); backdrop-filter: blur(3px); transition: opacity 0.35s ease, visibility 0.35s ease; }
+  .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .screen h1 { font-family: var(--serif); font-size: clamp(24px, 5vw, 34px); font-weight: 500; margin: 0 0 6px; }
+  .screen h1 em { font-style: italic; color: var(--gold-hell); }
+  .untertitel { color: var(--himmel-text); font-size: 14px; margin: 0 0 20px; }
+  .intro-text { max-width: 440px; font-size: 14.5px; line-height: 1.65; margin: 0 0 24px; }
+  .intro-text em { font-family: var(--serif); font-style: italic; color: var(--gold-hell); }
+  .knopf { background: var(--gold); color: var(--tinte); border: 1px solid var(--gold-hell); padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--sans); text-decoration: none; }
+  .knopf:hover { background: #dba458; }
+  .knopf.sekundaer { background: transparent; color: var(--himmel-text); border-color: var(--panel-rand); font-weight: 500; }
+  .knopf-reihe { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  /* ---------- Code-Eingabe ---------- */
+  .code-modal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 15; background: rgba(4, 10, 22, 0.8); visibility: hidden; opacity: 0; transition: opacity 0.25s ease, visibility 0.25s ease; }
+  .code-modal.show { visibility: visible; opacity: 1; }
+  .code-karte { background: var(--cream); color: var(--tinte); border-radius: 14px; padding: 24px 28px; text-align: center; max-width: 320px; }
+  .code-karte h3 { font-family: var(--serif); font-size: 18px; margin: 0 0 14px; }
+  .code-karte input { font-family: "Courier New", monospace; font-size: 28px; letter-spacing: 0.4em; text-align: center; width: 170px; padding: 8px 0 8px 12px; border: 1px solid var(--cream-tief); border-radius: 8px; background: #fff8ea; color: var(--tinte); }
+  .code-karte .code-fehler { color: #b04a30; font-size: 12.5px; min-height: 17px; margin: 8px 0 4px; }
+  .code-karte .knopf { margin-top: 6px; }
+
+  /* ---------- Zettel-Ansicht ---------- */
+  .zettel { background: #f8f0da; color: var(--tinte); border-radius: 4px; padding: 22px 26px; max-width: 300px; font-family: var(--serif); font-style: italic; font-size: 15px; line-height: 1.7; box-shadow: 0 14px 44px rgba(0,0,0,0.5); transform: rotate(-1.5deg); }
+  .zettel .gross { font-size: 26px; font-style: normal; letter-spacing: 0.25em; text-align: center; display: block; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="buehne">
+  <div class="raum" id="raum">
+    <div class="raum-bild" id="raum-bild"></div>
+    <div class="dunkel-overlay" id="dunkel-overlay" style="left: 66%; top: 34%; width: 30%; height: 42%;"></div>
+    <!-- Hotspots (Position in %, passt sich jedem Hintergrund an) -->
+    <div class="hotspot" id="hs-werkbank"   style="left: 6%;  top: 55%; width: 24%; height: 22%;" title=""></div>
+    <div class="hotspot" id="hs-spind"      style="left: 34%; top: 28%; width: 13%; height: 48%;" title=""></div>
+    <div class="hotspot" id="hs-ecke"       style="left: 68%; top: 38%; width: 26%; height: 34%;" title=""></div>
+    <div class="hotspot" id="hs-kasten"     style="left: 52%; top: 62%; width: 13%; height: 16%;" title=""></div>
+    <div class="hotspot" id="hs-schrank"    style="left: 82%; top: 20%; width: 15%; height: 52%;" title=""></div>
+    <div class="hotspot" id="hs-auto"       style="left: 8%;  top: 30%; width: 22%; height: 20%;" title=""></div>
+    <div class="dialog" id="dialog"><span class="wer" id="dialog-wer">Aci</span><span id="dialog-text"></span></div>
+    <div class="code-modal" id="code-modal">
+      <div class="code-karte">
+        <h3>Zahlenschloss</h3>
+        <input type="text" id="code-input" maxlength="4" inputmode="numeric" placeholder="····">
+        <p class="code-fehler" id="code-fehler"></p>
+        <div class="knopf-reihe">
+          <button class="knopf" id="code-ok">Öffnen</button>
+          <button class="knopf sekundaer" id="code-abbruch">Zurück</button>
+        </div>
+      </div>
+    </div>
+    <div class="code-modal" id="zettel-modal">
+      <div>
+        <div class="zettel" id="zettel-inhalt"></div>
+        <div style="text-align:center; margin-top: 16px;">
+          <button class="knopf sekundaer" id="zettel-zu">Weglegen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inventar" id="inventar">
+    <span class="inventar-label">Inventar</span>
+    <span class="ziel-hinweis" id="ziel-hinweis">Finde, was Anfisa meint …</span>
+  </div>
+
+  <!-- Intro -->
+  <div class="screen" id="screen-intro">
+    <h1>Acis <em>Garage</em></h1>
+    <p class="untertitel">Türchen zum Suchen</p>
+    <p class="intro-text">Acis Handy vibriert. Anfisa: <em>„Du weisst, was du für Weihnachten aus der Garage holen sollst. Und komm nicht ohne zurück."</em><br><br>Aci steht in der Garage. Kein Plan, wo das Ding steckt. Aber irgendwo hier muss es sein.<br><br><strong>Klicke dich durch die Garage.</strong> Hebe auf, was nützlich aussieht. Wähle ein Ding im Inventar und klicke damit auf die richtige Stelle.</p>
+    <button class="knopf" id="start-knopf">Suchen</button>
+  </div>
+
+  <!-- Ende -->
+  <div class="screen hidden" id="screen-ende">
+    <h1>Gefunden.</h1>
+    <p class="intro-text" id="ende-text"></p>
+    <div class="knopf-reihe">
+      <a class="knopf" href="index.html">Zurück zum Kalender</a>
+      <button class="knopf sekundaer" id="reset-knopf">Nochmal von vorn</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  // Optional: Sims-Screenshot der Garage. Leer = gezeichneter SVG-Platzhalter.
+  // Bei eigenem Bild: Hotspot-Positionen oben im HTML (in %) ans Bild anpassen.
+  const GARAGE_BILD_URL = '';
+  const CODE = '2412'; // Zahlenschloss-Code (steht auf dem Zettel)
+  // Das gesuchte Objekt — leicht austauschbar:
+  const ZIEL_NAME = 'die alte Lichterkette';
+  const ENDE_TEXT = 'Ganz hinten im Schrank, unter einem Karton voller Farbdosen: die alte Lichterkette. Die, die Anfisa seit Wochen sucht. Aci wickelt sie um den Arm und grinst. Weihnachten kann kommen.';
+
+  // ---------- Items ----------
+  const ITEM_ICONS = {
+    schraubenzieher: '<svg viewBox="0 0 40 40"><g stroke="#f4d484" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="8" y1="32" x2="22" y2="18"/><rect x="21" y="7" width="12" height="12" rx="2" transform="rotate(45 27 13)" fill="#c89248" stroke="#f4d484"/></g></svg>',
+    taschenlampe: '<svg viewBox="0 0 40 40"><g stroke="#f4d484" stroke-width="2.5" fill="none" stroke-linecap="round"><rect x="14" y="16" width="10" height="18" rx="3" fill="#3a4a6a"/><path d="M 12 16 L 26 16 L 23 8 L 15 8 Z" fill="#c89248"/><line x1="19" y1="4" x2="19" y2="1"/><line x1="11" y1="6" x2="9" y2="4"/><line x1="27" y1="6" x2="29" y2="4"/></g></svg>',
+    zettel: '<svg viewBox="0 0 40 40"><rect x="9" y="6" width="22" height="28" rx="2" fill="#f4ead0" stroke="#d8c89a" stroke-width="1.5" transform="rotate(-4 20 20)"/><g stroke="#8a6840" stroke-width="1.8" transform="rotate(-4 20 20)"><line x1="13" y1="13" x2="27" y2="13"/><line x1="13" y1="18" x2="27" y2="18"/><line x1="13" y1="23" x2="22" y2="23"/></g></svg>',
+    schluessel: '<svg viewBox="0 0 40 40"><g stroke="#f4d484" stroke-width="2.5" fill="none" stroke-linecap="round"><circle cx="13" cy="13" r="6"/><line x1="17" y1="17" x2="31" y2="31"/><line x1="27" y1="27" x2="27" y2="33"/><line x1="31" y1="31" x2="31" y2="36"/></g></svg>'
+  };
+  const ITEM_NAMEN = {
+    schraubenzieher: 'Schraubenzieher',
+    taschenlampe: 'Taschenlampe',
+    zettel: 'Zerknitterter Zettel',
+    schluessel: 'Kleiner Schlüssel'
+  };
+
+  // ---------- Zustand ----------
+  const zustand = {
+    inventar: [],
+    gewaehlt: null,
+    spindOffen: false,
+    eckeErhellt: false,
+    zettelGelesen: false,
+    kastenOffen: false,
+    fertig: false
+  };
+
+  // ---------- Platzhalter-Garage (SVG) ----------
+  function baueRaumBild() {
+    const container = document.getElementById('raum-bild');
+    if (GARAGE_BILD_URL) {
+      container.innerHTML = `<img src="${GARAGE_BILD_URL}" alt="Acis Garage">`;
+      return;
+    }
+    container.innerHTML = `
+    <svg viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <!-- PLATZHALTER-GARAGE: wird später durch Sims-Screenshot ersetzt -->
+      <rect width="1000" height="620" fill="#141c2e"/>
+      <rect y="470" width="1000" height="150" fill="#1e2436"/>
+      <rect y="466" width="1000" height="6" fill="#2a3248"/>
+      <!-- Garagentor hinten -->
+      <rect x="380" y="60" width="290" height="380" fill="#1a2438" stroke="#2a3a5a" stroke-width="3"/>
+      <g stroke="#2a3a5a" stroke-width="2">
+        <line x1="380" y1="130" x2="670" y2="130"/><line x1="380" y1="200" x2="670" y2="200"/>
+        <line x1="380" y1="270" x2="670" y2="270"/><line x1="380" y1="340" x2="670" y2="340"/>
+      </g>
+      <!-- Auto unter Plane (links oben) -->
+      <path d="M 70 260 Q 90 190 190 185 Q 290 185 300 250 L 300 300 L 70 300 Z" fill="#26304a"/>
+      <path d="M 70 260 Q 90 190 190 185 Q 290 185 300 250" fill="none" stroke="#38445e" stroke-width="3"/>
+      <line x1="110" y1="215" x2="150" y2="295" stroke="#38445e" stroke-width="2"/>
+      <line x1="200" y1="190" x2="220" y2="295" stroke="#38445e" stroke-width="2"/>
+      <!-- Werkbank (links unten) -->
+      <rect x="50" y="360" width="260" height="18" fill="#5a4526"/>
+      <rect x="60" y="378" width="16" height="90" fill="#4a3820"/>
+      <rect x="284" y="378" width="16" height="90" fill="#4a3820"/>
+      <rect x="70" y="330" width="60" height="30" fill="#3a4a6a"/>
+      <rect x="150" y="340" width="90" height="20" fill="#2e3f63"/>
+      <circle cx="260" cy="350" r="10" fill="#8a6840"/>
+      <!-- Spind (Mitte) -->
+      <rect x="345" y="180" width="120" height="290" fill="#33507c" stroke="#4a6a9c" stroke-width="3"/>
+      <line x1="405" y1="180" x2="405" y2="470" stroke="#4a6a9c" stroke-width="3"/>
+      <circle cx="393" cy="325" r="5" fill="#f4d484"/>
+      <circle cx="417" cy="325" r="5" fill="#f4d484"/>
+      <g stroke="#4a6a9c" stroke-width="2"><line x1="360" y1="210" x2="390" y2="210"/><line x1="420" y1="210" x2="450" y2="210"/></g>
+      <!-- Werkzeugkasten (Mitte unten) -->
+      <rect x="520" y="395" width="130" height="70" rx="6" fill="#8a3030" stroke="#a84040" stroke-width="3"/>
+      <rect x="520" y="385" width="130" height="16" rx="6" fill="#a84040"/>
+      <rect x="565" y="378" width="40" height="10" rx="4" fill="#6a2424"/>
+      <rect x="572" y="420" width="26" height="18" rx="3" fill="#2a1a1a"/>
+      <!-- Dunkle Ecke (rechts) mit Regal -->
+      <rect x="680" y="220" width="250" height="250" fill="#0e1424"/>
+      <g stroke="#242e46" stroke-width="4">
+        <line x1="690" y1="290" x2="920" y2="290"/><line x1="690" y1="370" x2="920" y2="370"/>
+      </g>
+      <!-- Alter Schrank (ganz rechts) -->
+      <rect x="825" y="120" width="150" height="350" fill="#4a3820" stroke="#6a5230" stroke-width="3"/>
+      <line x1="900" y1="120" x2="900" y2="470" stroke="#6a5230" stroke-width="3"/>
+      <rect x="885" y="280" width="10" height="26" rx="3" fill="#c89248"/>
+      <rect x="905" y="280" width="10" height="26" rx="3" fill="#c89248"/>
+      <circle cx="900" cy="315" r="7" fill="#1a1408" stroke="#c89248" stroke-width="2"/>
+      <!-- Deckenlampe -->
+      <line x1="500" y1="0" x2="500" y2="45" stroke="#3a4a6a" stroke-width="3"/>
+      <path d="M 470 45 L 530 45 L 518 70 L 482 70 Z" fill="#c89248"/>
+      <ellipse cx="500" cy="72" rx="16" ry="6" fill="#f4c870" opacity="0.9"/>
+      <ellipse cx="500" cy="240" rx="230" ry="200" fill="#f4c870" opacity="0.05"/>
+      <!-- Kram am Boden -->
+      <circle cx="740" cy="500" r="22" fill="#26304a"/>
+      <rect x="120" y="490" width="60" height="34" rx="4" fill="#2e3f63" transform="rotate(-8 150 507)"/>
+    </svg>`;
+  }
+
+  // ---------- Dialog ----------
+  let dialogTimer = null;
+  function sag(text, wer) {
+    const d = document.getElementById('dialog');
+    document.getElementById('dialog-wer').textContent = wer || 'Aci';
+    document.getElementById('dialog-text').textContent = ' ' + text;
+    d.classList.add('zeig');
+    clearTimeout(dialogTimer);
+    dialogTimer = setTimeout(() => d.classList.remove('zeig'), 4200);
+  }
+
+  // ---------- Inventar ----------
+  function gibItem(id) {
+    if (zustand.inventar.includes(id)) return;
+    zustand.inventar.push(id);
+    renderInventar();
+  }
+  function nimmItem(id) {
+    zustand.inventar = zustand.inventar.filter(i => i !== id);
+    if (zustand.gewaehlt === id) zustand.gewaehlt = null;
+    renderInventar();
+  }
+  function renderInventar() {
+    const inv = document.getElementById('inventar');
+    inv.querySelectorAll('.inv-slot').forEach(s => s.remove());
+    const ziel = document.getElementById('ziel-hinweis');
+    zustand.inventar.forEach(id => {
+      const slot = document.createElement('div');
+      slot.className = 'inv-slot' + (zustand.gewaehlt === id ? ' gewaehlt' : '');
+      slot.innerHTML = ITEM_ICONS[id] + `<span class="tooltip">${ITEM_NAMEN[id]}</span>`;
+      slot.onclick = () => {
+        if (id === 'zettel') { zeigeZettel(); return; }
+        zustand.gewaehlt = zustand.gewaehlt === id ? null : id;
+        renderInventar();
+        if (zustand.gewaehlt) sag(ITEM_NAMEN[id] + ' — und jetzt? Klick auf die richtige Stelle.');
+      };
+      inv.insertBefore(slot, ziel);
+    });
+  }
+
+  // ---------- Zettel ----------
+  function zeigeZettel() {
+    document.getElementById('zettel-inhalt').innerHTML =
+      `„Aci — falls du das liest, hast du den Kasten immer noch nicht aufgeräumt.<br>Der Code ist unser Tag."<br><span class="gross">${CODE}</span>`;
+    document.getElementById('zettel-modal').classList.add('show');
+    zustand.zettelGelesen = true;
+  }
+  document.getElementById('zettel-zu').onclick = () => document.getElementById('zettel-modal').classList.remove('show');
+
+  // ---------- Hotspot-Logik ----------
+  function klickWerkbank() {
+    if (!zustand.inventar.includes('schraubenzieher') && !zustand.spindOffen) {
+      gibItem('schraubenzieher');
+      sag('Ein Schraubenzieher. Liegt hier seit Ewigkeiten rum. Kann man immer brauchen.');
+    } else {
+      sag('Werkbank. Chaos wie immer. Hier ist nichts mehr, was hilft.');
+    }
+  }
+  function klickSpind() {
+    if (zustand.spindOffen) { sag('Der Spind ist offen. Ausser der Taschenlampe war nichts Brauchbares drin.'); return; }
+    if (zustand.gewaehlt === 'schraubenzieher') {
+      zustand.spindOffen = true;
+      zustand.gewaehlt = null;
+      gibItem('taschenlampe');
+      renderInventar();
+      sag('Die Schrauben quietschen — auf. Eine Taschenlampe! Die Batterien... funktionieren sogar.');
+    } else {
+      sag('Der Spind ist zugeschraubt. Wer macht denn sowas? Ohne Werkzeug geht da nichts.');
+    }
+  }
+  function klickEcke() {
+    if (!zustand.eckeErhellt) {
+      if (zustand.gewaehlt === 'taschenlampe') {
+        zustand.eckeErhellt = true;
+        zustand.gewaehlt = null;
+        renderInventar();
+        document.getElementById('dunkel-overlay').classList.add('erhellt');
+        sag('Licht an. Da — zwischen den Regalbrettern klemmt ein Zettel.');
+      } else {
+        sag('Stockdunkel da hinten. Die Deckenlampe reicht nicht bis in die Ecke.');
+      }
+      return;
+    }
+    if (!zustand.inventar.includes('zettel') && !zustand.zettelGelesen) {
+      gibItem('zettel');
+      sag('Ein zerknitterter Zettel. Anfisas Handschrift. Lieber mal lesen.');
+    } else {
+      sag('Das Regal. Alte Farbdosen, ein kaputter Föhn. Nichts für Weihnachten.');
+    }
+  }
+  function klickKasten() {
+    if (zustand.kastenOffen) { sag('Der Werkzeugkasten ist offen und leer. Bis auf Werkzeug natürlich.'); return; }
+    if (!zustand.zettelGelesen) {
+      sag('Ein Werkzeugkasten mit Zahlenschloss. Vier Ziffern. Aci hat keine Ahnung.');
+      return;
+    }
+    document.getElementById('code-fehler').textContent = '';
+    document.getElementById('code-input').value = '';
+    document.getElementById('code-modal').classList.add('show');
+    setTimeout(() => document.getElementById('code-input').focus(), 100);
+  }
+  function klickSchrank() {
+    if (zustand.fertig) return;
+    if (zustand.gewaehlt === 'schluessel') {
+      zustand.fertig = true;
+      nimmItem('schluessel');
+      document.getElementById('ende-text').textContent = ENDE_TEXT;
+      setTimeout(() => document.getElementById('screen-ende').classList.remove('hidden'), 600);
+      sag('Der Schlüssel passt.');
+    } else if (zustand.inventar.includes('schluessel')) {
+      sag('Abgeschlossen. Aber der kleine Schlüssel aus dem Kasten... Wähl ihn im Inventar.');
+    } else {
+      sag('Der alte Schrank. Abgeschlossen, natürlich. Der Schlüssel ist seit Jahren verschollen.');
+    }
+  }
+  function klickAuto() {
+    sag('Das Projektauto. Läuft nicht. Lief nie. Aci nennt es trotzdem „fast fertig".');
+  }
+
+  document.getElementById('hs-werkbank').onclick = klickWerkbank;
+  document.getElementById('hs-spind').onclick = klickSpind;
+  document.getElementById('hs-ecke').onclick = klickEcke;
+  document.getElementById('hs-kasten').onclick = klickKasten;
+  document.getElementById('hs-schrank').onclick = klickSchrank;
+  document.getElementById('hs-auto').onclick = klickAuto;
+
+  // Code-Modal
+  document.getElementById('code-ok').onclick = pruefeCode;
+  document.getElementById('code-abbruch').onclick = () => document.getElementById('code-modal').classList.remove('show');
+  document.getElementById('code-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') pruefeCode(); });
+  function pruefeCode() {
+    const eingabe = document.getElementById('code-input').value.trim();
+    if (eingabe === CODE) {
+      zustand.kastenOffen = true;
+      document.getElementById('code-modal').classList.remove('show');
+      gibItem('schluessel');
+      sag('Klick. Offen. Und zwischen den Schraubenschlüsseln: ein kleiner Schlüssel mit rotem Band.');
+    } else {
+      document.getElementById('code-fehler').textContent = 'Bleibt zu. Falscher Code.';
+    }
+  }
+
+  // Start / Reset
+  document.getElementById('start-knopf').onclick = () => {
+    document.getElementById('screen-intro').classList.add('hidden');
+    setTimeout(() => sag('Okay. „Das Ding für Weihnachten." Sehr hilfreich, Anfisa. Fangen wir an zu suchen.'), 500);
+  };
+  document.getElementById('reset-knopf').onclick = () => location.reload();
+
+  document.getElementById('ziel-hinweis').textContent = 'Anfisa will: ' + ZIEL_NAME + ' — angeblich hier irgendwo.';
+  baueRaumBild();
+})();
+</script>
+</body>
+</html>
