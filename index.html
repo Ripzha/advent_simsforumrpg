@@ -133,7 +133,18 @@
   }
 
   /* ---------- Fusszeile ---------- */
-  .ak-mond-overlay { position: absolute; top: 3px; right: 2%; width: clamp(62px, 7.5vw, 78px); z-index: 2; pointer-events: none; }
+  #ak-aurora { position: absolute; top: 0; left: 0; right: 0; height: 46%; z-index: 1; pointer-events: none; overflow: hidden; }
+  #ak-aurora i { position: absolute; top: -30%; left: -10%; width: 55%; height: 120%; border-radius: 50%;
+    background: linear-gradient(180deg, rgba(80, 220, 160, 0.0) 0%, rgba(80, 220, 160, 0.16) 35%, rgba(120, 160, 255, 0.10) 65%, rgba(80, 220, 160, 0) 100%);
+    filter: blur(26px); transform: skewX(-18deg); animation: aurora-drift 11s ease-in-out infinite alternate; }
+  #ak-aurora i:nth-child(2) { left: 28%; width: 48%; animation-duration: 14s; animation-delay: -4s;
+    background: linear-gradient(180deg, rgba(150, 120, 255, 0) 0%, rgba(150, 120, 255, 0.13) 40%, rgba(80, 220, 160, 0.10) 70%, rgba(150, 120, 255, 0) 100%); }
+  #ak-aurora i:nth-child(3) { left: 60%; width: 50%; animation-duration: 17s; animation-delay: -8s; }
+  @keyframes aurora-drift {
+    0% { transform: skewX(-18deg) translateX(-4%) scaleY(1); opacity: 0.75; }
+    100% { transform: skewX(-10deg) translateX(7%) scaleY(1.15); opacity: 1; }
+  }
+  .ak-mond-overlay { position: absolute; top: 0; right: 2%; width: clamp(58px, 7vw, 72px); z-index: 2; pointer-events: none; }
   .ak-mond-overlay svg { width: 100%; height: auto; display: block; }
   #walker, #walker:focus, #walker:focus-visible { outline: none; }
   #walker { -webkit-tap-highlight-color: transparent; }
@@ -258,7 +269,7 @@
   </div>
   <div class="ak-snow ak-snow-hinten" id="ak-snow-hinten" aria-hidden="true"></div>
   <div class="ak-mond-overlay" aria-hidden="true">
-    <svg viewBox="398 -52 204 204" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="442 -12 116 116" xmlns="http://www.w3.org/2000/svg">
       <g id="moon">
         <circle cx="500" cy="46" r="94" fill="#e8d8a8" opacity="0.05" class="moon-glow"/>
         <circle cx="500" cy="46" r="70" fill="#e8d8a8" opacity="0.10" class="moon-glow"/>
@@ -286,6 +297,7 @@
       </span>
     </div>
     <div class="ak-controls">
+      <button id="ak-reset-btn" style="display: none;" title="Nur im Test-Modus sichtbar">Zurücksetzen</button>
       <button id="ak-sound-btn" class="active" aria-pressed="true">Sound: an</button>
     </div>
   </div>
@@ -653,7 +665,22 @@
     if (now >= dec25) return 24;
     return now.getDate();
   }
+  function aktiviereResetKnopf() {
+    const btn = document.getElementById('ak-reset-btn');
+    btn.style.display = '';
+    btn.onclick = () => {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('adventskalender_') === 0) keys.push(k);
+      }
+      keys.forEach(k => localStorage.removeItem(k));
+      location.reload();
+    };
+  }
   function formatToday(today, jahr, testMode) {
+    const istTest = testMode === true || String(testMode).toUpperCase() === 'TRUE' || (!isNaN(Number(testMode)) && Number(testMode) >= 1 && Number(testMode) <= 24);
+    if (istTest) aktiviereResetKnopf();
     if (testMode === true || String(testMode).toUpperCase() === 'TRUE') return 'Test-Modus · alle Türchen offen';
     const num = Number(testMode);
     if (!isNaN(num) && num >= 1 && num <= 24) return `Test-Modus · simuliert ${num}. Dezember`;
@@ -843,12 +870,21 @@
       streak.style.color = '#ffe066';
       streak.style.textShadow = '0 0 12px rgba(255, 224, 102, 0.8)';
       setTimeout(() => {
-        showToast('★ Alle 24 Türchen pünktlich geöffnet — die Laterne brennt golden! ★');
-        for (let i = 0; i < 8; i++) setTimeout(spawnSternschnuppe, 400 + i * 350);
+        showToast('★ Alle 24 pünktlich — der Himmel tanzt für dich! ★');
+        zeigePolarlicht();
       }, reducedMotion ? 200 : 5200);
     }
   }
   let perfektGefeiert = false;
+  // Polarlicht: dauerhafte Aurora über dem Nachthimmel — die Ehrung für 24× pünktlich
+  function zeigePolarlicht() {
+    if (document.getElementById('ak-aurora')) return;
+    const a = document.createElement('div');
+    a.id = 'ak-aurora';
+    a.setAttribute('aria-hidden', 'true');
+    a.innerHTML = '<i></i><i></i><i></i>';
+    document.querySelector('.ak-wrap').prepend(a);
+  }
 
   // --- Wanderer: Klick → Spruch des Tages ---
   const fallbackSprueche = [
