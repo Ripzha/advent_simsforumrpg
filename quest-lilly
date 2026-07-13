@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Lillys Ständchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --nacht: #0a1428;
+    --nacht-tief: #060d1c;
+    --panel-rand: #3a4a6a;
+    --gold: #c89248;
+    --gold-hell: #f4d484;
+    --glut: #f4c870;
+    --cream: #f4ead0;
+    --cream-tief: #d8c89a;
+    --tinte: #2a1a0a;
+    --tinte-mittel: #4a3820;
+    --tinte-hell: #8a6840;
+    --himmel-text: #a8b8d5;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Karla", -apple-system, system-ui, sans-serif;
+    --gruen: #9ee493;
+    --gelb: #ffe066;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--nacht); font-family: var(--sans); color: var(--cream); height: 100%; overflow: hidden; }
+  .buehne { position: relative; width: 100%; height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: linear-gradient(180deg, var(--nacht-tief) 0%, var(--nacht) 40%); overflow: hidden; }
+  .buehne::before { content: ""; position: absolute; inset: 0; background: url('bilder/hintergrund.png') center / cover no-repeat; opacity: 0.45; z-index: 0; }
+  .buehne::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,13,28,0.25) 0%, rgba(6,13,28,0.55) 55%, rgba(6,13,28,0.85) 100%); z-index: 0; pointer-events: none; }
+
+  /* Winter-Ambiente */
+  .flocken { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+  .flocken span { position: absolute; top: -10px; background: rgba(255,255,255,0.5); border-radius: 50%; animation: fall linear infinite; }
+  @keyframes fall { to { transform: translateY(110vh); } }
+
+  /* ---------- Screens ---------- */
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; z-index: 10; text-align: center; background: rgba(6, 13, 28, 0.6); backdrop-filter: blur(2px); transition: opacity 0.4s ease, visibility 0.4s ease; }
+  .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .screen h1 { font-family: var(--serif); font-size: clamp(26px, 5vw, 38px); font-weight: 500; margin: 0 0 6px; }
+  .screen h1 em { font-style: italic; color: var(--gold-hell); }
+  .untertitel { color: var(--himmel-text); font-size: 14px; margin: 0 0 22px; letter-spacing: 0.03em; }
+  .lilly-figur { width: min(200px, 40vw); border-radius: 12px; border: 1px solid var(--panel-rand); margin-bottom: 18px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+  .lilly-fallback { width: min(160px, 36vw); aspect-ratio: 3/4; border-radius: 12px; border: 1px solid var(--panel-rand); margin-bottom: 18px; background: linear-gradient(160deg, #16233e, #0c1828); display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-style: italic; color: var(--himmel-text); font-size: 13px; padding: 12px; }
+  .intro-text { max-width: 420px; font-size: 14.5px; line-height: 1.65; color: var(--cream); margin: 0 0 26px; }
+  .intro-text em { font-family: var(--serif); font-style: italic; color: var(--gold-hell); }
+  .knopf { background: var(--gold); color: var(--tinte); border: 1px solid var(--gold-hell); padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 600; font-family: var(--sans); cursor: pointer; letter-spacing: 0.02em; transition: transform 0.12s ease, background 0.15s ease; }
+  .knopf:hover { background: #dba458; transform: translateY(-1px); }
+  .knopf.sekundaer { background: transparent; color: var(--himmel-text); border-color: var(--panel-rand); font-weight: 500; }
+  .knopf.sekundaer:hover { background: #1a2a45; color: var(--cream); transform: none; }
+  .knopf-reihe { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .hilfe { margin-top: 22px; font-size: 12px; color: var(--himmel-text); max-width: 380px; line-height: 1.6; }
+  .hilfe kbd { background: #1a2a45; border: 1px solid var(--panel-rand); border-radius: 4px; padding: 1px 6px; font-family: var(--sans); font-size: 11px; }
+
+  /* ---------- Spielfeld ---------- */
+  .spielfeld { position: relative; flex: 1; z-index: 2; overflow: hidden; }
+  .kopfzeile { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; z-index: 5; font-size: 13px; color: var(--himmel-text); }
+  .punkte { font-family: var(--serif); font-size: 18px; color: var(--cream); }
+  .serie { color: var(--gold-hell); min-width: 70px; text-align: center; }
+  .fortschritt { position: absolute; top: 0; left: 0; height: 3px; background: var(--gold); width: 0%; z-index: 6; transition: width 0.3s linear; }
+  .urteil { position: absolute; left: 50%; top: 38%; transform: translateX(-50%); font-family: var(--serif); font-size: 26px; font-weight: 600; opacity: 0; z-index: 6; pointer-events: none; }
+  .urteil.zeig { animation: urteil-pop 0.55s ease forwards; }
+  @keyframes urteil-pop { 0% { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.9); } 25% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.05); } 100% { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(1); } }
+
+  .note { position: absolute; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--tinte); background: linear-gradient(160deg, var(--gold-hell), var(--gold)); border: 1px solid #ffe4a0; box-shadow: 0 2px 10px rgba(200, 146, 72, 0.4); z-index: 3; will-change: transform; font-family: var(--serif); }
+  .note.schwarz-note { background: linear-gradient(160deg, #b8d8f0, #84aed4); border-color: #d0e8fc; color: #10203a; box-shadow: 0 2px 10px rgba(132, 174, 212, 0.4); }
+  .note.getroffen { animation: note-treffer 0.3s ease forwards; }
+  @keyframes note-treffer { to { opacity: 0; transform: scale(1.5); } }
+  .note.verpasst { opacity: 0.25; }
+
+  /* ---------- Klaviatur ---------- */
+  .klaviatur { position: relative; height: clamp(120px, 22vh, 180px); z-index: 4; display: flex; padding: 0 10px 10px; gap: 3px; }
+  .taste { position: relative; flex: 1; background: linear-gradient(180deg, #f8f4e8 0%, #eee6d0 88%, #d8cdb0 100%); border: 1px solid #b8ad90; border-radius: 0 0 8px 8px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px; user-select: none; transition: background 0.06s ease; }
+  .taste:active, .taste.gedrueckt { background: linear-gradient(180deg, #eadfc2 0%, #dfd2ae 100%); }
+  .taste.aufleuchten { background: linear-gradient(180deg, #ffedb8 0%, #f4d484 100%); }
+  .taste .name { font-family: var(--serif); font-size: 13px; color: #6a5a40; pointer-events: none; }
+  .taste .kuerzel { font-size: 9px; color: #a09070; pointer-events: none; margin-top: 1px; }
+  .schwarz { position: absolute; top: 0; width: 7%; height: 58%; background: linear-gradient(180deg, #2a3348 0%, #141c30 90%); border: 1px solid #0a1020; border-radius: 0 0 6px 6px; cursor: pointer; z-index: 5; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 6px; user-select: none; }
+  .schwarz:active, .schwarz.gedrueckt { background: linear-gradient(180deg, #3a4560 0%, #202a44 90%); }
+  .schwarz.aufleuchten { background: linear-gradient(180deg, #5a7aa8 0%, #38507c 90%); }
+  .schwarz .name { font-family: var(--serif); font-size: 10px; color: #b8c8e0; pointer-events: none; }
+  .schwarz .kuerzel { font-size: 8px; color: #7888a8; pointer-events: none; }
+  .treffleiste { position: absolute; left: 10px; right: 10px; height: 3px; background: linear-gradient(90deg, transparent, rgba(244, 212, 132, 0.7), transparent); z-index: 3; pointer-events: none; }
+
+  /* ---------- Lilly Guide (Ende) ---------- */
+  .guide { display: flex; align-items: flex-end; gap: 16px; max-width: 520px; text-align: left; margin-bottom: 24px; }
+  .guide img, .guide .lilly-fallback { width: min(150px, 32vw); margin: 0; flex-shrink: 0; }
+  .blase { background: var(--cream); color: var(--tinte); border-radius: 14px; padding: 18px 20px; font-size: 14.5px; line-height: 1.65; position: relative; box-shadow: 0 10px 36px rgba(0,0,0,0.45); }
+  .blase::before { content: ""; position: absolute; left: -9px; bottom: 26px; border: 9px solid transparent; border-right-color: var(--cream); border-left: none; }
+  .blase .sprecherin { font-family: var(--serif); font-style: italic; font-size: 12.5px; color: var(--tinte-hell); margin: 0 0 8px; }
+  .blase p { margin: 0 0 10px; }
+  .blase p:last-child { margin: 0; }
+  .blase em { font-family: var(--serif); color: var(--tinte-mittel); }
+  .ergebnis-zahl { font-family: var(--serif); font-size: 42px; color: var(--gold-hell); margin: 0 0 4px; }
+  .ergebnis-label { color: var(--himmel-text); font-size: 13px; margin: 0 0 24px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flocken span { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="buehne">
+  <div class="flocken" id="flocken" aria-hidden="true"></div>
+
+  <!-- Spielfeld -->
+  <div class="spielfeld" id="spielfeld">
+    <div class="fortschritt" id="fortschritt"></div>
+    <div class="kopfzeile">
+      <span class="punkte" id="punkte">0</span>
+      <span class="serie" id="serie"></span>
+      <button class="knopf sekundaer" id="abbrechen" style="padding: 5px 12px; font-size: 11px;">Abbrechen</button>
+    </div>
+    <div class="urteil" id="urteil"></div>
+  </div>
+  <div class="treffleiste" id="treffleiste"></div>
+
+  <!-- Klaviatur -->
+  <div class="klaviatur" id="klaviatur"></div>
+
+  <!-- Intro -->
+  <div class="screen" id="screen-intro">
+    <h1>Lillys <em>Ständchen</em></h1>
+    <p class="untertitel">Ein Türchen zum Mitspielen</p>
+    <img class="lilly-figur" src="bilder/lilly.png" alt="Lilly am Klavier" onerror="this.outerHTML='&lt;div class=&quot;lilly-fallback&quot;&gt;Hier sitzt Lilly am Klavier — Bild folgt&lt;/div&gt;'">
+    <p class="intro-text">Lilly rückt den Klavierhocker zurecht und sieht dich an. <em>„Kennst du das hier? Spiel mit mir — ich zeig dir die Noten, du triffst die Tasten. Und hör gut hin. Der Name des Stücks könnte noch wichtig werden."</em></p>
+    <div class="knopf-reihe">
+      <button class="knopf" id="start-knopf">Spielen</button>
+      <button class="knopf sekundaer" id="vorspiel-knopf">Erst mal anhören</button>
+    </div>
+    <p class="hilfe">Klicke die Tasten wenn die Note sie erreicht — oder nutze die Tastatur: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> für die weissen, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Z</kbd> <kbd>U</kbd> für die schwarzen Tasten.</p>
+  </div>
+
+  <!-- Ende: geschafft -->
+  <div class="screen hidden" id="screen-erfolg">
+    <p class="ergebnis-zahl" id="erfolg-prozent">0%</p>
+    <p class="ergebnis-label">getroffen</p>
+    <div class="guide">
+      <img src="bilder/lilly.png" alt="Lilly" onerror="this.outerHTML='&lt;div class=&quot;lilly-fallback&quot;&gt;Lilly&lt;/div&gt;'">
+      <div class="blase">
+        <p class="sprecherin">Lilly</p>
+        <p>„Schön gespielt! Und — erkannt? Falls ja: <em>behalt es für dich.</em>"</p>
+        <p>„Nur so viel: Im Kalender gibt es etwas, das nicht so ist wie der Rest. <em>Halt die Augen offen.</em>"</p>
+      </div>
+    </div>
+    <div class="knopf-reihe">
+      <a class="knopf" href="index.html">Zurück zum Kalender</a>
+      <button class="knopf sekundaer" id="nochmal-knopf">Nochmal spielen</button>
+    </div>
+  </div>
+
+  <!-- Ende: nochmal versuchen -->
+  <div class="screen hidden" id="screen-retry">
+    <p class="ergebnis-zahl" id="retry-prozent">0%</p>
+    <p class="ergebnis-label">getroffen</p>
+    <div class="guide">
+      <img src="bilder/lilly.png" alt="Lilly" onerror="this.outerHTML='&lt;div class=&quot;lilly-fallback&quot;&gt;Lilly&lt;/div&gt;'">
+      <div class="blase">
+        <p class="sprecherin">Lilly</p>
+        <p>„Schöner Versuch! Das Stück ist ruhiger als man denkt — lass dich nicht hetzen. Noch eine Runde?"</p>
+      </div>
+    </div>
+    <div class="knopf-reihe">
+      <button class="knopf" id="retry-knopf">Nochmal spielen</button>
+      <button class="knopf sekundaer" id="anhoeren-knopf">Nochmal anhören</button>
+      <a class="knopf sekundaer" href="index.html">Zurück zum Kalender</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ---------- Winter-Ambiente ----------
+  const flocken = document.getElementById('flocken');
+  for (let i = 0; i < 30; i++) {
+    const s = document.createElement('span');
+    const size = 2 + Math.random() * 3;
+    s.style.width = size + 'px'; s.style.height = size + 'px';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.animationDuration = (6 + Math.random() * 7) + 's';
+    s.style.animationDelay = (Math.random() * 8) + 's';
+    s.style.opacity = 0.25 + Math.random() * 0.4;
+    flocken.appendChild(s);
+  }
+
+  // ---------- Klaviatur-Definition ----------
+  // Weisse Tasten C4–C5, schwarze dazwischen. Kürzel = Computertasten.
+  const WEISSE = [
+    { note: 'C4', freq: 261.63, kuerzel: 'A' },
+    { note: 'D4', freq: 293.66, kuerzel: 'S' },
+    { note: 'E4', freq: 329.63, kuerzel: 'D' },
+    { note: 'F4', freq: 349.23, kuerzel: 'F' },
+    { note: 'G4', freq: 392.00, kuerzel: 'G' },
+    { note: 'A4', freq: 440.00, kuerzel: 'H' },
+    { note: 'H4', freq: 493.88, kuerzel: 'J' },
+    { note: 'C5', freq: 523.25, kuerzel: 'K' }
+  ];
+  const SCHWARZE = [
+    { note: 'Cis4', freq: 277.18, kuerzel: 'W', zwischen: [0, 1] },
+    { note: 'Dis4', freq: 311.13, kuerzel: 'E', zwischen: [1, 2] },
+    { note: 'Fis4', freq: 369.99, kuerzel: 'T', zwischen: [3, 4] },
+    { note: 'Gis4', freq: 415.30, kuerzel: 'Z', zwischen: [4, 5] },
+    { note: 'Ais4', freq: 466.16, kuerzel: 'U', zwischen: [5, 6] }
+  ];
+  const ALLE = {};
+  WEISSE.forEach(t => ALLE[t.note] = t);
+  SCHWARZE.forEach(t => ALLE[t.note] = t);
+  const KUERZEL_MAP = {};
+  WEISSE.forEach(t => KUERZEL_MAP[t.kuerzel] = t.note);
+  SCHWARZE.forEach(t => KUERZEL_MAP[t.kuerzel] = t.note);
+  // Anzeigename ohne Oktave
+  function anzeigeName(note) {
+    return note.replace(/[45]$/, '').replace('is', '♯');
+  }
+
+  // ---------- Melodie (gemeinfrei, 1895) — bewusst OHNE Liedtext, das Erkennen ist Teil des Rätsels ----------
+  const PHRASEN = [
+    ['H4', 'H4', 'A4', 'H4', 'A4', 'G4'],
+    ['G4', 'E4', 'G4', 'Fis4', 'E4', 'D4'],
+    ['A4', 'Gis4', 'A4', 'C5', 'H4', 'A4', 'G4'],
+    ['A4', 'E4', 'E4', 'Fis4', 'E4', 'Fis4', 'G4']
+  ];
+  const BEAT = 340; // ms pro Zähler — ruhiges Tempo
+  // Rhythmus-Muster: [Startversatz, Dauer] in Beats
+  const MUSTER_6 = [[0, 1.5], [1.5, 1], [2.5, 1], [3.5, 1], [4.5, 1], [5.5, 2.5]];
+  const MUSTER_7 = [[0, 1.5], [1.5, 1], [2.5, 1], [3.5, 1.5], [5, 1], [6, 1], [7, 2.5]];
+  const PHRASEN_PAUSE = 1.5;
+
+  function baueSong() {
+    const noten = [];
+    let t = 0;
+    [PHRASEN, PHRASEN].forEach((durchgang) => {
+      durchgang.forEach((phrase) => {
+        const muster = phrase.length === 6 ? MUSTER_6 : MUSTER_7;
+        phrase.forEach((note, i) => {
+          noten.push({
+            zeit: t + muster[i][0] * BEAT,
+            dauer: muster[i][1] * BEAT,
+            note: note
+          });
+        });
+        const ende = muster[muster.length - 1];
+        t += (ende[0] + ende[1] + PHRASEN_PAUSE) * BEAT;
+      });
+      t += 2 * BEAT; // Atempause zwischen den Durchgängen
+    });
+    return { noten, laenge: t };
+  }
+
+  // ---------- Audio ----------
+  let ctx = null;
+  function ensureAudio() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function spieleTon(freq, dauerMs, leise) {
+    const c = ensureAudio(); if (!c) return;
+    const now = c.currentTime;
+    const dauer = Math.max(0.5, (dauerMs || 500) / 1000 + 0.35);
+    const filter = c.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 3200; filter.Q.value = 0.5;
+    filter.connect(c.destination);
+    const lautstaerke = leise ? 0.5 : 1;
+    // Grundton + zwei Obertöne = klavierähnlich
+    [[1, 0.20], [2, 0.07], [3, 0.025]].forEach(([mult, vol]) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = freq * mult;
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(vol * lautstaerke, now + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dauer);
+      o.connect(g).connect(filter);
+      o.start(now); o.stop(now + dauer);
+    });
+  }
+
+  // ---------- Klaviatur bauen ----------
+  const klaviatur = document.getElementById('klaviatur');
+  const tastenElemente = {};
+  WEISSE.forEach((t) => {
+    const el = document.createElement('div');
+    el.className = 'taste';
+    el.dataset.note = t.note;
+    el.innerHTML = `<span class="name">${t.kuerzel}</span><span class="kuerzel">${anzeigeName(t.note)}</span>`;
+    klaviatur.appendChild(el);
+    tastenElemente[t.note] = el;
+  });
+  function positioniereSchwarze() {
+    SCHWARZE.forEach((t) => {
+      let el = tastenElemente[t.note];
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'schwarz';
+        el.dataset.note = t.note;
+        el.innerHTML = `<span class="name">${t.kuerzel}</span><span class="kuerzel">${anzeigeName(t.note)}</span>`;
+        klaviatur.appendChild(el);
+        tastenElemente[t.note] = el;
+      }
+      const links = tastenElemente[WEISSE[t.zwischen[0]].note];
+      const rechts = tastenElemente[WEISSE[t.zwischen[1]].note];
+      const kRect = klaviatur.getBoundingClientRect();
+      const mitte = (links.getBoundingClientRect().right + rechts.getBoundingClientRect().left) / 2 - kRect.left;
+      el.style.left = mitte + 'px';
+      el.style.transform = 'translateX(-50%)';
+    });
+  }
+  window.addEventListener('resize', positioniereSchwarze);
+  requestAnimationFrame(positioniereSchwarze);
+
+  // Treffleiste auf Höhe der Tastenoberkante
+  function setzeTreffleiste() {
+    const kRect = klaviatur.getBoundingClientRect();
+    document.getElementById('treffleiste').style.top = kRect.top + 'px';
+  }
+  window.addEventListener('resize', setzeTreffleiste);
+  requestAnimationFrame(setzeTreffleiste);
+
+  // ---------- Spielzustand ----------
+  const FALLZEIT = 2600;    // ms von oben bis Treffleiste
+  const PERFEKT = 150;      // ± ms
+  const GUT = 300;          // ± ms
+  let song = null;
+  let laufend = false, vorspiel = false;
+  let startZeit = 0;
+  let punkte = 0, maxPunkte = 0, serie = 0;
+  let rafId = null;
+  const spielfeld = document.getElementById('spielfeld');
+  const punkteEl = document.getElementById('punkte');
+  const serieEl = document.getElementById('serie');
+  const urteilEl = document.getElementById('urteil');
+  const fortschrittEl = document.getElementById('fortschritt');
+
+  function zeigeUrteil(text, farbe) {
+    urteilEl.textContent = text;
+    urteilEl.style.color = farbe;
+    urteilEl.classList.remove('zeig');
+    void urteilEl.offsetWidth;
+    urteilEl.classList.add('zeig');
+  }
+  function tasteBlitzt(note, klasse) {
+    const el = tastenElemente[note];
+    if (!el) return;
+    el.classList.add(klasse);
+    setTimeout(() => el.classList.remove(klasse), 160);
+  }
+
+
+  function starteSpiel(nurZuhoeren) {
+    ensureAudio();
+    song = baueSong();
+    laufend = true;
+    vorspiel = !!nurZuhoeren;
+    punkte = 0; serie = 0;
+    maxPunkte = song.noten.length * 100;
+    punkteEl.textContent = '0';
+    serieEl.textContent = '';
+    document.getElementById('screen-intro').classList.add('hidden');
+    document.getElementById('screen-erfolg').classList.add('hidden');
+    document.getElementById('screen-retry').classList.add('hidden');
+    // Noten-Elemente anlegen
+    spielfeld.querySelectorAll('.note').forEach(n => n.remove());
+    song.noten.forEach((n) => {
+      const el = document.createElement('div');
+      el.className = 'note' + (n.note.includes('is') ? ' schwarz-note' : '');
+      el.textContent = ALLE[n.note].kuerzel;
+      el.style.display = 'none';
+      spielfeld.appendChild(el);
+      n.el = el;
+      n.status = 'offen';
+    });
+    startZeit = performance.now() + 1400; // kurzer Vorlauf
+    positioniereSchwarze();
+    setzeTreffleiste();
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function tick(jetzt) {
+    if (!laufend) return;
+    const t = jetzt - startZeit;
+    const feldRect = spielfeld.getBoundingClientRect();
+    const treffY = feldRect.height; // Unterkante Spielfeld = Tastenoberkante
+
+    song.noten.forEach((n) => {
+      const dt = n.zeit - t; // ms bis Treffpunkt
+      if (dt < FALLZEIT && dt > -600) {
+        if (n.status === 'offen' || n.status === 'verpasst-anzeig') {
+          const tasteEl = tastenElemente[n.note];
+          if (tasteEl) {
+            const tRect = tasteEl.getBoundingClientRect();
+            const breite = Math.min(tRect.width - 6, 64);
+            const hoehe = Math.max(26, n.dauer / 14);
+            const x = tRect.left - feldRect.left + (tRect.width - breite) / 2;
+            const y = treffY - ((dt / FALLZEIT) * (treffY + 80)) - hoehe;
+            n.el.style.display = 'flex';
+            n.el.style.width = breite + 'px';
+            n.el.style.height = hoehe + 'px';
+            n.el.style.transform = `translate(${x}px, ${y}px)`;
+          }
+        }
+        // Vorspiel-Modus: automatisch abspielen
+        if (vorspiel && n.status === 'offen' && dt <= 0) {
+          n.status = 'auto';
+          spieleTon(ALLE[n.note].freq, n.dauer);
+          tasteBlitzt(n.note, 'aufleuchten');
+          n.el.classList.add('getroffen');
+        }
+      }
+      // Verpasst (nur im Spiel-Modus)
+      if (!vorspiel && n.status === 'offen' && dt < -GUT) {
+        n.status = 'verpasst';
+        n.el.classList.add('verpasst');
+        serie = 0;
+        serieEl.textContent = '';
+        setTimeout(() => { n.el.style.display = 'none'; }, 500);
+      }
+      if (n.status === 'verpasst' && dt < -600) n.el.style.display = 'none';
+    });
+
+    fortschrittEl.style.width = Math.min(100, (t / song.laenge) * 100) + '%';
+
+    if (t > song.laenge + 800) {
+      beendeSpiel();
+      return;
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function eingabe(note) {
+    if (!laufend) { spieleTon(ALLE[note] ? ALLE[note].freq : 440, 400, true); return; }
+    tasteBlitzt(note, note.includes('is') ? 'aufleuchten' : 'aufleuchten');
+    if (vorspiel) { spieleTon(ALLE[note].freq, 400, true); return; }
+    const t = performance.now() - startZeit;
+    // Nächste offene Note dieser Tonhöhe im Fenster suchen
+    let beste = null, besteDiff = Infinity;
+    song.noten.forEach((n) => {
+      if (n.status !== 'offen' || n.note !== note) return;
+      const diff = Math.abs(n.zeit - t);
+      if (diff < besteDiff) { besteDiff = diff; beste = n; }
+    });
+    if (beste && besteDiff <= GUT) {
+      beste.status = 'getroffen';
+      beste.el.classList.add('getroffen');
+      setTimeout(() => { beste.el.style.display = 'none'; }, 320);
+      spieleTon(ALLE[note].freq, beste.dauer);
+      serie++;
+      if (besteDiff <= PERFEKT) {
+        punkte += 100;
+        zeigeUrteil('Perfekt', 'var(--gruen)');
+      } else {
+        punkte += 60;
+        zeigeUrteil('Gut', 'var(--gelb)');
+      }
+      punkteEl.textContent = punkte;
+      if (serie >= 5) serieEl.textContent = serie + ' in Folge';
+    } else {
+      // Falsche Taste oder daneben: Ton trotzdem, leise — man hört den Fehler
+      spieleTon(ALLE[note].freq, 350, true);
+      serie = 0;
+      serieEl.textContent = '';
+    }
+  }
+
+  function beendeSpiel() {
+    laufend = false;
+    cancelAnimationFrame(rafId);
+    spielfeld.querySelectorAll('.note').forEach(n => n.remove());
+    if (vorspiel) {
+      document.getElementById('screen-intro').classList.remove('hidden');
+      return;
+    }
+    const prozent = Math.round((punkte / maxPunkte) * 100);
+    if (prozent >= 70) {
+      document.getElementById('erfolg-prozent').textContent = prozent + '%';
+      document.getElementById('screen-erfolg').classList.remove('hidden');
+    } else {
+      document.getElementById('retry-prozent').textContent = prozent + '%';
+      document.getElementById('screen-retry').classList.remove('hidden');
+    }
+  }
+
+  // ---------- Eingabe-Events ----------
+  klaviatur.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest('[data-note]');
+    if (el) { e.preventDefault(); eingabe(el.dataset.note); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    const note = KUERZEL_MAP[e.key.toUpperCase()];
+    if (note) {
+      const el = tastenElemente[note];
+      if (el) { el.classList.add('gedrueckt'); setTimeout(() => el.classList.remove('gedrueckt'), 140); }
+      eingabe(note);
+    }
+  });
+
+  document.getElementById('start-knopf').onclick = () => starteSpiel(false);
+  document.getElementById('vorspiel-knopf').onclick = () => starteSpiel(true);
+  document.getElementById('nochmal-knopf').onclick = () => starteSpiel(false);
+  document.getElementById('retry-knopf').onclick = () => starteSpiel(false);
+  document.getElementById('anhoeren-knopf').onclick = () => starteSpiel(true);
+  document.getElementById('abbrechen').onclick = () => {
+    laufend = false;
+    cancelAnimationFrame(rafId);
+    spielfeld.querySelectorAll('.note').forEach(n => n.remove());
+    document.getElementById('screen-intro').classList.remove('hidden');
+  };
+})();
+</script>
+</body>
+</html>
