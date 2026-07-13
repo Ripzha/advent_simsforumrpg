@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Das zerbrochene Bild</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --nacht: #0a1428; --nacht-tief: #060d1c; --panel-rand: #3a4a6a;
+    --gold: #c89248; --gold-hell: #f4d484; --cream: #f4ead0; --tinte: #2a1a0a;
+    --himmel-text: #a8b8d5;
+    --serif: "Fraunces", Georgia, serif; --sans: "Karla", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--nacht); color: var(--cream); font-family: var(--sans); height: 100%; overflow: hidden; }
+  .buehne { position: relative; width: 100%; height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: linear-gradient(180deg, var(--nacht-tief), var(--nacht) 45%); }
+  .kopf { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 18px 8px; z-index: 5; flex-wrap: wrap; gap: 8px; }
+  h1 { font-family: var(--serif); font-size: clamp(18px, 4vw, 26px); font-weight: 500; margin: 0; }
+  h1 em { font-style: italic; color: var(--gold-hell); }
+  .status { font-size: 13px; color: var(--himmel-text); display: flex; gap: 16px; align-items: center; }
+  .status b { color: var(--gold-hell); font-family: var(--serif); font-weight: 500; }
+  .mini-knopf { background: transparent; border: 1px solid var(--panel-rand); color: var(--himmel-text); padding: 5px 12px; border-radius: 5px; font-size: 11.5px; cursor: pointer; font-family: var(--sans); }
+  .mini-knopf:hover { background: #1a2a45; color: var(--cream); }
+  .mini-knopf.aktiv { background: #2a3a5a; color: var(--cream); }
+
+  .spielflaeche { position: relative; flex: 1; overflow: hidden; touch-action: none; }
+  .brett { position: absolute; border: 2px dashed rgba(168, 184, 213, 0.35); border-radius: 6px; background: rgba(12, 24, 40, 0.5); }
+  .brett .vorlage { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+  .brett .vorlage.zeig { opacity: 0.22; }
+  .teil { position: absolute; cursor: grab; touch-action: none; will-change: transform; filter: drop-shadow(2px 3px 5px rgba(0,0,0,0.55)); }
+  .teil.greifen { cursor: grabbing; z-index: 500 !important; filter: drop-shadow(4px 7px 12px rgba(0,0,0,0.7)); }
+  .teil.sitzt { cursor: default; filter: none; z-index: 1 !important; }
+  .teil.einrasten { animation: einrast 0.22s ease; }
+  @keyframes einrast { 0% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; z-index: 20; text-align: center; background: rgba(6, 13, 28, 0.82); backdrop-filter: blur(3px); transition: opacity 0.35s ease, visibility 0.35s ease; }
+  .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .screen h2 { font-family: var(--serif); font-size: clamp(22px, 5vw, 32px); font-weight: 500; margin: 0 0 6px; }
+  .screen h2 em { font-style: italic; color: var(--gold-hell); }
+  .screen p { color: var(--himmel-text); font-size: 14px; margin: 0 0 22px; max-width: 400px; line-height: 1.6; }
+  .knopf { background: var(--gold); color: var(--tinte); border: 1px solid var(--gold-hell); padding: 12px 26px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--sans); text-decoration: none; display: inline-block; }
+  .knopf:hover { background: #dba458; }
+  .knopf.sekundaer { background: transparent; color: var(--himmel-text); border-color: var(--panel-rand); font-weight: 500; }
+  .knopf-reihe { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .fertig-bild { max-width: min(70vw, 46vh); border-radius: 10px; border: 2px solid var(--gold-hell); box-shadow: 0 0 44px rgba(244, 212, 132, 0.4); margin-bottom: 18px; }
+</style>
+</head>
+<body>
+<div class="buehne">
+  <div class="kopf">
+    <h1>Das <em>zerbrochene</em> Bild</h1>
+    <div class="status">
+      <span><b id="sitzen">0</b> / <b id="gesamt">0</b> Teile</span>
+      <button class="mini-knopf" id="vorlage-knopf">Vorlage zeigen</button>
+      <button class="mini-knopf" id="misch-knopf">Neu verstreuen</button>
+    </div>
+  </div>
+  <div class="spielflaeche" id="spielflaeche">
+    <div class="brett" id="brett"><img class="vorlage" id="vorlage" alt=""></div>
+  </div>
+
+  <!-- Intro -->
+  <div class="screen" id="screen-intro">
+    <h2>Das <em>zerbrochene</em> Bild</h2>
+    <p>Dieses Türchen ist in Stücke gefallen — sie liegen überall verstreut. Zieh jedes Teil an seinen Platz auf dem Brett. Wenn ein Teil richtig liegt, rastet es ein.</p>
+    <button class="knopf" id="start-knopf">Aufsammeln</button>
+  </div>
+
+  <!-- Fertig -->
+  <div class="screen hidden" id="screen-fertig">
+    <h2>Wieder <em>ganz.</em></h2>
+    <img class="fertig-bild" id="fertig-bild" alt="Das vollständige Bild">
+    <p id="fertig-text"></p>
+    <div class="knopf-reihe">
+      <a class="knopf" href="index.html">Zurück zum Kalender</a>
+      <button class="knopf sekundaer" id="nochmal-knopf">Nochmal puzzeln</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  // >>> BILD-URL HIER EINTRAGEN — quadratisch (~1000×1000px) am besten <<<
+  // Leer = prozedural gezeichnete Winter-Szene als Platzhalter (voll spielbar).
+  const BILD_URL = '';
+  const RASTER = 6;        // 6x6 = 36 Teile. 5 = leichter (25), 7 = schwerer (49).
+  const SNAP = 20;         // Einrast-Distanz in px
+
+  const flaeche = document.getElementById('spielflaeche');
+  const brettEl = document.getElementById('brett');
+  const N = RASTER * RASTER;
+  document.getElementById('gesamt').textContent = N;
+
+  let bild = null;         // Quell-Canvas (quadratisch)
+  let brett = { x: 0, y: 0, groesse: 0 };
+  let teile = [];          // { c, r, canvas, x, y, sitzt, tabT, tabR, tabB, tabL }
+  let tabsH = [], tabsV = [];
+  let sitzen = 0;
+  let zTop = 10;
+
+  // ---------- Quellbild vorbereiten (auf Quadrat croppen) ----------
+  function bereiteBild(imgOderNull) {
+    const S = 1000;
+    const c = document.createElement('canvas');
+    c.width = S; c.height = S;
+    const ctx = c.getContext('2d');
+    if (imgOderNull) {
+      const iw = imgOderNull.naturalWidth, ih = imgOderNull.naturalHeight;
+      const m = Math.min(iw, ih);
+      ctx.drawImage(imgOderNull, (iw - m) / 2, (ih - m) / 2, m, m, 0, 0, S, S);
+    } else {
+      zeichnePlatzhalterSzene(ctx, S);
+    }
+    return c;
+  }
+
+  // Prozedurale Winter-Szene — Platzhalter bis das echte Bild kommt
+  function zeichnePlatzhalterSzene(ctx, S) {
+    const grad = ctx.createLinearGradient(0, 0, 0, S);
+    grad.addColorStop(0, '#0d1830'); grad.addColorStop(0.55, '#1a2a4a'); grad.addColorStop(1, '#26385e');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, S, S);
+    // Sterne
+    ctx.fillStyle = '#f4ead0';
+    for (let i = 0; i < 90; i++) {
+      ctx.globalAlpha = 0.3 + Math.random() * 0.7;
+      ctx.beginPath(); ctx.arc(Math.random() * S, Math.random() * S * 0.5, Math.random() * 2 + 0.6, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // Mond
+    ctx.fillStyle = 'rgba(244,232,200,0.15)'; ctx.beginPath(); ctx.arc(S * 0.72, S * 0.2, 110, 0, 7); ctx.fill();
+    ctx.fillStyle = '#f4e8c8'; ctx.beginPath(); ctx.arc(S * 0.72, S * 0.2, 74, 0, 7); ctx.fill();
+    // Schneehügel
+    ctx.fillStyle = '#dfe8f4';
+    ctx.beginPath(); ctx.moveTo(0, S * 0.78); ctx.quadraticCurveTo(S * 0.3, S * 0.68, S * 0.55, S * 0.78); ctx.quadraticCurveTo(S * 0.8, S * 0.88, S, S * 0.76); ctx.lineTo(S, S); ctx.lineTo(0, S); ctx.fill();
+    // Tannen
+    function tanne(x, y, gr, farbe) {
+      ctx.fillStyle = farbe;
+      for (let e = 0; e < 3; e++) {
+        const b = gr * (1 - e * 0.24), h = gr * 0.55, yy = y - e * gr * 0.42;
+        ctx.beginPath(); ctx.moveTo(x - b / 2, yy); ctx.lineTo(x, yy - h); ctx.lineTo(x + b / 2, yy); ctx.fill();
+      }
+      ctx.fillStyle = '#3a2a18'; ctx.fillRect(x - gr * 0.05, y, gr * 0.1, gr * 0.18);
+    }
+    tanne(S * 0.16, S * 0.8, 200, '#1e3a2e');
+    tanne(S * 0.38, S * 0.85, 150, '#26483a');
+    tanne(S * 0.87, S * 0.82, 180, '#1e3a2e');
+    // Haus mit warmen Fenstern
+    ctx.fillStyle = '#3a2c1c'; ctx.fillRect(S * 0.55, S * 0.62, 200, 170);
+    ctx.fillStyle = '#2a1e12'; ctx.beginPath(); ctx.moveTo(S * 0.53, S * 0.62); ctx.lineTo(S * 0.55 + 100, S * 0.52); ctx.lineTo(S * 0.57 + 200, S * 0.62); ctx.fill();
+    ctx.fillStyle = '#f4c870';
+    ctx.fillRect(S * 0.58, S * 0.67, 44, 54); ctx.fillRect(S * 0.68, S * 0.67, 44, 54);
+    ctx.fillStyle = '#e8eef8'; ctx.fillRect(S * 0.53, S * 0.6, 240, 12);
+    // Fallender Schnee
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    for (let i = 0; i < 130; i++) {
+      ctx.globalAlpha = 0.35 + Math.random() * 0.55;
+      ctx.beginPath(); ctx.arc(Math.random() * S, Math.random() * S, Math.random() * 4 + 1.5, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---------- Jigsaw-Kanten ----------
+  // edge zeichnet eine Kante von (ax,ay) nach (bx,by); tab = 0 gerade, ±1 Nase raus/rein
+  function edge(ctx, ax, ay, bx, by, tab) {
+    if (!tab) { ctx.lineTo(bx, by); return; }
+    const dx = bx - ax, dy = by - ay;
+    const nx = -dy, ny = dx; // Normale (Länge = Kantenlänge)
+    const p = (f, n) => [ax + dx * f + nx * n * tab, ay + dy * f + ny * n * tab];
+    let q = p(0.40, 0); ctx.lineTo(q[0], q[1]);
+    let c1 = p(0.52, 0.02), c2 = p(0.28, 0.24), m = p(0.50, 0.26);
+    ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], m[0], m[1]);
+    c1 = p(0.72, 0.24); c2 = p(0.48, 0.02); q = p(0.60, 0);
+    ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], q[0], q[1]);
+    ctx.lineTo(bx, by);
+  }
+
+  function teilPfad(ctx, pw, m, tabT, tabR, tabB, tabL) {
+    ctx.beginPath();
+    ctx.moveTo(m, m);
+    edge(ctx, m, m, m + pw, m, tabT);
+    edge(ctx, m + pw, m, m + pw, m + pw, tabR);
+    edge(ctx, m + pw, m + pw, m, m + pw, tabB);
+    edge(ctx, m, m + pw, m, m, tabL);
+    ctx.closePath();
+  }
+
+  // ---------- Layout + Teile bauen ----------
+  function layout() {
+    const fw = flaeche.clientWidth, fh = flaeche.clientHeight;
+    brett.groesse = Math.min(fw * 0.62, fh * 0.72, 560);
+    brett.x = (fw - brett.groesse) / 2;
+    brett.y = (fh - brett.groesse) / 2;
+    brettEl.style.left = brett.x + 'px';
+    brettEl.style.top = brett.y + 'px';
+    brettEl.style.width = brett.groesse + 'px';
+    brettEl.style.height = brett.groesse + 'px';
+  }
+
+  function baueTeile() {
+    teile.forEach(t => t.el && t.el.remove());
+    teile = [];
+    sitzen = 0;
+    document.getElementById('sitzen').textContent = '0';
+    // Zufällige Nasen-Richtungen
+    tabsH = []; tabsV = [];
+    for (let r = 0; r < RASTER; r++) {
+      tabsH[r] = []; tabsV[r] = [];
+      for (let c = 0; c < RASTER; c++) {
+        tabsH[r][c] = Math.random() < 0.5 ? 1 : -1; // Kante rechts von (r,c)
+        tabsV[r][c] = Math.random() < 0.5 ? 1 : -1; // Kante unter (r,c)
+      }
+    }
+    const pw = brett.groesse / RASTER;
+    const m = pw * 0.32; // Rand für Nasen
+    const quellPw = 1000 / RASTER;
+    const quellM = quellPw * 0.32;
+
+    for (let r = 0; r < RASTER; r++) {
+      for (let c = 0; c < RASTER; c++) {
+        const tabT = r === 0 ? 0 : -tabsV[r - 1][c];
+        const tabB = r === RASTER - 1 ? 0 : tabsV[r][c];
+        const tabL = c === 0 ? 0 : -tabsH[r][c - 1];
+        const tabR = c === RASTER - 1 ? 0 : tabsH[r][c];
+
+        const cv = document.createElement('canvas');
+        const gr = Math.ceil(pw + 2 * m);
+        cv.width = gr; cv.height = gr;
+        const ctx = cv.getContext('2d');
+        teilPfad(ctx, pw, m, tabT, tabR, tabB, tabL);
+        ctx.save();
+        ctx.clip();
+        // Bildausschnitt: Quellbild skaliert aufs Brett, Teil-Offset berücksichtigt
+        ctx.drawImage(bild, 0, 0, 1000, 1000, m - c * pw, m - r * pw, brett.groesse, brett.groesse);
+        ctx.restore();
+        // Kontur
+        teilPfad(ctx, pw, m, tabT, tabR, tabB, tabL);
+        ctx.strokeStyle = 'rgba(10, 20, 40, 0.55)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        cv.className = 'teil';
+        cv.style.width = gr + 'px'; cv.style.height = gr + 'px';
+        flaeche.appendChild(cv);
+        const teil = { c, r, el: cv, m, pw, sitzt: false, zielX: brett.x + c * pw - m, zielY: brett.y + r * pw - m, x: 0, y: 0 };
+        teile.push(teil);
+        machDraggable(teil);
+      }
+    }
+    verstreue();
+  }
+
+  function verstreue() {
+    const fw = flaeche.clientWidth, fh = flaeche.clientHeight;
+    teile.forEach(t => {
+      if (t.sitzt) return;
+      // Zufällig in den Rändern um das Brett verteilen (links/rechts/oben/unten)
+      const gr = t.el.width;
+      let x, y;
+      const zone = Math.floor(Math.random() * 4);
+      if (zone === 0) { x = Math.random() * Math.max(10, brett.x - gr); y = Math.random() * (fh - gr); }
+      else if (zone === 1) { x = brett.x + brett.groesse + Math.random() * Math.max(10, fw - brett.x - brett.groesse - gr); y = Math.random() * (fh - gr); }
+      else if (zone === 2) { x = Math.random() * (fw - gr); y = Math.random() * Math.max(10, brett.y - gr); }
+      else { x = Math.random() * (fw - gr); y = brett.y + brett.groesse + Math.random() * Math.max(10, fh - brett.y - brett.groesse - gr); }
+      // Fallback falls Ränder zu schmal (kleine Screens): irgendwo
+      if (isNaN(x) || x < 0) x = Math.random() * (fw - gr);
+      if (isNaN(y) || y < 0) y = Math.random() * (fh - gr);
+      setzePos(t, Math.max(0, Math.min(fw - gr, x)), Math.max(0, Math.min(fh - gr, y)));
+      t.el.style.zIndex = ++zTop;
+    });
+  }
+
+  function setzePos(t, x, y) {
+    t.x = x; t.y = y;
+    t.el.style.transform = `translate(${x}px, ${y}px)`;
+  }
+
+  // ---------- Drag & Drop ----------
+  function machDraggable(t) {
+    let offX = 0, offY = 0, aktiv = false;
+    t.el.addEventListener('pointerdown', (e) => {
+      if (t.sitzt) return;
+      aktiv = true;
+      t.el.setPointerCapture(e.pointerId);
+      t.el.classList.add('greifen');
+      t.el.style.zIndex = ++zTop;
+      offX = e.clientX - t.x;
+      offY = e.clientY - t.y;
+      e.preventDefault();
+    });
+    t.el.addEventListener('pointermove', (e) => {
+      if (!aktiv) return;
+      setzePos(t, e.clientX - offX, e.clientY - offY);
+    });
+    t.el.addEventListener('pointerup', () => {
+      if (!aktiv) return;
+      aktiv = false;
+      t.el.classList.remove('greifen');
+      // Snap-Prüfung
+      if (Math.abs(t.x - t.zielX) < SNAP && Math.abs(t.y - t.zielY) < SNAP) {
+        setzePos(t, t.zielX, t.zielY);
+        t.sitzt = true;
+        t.el.classList.add('sitzt', 'einrasten');
+        sitzen++;
+        document.getElementById('sitzen').textContent = sitzen;
+        if (sitzen === N) setTimeout(fertig, 400);
+      }
+    });
+  }
+
+  function fertig() {
+    const f = document.getElementById('fertig-bild');
+    f.src = bild.toDataURL('image/jpeg', 0.85);
+    document.getElementById('fertig-text').textContent = 'Das Türchen ist vollständig — alle ' + N + ' Teile sitzen.';
+    document.getElementById('screen-fertig').classList.remove('hidden');
+  }
+
+  // ---------- Steuerung ----------
+  document.getElementById('vorlage-knopf').onclick = (e) => {
+    const v = document.getElementById('vorlage');
+    v.classList.toggle('zeig');
+    e.target.classList.toggle('aktiv');
+  };
+  document.getElementById('misch-knopf').onclick = verstreue;
+  document.getElementById('start-knopf').onclick = () => {
+    document.getElementById('screen-intro').classList.add('hidden');
+  };
+  document.getElementById('nochmal-knopf').onclick = () => {
+    document.getElementById('screen-fertig').classList.add('hidden');
+    baueTeile();
+  };
+  window.addEventListener('resize', () => { layout(); baueTeile(); });
+
+  // ---------- Start ----------
+  function init(imgOderNull) {
+    bild = bereiteBild(imgOderNull);
+    document.getElementById('vorlage').src = bild.toDataURL('image/jpeg', 0.7);
+    layout();
+    baueTeile();
+  }
+  if (BILD_URL) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => init(img);
+    img.onerror = () => init(null);
+    img.src = BILD_URL;
+  } else {
+    init(null);
+  }
+})();
+</script>
+</body>
+</html>
