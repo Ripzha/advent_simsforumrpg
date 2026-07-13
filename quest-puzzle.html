@@ -28,11 +28,11 @@
   .brett { position: absolute; border: 2px dashed rgba(168, 184, 213, 0.35); border-radius: 6px; background: rgba(12, 24, 40, 0.5); }
   .brett .vorlage { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
   .brett .vorlage.zeig { opacity: 0.22; }
-  .teil { position: absolute; cursor: grab; touch-action: none; will-change: transform; filter: drop-shadow(2px 3px 5px rgba(0,0,0,0.55)); }
+  .teil { position: absolute; cursor: grab; touch-action: none; will-change: transform; filter: drop-shadow(2px 3px 5px rgba(0,0,0,0.55)); transform: translate(var(--tx, 0px), var(--ty, 0px)); }
   .teil.greifen { cursor: grabbing; z-index: 500 !important; filter: drop-shadow(4px 7px 12px rgba(0,0,0,0.7)); }
   .teil.sitzt { cursor: default; filter: none; z-index: 1 !important; }
   .teil.einrasten { animation: einrast 0.22s ease; }
-  @keyframes einrast { 0% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  @keyframes einrast { 0% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(1.06); } 100% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(1); } }
 
   .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; z-index: 20; text-align: center; background: rgba(6, 13, 28, 0.82); backdrop-filter: blur(3px); transition: opacity 0.35s ease, visibility 0.35s ease; }
   .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
@@ -273,7 +273,8 @@
 
   function setzePos(t, x, y) {
     t.x = x; t.y = y;
-    t.el.style.transform = `translate(${x}px, ${y}px)`;
+    t.el.style.setProperty('--tx', x + 'px');
+    t.el.style.setProperty('--ty', y + 'px');
   }
 
   // ---------- Drag & Drop ----------
