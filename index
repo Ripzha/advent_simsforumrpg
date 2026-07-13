@@ -340,7 +340,7 @@
 </div>
 <script>
   // >>> URL DEINER APPS SCRIPT WEB APP HIER EINSETZEN <<<
-  const APPS_SCRIPT_URL = '';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxKRKsfh_2YFkS5a5kpDYWSQImA1lEq3ndnVJj4YpPqWcLrqmUinp-l4WA93e5U79MPA/exec';
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
