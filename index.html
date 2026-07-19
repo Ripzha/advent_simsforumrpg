@@ -189,8 +189,9 @@
   .ak-sprosse.waagrecht { left: 0; right: 0; height: 9px; background: linear-gradient(180deg, #5c4226, #3e2d18); }
   /* Fensterbank mit Schnee */
   .ak-fensterbank { position: sticky; bottom: -27px; margin: 10px -12px -26px; height: 18px; background: linear-gradient(180deg, #6a4e2c, #3a2a18); border-top: 3px solid #e8eef8; box-shadow: 0 -1px 0 rgba(232, 238, 248, 0.4); z-index: 4; }
-  .ak-flocken-galerie { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px 6px; }
-  .ak-flocken-karte { position: relative; text-align: center; }
+  .ak-flocken-fenster { min-height: 46vh; }
+  .ak-flocken-galerie { position: relative; z-index: 1; min-height: 38vh; }
+  .ak-flocken-karte { position: absolute; width: 96px; text-align: center; margin-left: -48px; }
   /* Faden, an dem die Flocke hängt */
   .ak-flocken-karte::before { content: ""; position: absolute; left: 50%; top: -14px; width: 1px; height: 16px; background: rgba(244, 234, 208, 0.3); }
   .ak-flocken-karte canvas { display: block; width: 100%; max-width: 96px; margin: 0 auto; filter: drop-shadow(0 0 6px rgba(184, 216, 240, 0.35)); }
@@ -739,9 +740,10 @@
     if (x) x.addEventListener('click', schliesseFlockenModal);
   })();
   // Flocken-Geometrie (identisch zur Werkstatt: 12-fach, Radius normiert auf 1000)
-  const FL_HALB = 15 * Math.PI / 180, FL_SCHNITT = 27, FL_LOCH = 58;
-  function flKeil(strokeListe, r) {
-    const w = Math.ceil(2 * r * Math.sin(FL_HALB)) + 8, hh = Math.ceil(r) + 8;
+  const FL_SCHNITT = 27, FL_LOCH = 58;
+  function flKeil(strokeListe, r, n) {
+    const halb = Math.PI / (n || 12);
+    const w = Math.ceil(2 * r * Math.sin(halb)) + 8, hh = Math.ceil(r) + 8;
     const c = document.createElement('canvas');
     c.width = w; c.height = hh;
     const ctx = c.getContext('2d');
@@ -749,7 +751,7 @@
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(ax, ay);
-    const a1 = -Math.PI / 2 - FL_HALB, a2 = -Math.PI / 2 + FL_HALB;
+    const a1 = -Math.PI / 2 - halb, a2 = -Math.PI / 2 + halb;
     ctx.lineTo(ax + r * Math.cos(a1), ay + r * Math.sin(a1));
     ctx.arc(ax, ay, r, a1, a2, false);
     ctx.closePath();
@@ -776,14 +778,15 @@
     });
     return { canvas: c, ax: ax, ay: ay };
   }
-  function flRender(ziel, strokeListe, radius) {
+  function flRender(ziel, strokeListe, radius, n) {
+    n = n || 12;
     const zctx = ziel.getContext('2d');
-    const keil = flKeil(strokeListe, radius);
+    const keil = flKeil(strokeListe, radius, n);
     const cx = ziel.width / 2, cy = ziel.height / 2;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < n; i++) {
       zctx.save();
       zctx.translate(cx, cy);
-      zctx.rotate(i * Math.PI / 6);
+      zctx.rotate(i * 2 * Math.PI / n);
       if (i % 2) zctx.scale(-1, 1);
       zctx.drawImage(keil.canvas, -keil.ax, -keil.ay);
       zctx.restore();
@@ -817,6 +820,7 @@
   async function ladeFlocken() {
     const halter = document.getElementById('ak-flocken-galerie');
     const status = document.getElementById('ak-flocken-status');
+    let flockenIndex = 0;
     try {
       const res = await fetch(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'action=flocken');
       const data = await res.json();
@@ -836,11 +840,21 @@
         let seed = 0;
         for (let si = 0; si < f.name.length; si++) seed = (seed * 31 + f.name.charCodeAt(si)) % 9973;
         const rnd = (n) => { seed = (seed * 137 + 71) % 9973; return (seed / 9973) * n; };
-        const drehung = rnd(24) - 12, versatzX = rnd(14) - 7, versatzY = rnd(12) - 4, skala = 0.85 + rnd(0.3);
-        karte.style.transform = `translate(${versatzX}px, ${versatzY}px) rotate(${drehung}deg) scale(${skala})`;
+        // Frei verstreut, Überlappen erlaubt
+        const breite = Math.max(240, halter.clientWidth || 500);
+        const spalten = Math.max(3, Math.floor(breite / 100));
+        const spalte = flockenIndex % spalten, zeile = Math.floor(flockenIndex / spalten);
+        flockenIndex++;
+        karte.style.left = (((spalte + 0.5) / spalten * 100) + (rnd(16) - 8)) + '%';
+        const oben = 20 + zeile * 92 + rnd(40) - 20;
+        karte.style.top = oben + 'px';
+        karte.style.zIndex = 2 + Math.floor(rnd(20));
+        halter.style.minHeight = Math.max(parseInt(halter.style.minHeight) || 0, oben + 130) + 'px';
+        const drehung = rnd(24) - 12, skala = 0.85 + rnd(0.3);
+        karte.style.transform = `rotate(${drehung}deg) scale(${skala})`;
         const c = document.createElement('canvas');
         c.width = 96; c.height = 96;
-        flRender(c, daten.s, 42);
+        flRender(c, daten.s, 42, daten.n || 12);
         const label = document.createElement('span');
         label.className = 'fname';
         label.style.setProperty('--nrot', (rnd(14) - 7 - drehung) + 'deg');
