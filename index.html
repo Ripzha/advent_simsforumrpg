@@ -329,7 +329,7 @@
     <div class="ak-progress">
       <span id="ak-count">0 von 24 geöffnet</span>
       <div class="ak-kerzen" id="ak-kerzen" aria-hidden="true"></div>
-      <span class="ak-streak" id="ak-streak" title="Am selben Tag geöffnete Türchen">
+      <span class="ak-streak" id="ak-streak" title="Türchen, die an ihrem Tag geöffnet wurden — klick mich" style="cursor: pointer;">
         <svg viewBox="0 0 11 14" aria-hidden="true"><path d="M5.5 0 C6.5 3, 9.5 4.5, 9.5 8.5 C9.5 11.5, 7.7 14, 5.5 14 C3.3 14, 1.5 11.5, 1.5 8.5 C1.5 6.5, 2.5 5.5, 3.2 4.4 C3.5 6, 4.2 6.8, 5 7 C4.2 4.5, 4.8 2, 5.5 0 Z" fill="#f4c870"/></svg>
         <span id="ak-streak-num">0</span> pünktlich
       </span>
@@ -448,6 +448,7 @@
   ];
   const dunkleFenster = [];
   let geheimFensterGesetzt = false;
+  let globalTestModus = false;
   let flockenFensterGesetzt = false;
   houseDefs.forEach((h, hausIdx) => {
     const yBase = 745, yTop = yBase - h.h;
@@ -727,6 +728,20 @@
     }
   }
 
+  // --- Pünktlich-Zähler: Teaser für die Belohnung ---
+  (function initStreakTeaser() {
+    const streak = document.getElementById('ak-streak');
+    if (!streak) return;
+    streak.addEventListener('click', () => {
+      const n = globalPuenktlich ? globalPuenktlich.size : 0;
+      if (n >= 24) {
+        showToast('Alle 24 an ihrem Tag — du weisst, was der Himmel dann tut. ✨');
+      } else {
+        showToast(`${n} von 24 Türchen an ihrem Tag geöffnet. Wer alle 24 pünktlich schafft, bekommt am Ende etwas zu sehen, das sonst niemand sieht …`);
+      }
+    });
+  })();
+
   // --- Flocken-Fenster: Galerie aus Afisas Küche ---
   function oeffneFlockenModal() {
     const m = document.getElementById('ak-flocken-modal');
@@ -953,7 +968,7 @@
   }
   function formatToday(today, jahr, testMode) {
     const istTest = testMode === true || String(testMode).toUpperCase() === 'TRUE' || (!isNaN(Number(testMode)) && Number(testMode) >= 1 && Number(testMode) <= 24);
-    if (istTest) aktiviereResetKnopf();
+    if (istTest) { globalTestModus = true; aktiviereResetKnopf(); }
     if (testMode === true || String(testMode).toUpperCase() === 'TRUE') return 'Test-Modus · alle Türchen offen';
     const num = Number(testMode);
     if (!isNaN(num) && num >= 1 && num <= 24) return `Test-Modus · simuliert ${num}. Dezember`;
@@ -1121,7 +1136,8 @@
     }
   }
   function registrierePuenktlich(tag) {
-    if (tag === modalState.today && globalPuenktlich && !globalPuenktlich.has(tag)) {
+    // Im Test-Modus zählt jedes Öffnen als pünktlich, damit die Belohnung testbar ist
+    if ((tag === modalState.today || globalTestModus) && globalPuenktlich && !globalPuenktlich.has(tag)) {
       globalPuenktlich.add(tag);
       saveSet(`adventskalender_${globalJahr}_puenktlich`, globalPuenktlich);
     }
