@@ -508,14 +508,14 @@
     musikLaedt = false;
   }
   function starteSynth() {
-    const c = audio(); if (!c) return;
+    const c = audio(); if (!c || !musikAn) return;
     melodiePos = 0; achtelIndex = 0;
     naechsteNote = c.currentTime + 0.15;
     if (musikTimer) clearInterval(musikTimer);
     musikTimer = setInterval(planeMusik, 90);
   }
   function dateiStart() {
-    const c = audio(); if (!c || !musikBuffer) return;
+    const c = audio(); if (!c || !musikBuffer || !musikAn) return;
     if (musikSource) { try { musikSource.stop(); } catch (e) {} }
     musikSource = c.createBufferSource();
     musikSource.buffer = musikBuffer;
@@ -563,8 +563,22 @@
     // rausch: Vollgas · boss: Track macht Platz für den Jagd-Riff · normal
     const rate = ziel === 'rausch' ? 1.3 : 1;
     const vol = ziel === 'rausch' ? 0.62 : ziel === 'boss' ? 0.07 : 0.5;
-    musikSource.playbackRate.setTargetAtTime(rate, c.currentTime, 0.25);
-    if (musikGain) musikGain.gain.setTargetAtTime(vol, c.currentTime, 0.3);
+    const now = c.currentTime;
+    if (rate < musikSource.playbackRate.value - 0.01) {
+      // Runterschalten: Lautstärke kurz wegducken, Tempo in 0.35s sauber runterfahren, wieder hoch —
+      // so gibt es kein langgezogenes Leiern im Ohr
+      musikSource.playbackRate.cancelScheduledValues(now);
+      musikSource.playbackRate.setValueAtTime(musikSource.playbackRate.value, now);
+      musikSource.playbackRate.linearRampToValueAtTime(rate, now + 0.35);
+      if (musikGain) {
+        musikGain.gain.cancelScheduledValues(now);
+        musikGain.gain.setTargetAtTime(0.1, now, 0.05);
+        musikGain.gain.setTargetAtTime(vol, now + 0.4, 0.25);
+      }
+    } else {
+      musikSource.playbackRate.setTargetAtTime(rate, now, 0.15);
+      if (musikGain) musikGain.gain.setTargetAtTime(vol, now, 0.3);
+    }
   }
   // Verfolgungs-Riff während der Jagd (E-Moll, treibend)
   let bossMusikTimer = null, bossNaechste = 0, bossStep = 0;
@@ -691,6 +705,7 @@
   ];
   const TEMPO_START = 340;
   let tempo = TEMPO_START;
+  let letztesHerzWx = -99999;
   const TEMPO_MAX = 760;
   let hindernisse = [], sammel = [], popups = [], spray = [];
   let naechstesHindernis = 900, naechstesSammel = 500;
@@ -718,10 +733,18 @@
     return SAMMEL_TYPEN[0];
   }
   function schwierigkeit() { return Math.max(0, Math.min(1, (tempo - TEMPO_START) / (TEMPO_MAX - TEMPO_START))); }
+  // Ab 20k Punkten wird der Hang steiler — und bleibt es, auch nach einem Crash
+  function tempoBoden() {
+    if (punkte >= 60000) return TEMPO_START + 240;
+    if (punkte >= 40000) return TEMPO_START + 170;
+    if (punkte >= 20000) return TEMPO_START + 100;
+    return TEMPO_START;
+  }
+  let letzteTempoStufe = 0;
 
   function reset() {
     phase1 = Math.random() * 7; phase2 = Math.random() * 7; phase3 = Math.random() * 7;
-    worldX = 0; tempo = TEMPO_START;
+    worldX = 0; tempo = TEMPO_START; letzteTempoStufe = 0; letztesHerzWx = -99999;
     sledY = terrainY(SLED_X()); vy = 0; amBoden = true;
     ducken = false; jubel = null;
     combo = 0; comboMeter = 0; maxHalte = 0;
@@ -771,6 +794,12 @@
       }
       let warDoppel = false;
       if (wirdSchranke) {
+        // Auf zu steilem Hang die Schranke vorschieben, bis es flacher wird
+        let sv = 0;
+        while (sv < 4 && Math.abs(terrainY(naechstesHindernis + 70) - terrainY(naechstesHindernis - 70)) > 44) {
+          naechstesHindernis += 130;
+          sv++;
+        }
         hindernisse.push({ wx: naechstesHindernis, typ: 'schranke', b: 96, h: 0 });
         letztesHindernisWx = naechstesHindernis;
       } else {
@@ -794,8 +823,11 @@
     while (naechstesSammel < rechteKante) {
       if (++wache2 > 80) { naechstesSammel = rechteKante + 100; break; }
       let art = zufallsSammel();
-      // Selten: Ersatzteil-Kiste (+1 Leben), nur wenn Leben fehlen
-      if (leben < 3 && Math.random() < 0.07) art = { typ: 'herz', wert: 0 };
+      // Selten: Ersatzteil-Kiste (+1 Leben), nur wenn Leben fehlen — mit Abklingzeit
+      if (leben < 3 && Math.random() < 0.025 && naechstesSammel - letztesHerzWx > 4200) {
+        art = { typ: 'herz', wert: 0 };
+        letztesHerzWx = naechstesSammel;
+      }
       // Easter-Eggs: Booms Kreditkarte (Vorsicht…) und der goldene Glücks-Schädel
       else if (Math.random() < 0.028) {
         art = Math.random() < 0.4 ? { typ: 'kreditkarte', wert: 250 } : { typ: 'schaedel', wert: 100 };
@@ -897,6 +929,15 @@
       spray.forEach(p => { p.x += p.vx * dt; p.wy += p.vy * dt; p.vy += 500 * dt; p.alter += dt; });
       spray = spray.filter(p => p.alter < 0.6);
 
+      if (!musikAn && (musikSource || musikTimer)) musikStop();
+      const boden = tempoBoden();
+      if (tempo < boden) tempo = boden;
+      const stufe = boden - TEMPO_START;
+      if (stufe > letzteTempoStufe) {
+        letzteTempoStufe = stufe;
+        popups.push({ wy: sledY - 100, txt: '⚡ Der Hang wird steiler!', alter: 0 });
+        plink(8);
+      }
       spawnLogik();
 
       // Kollisionen: Hindernisse
@@ -904,8 +945,9 @@
         const hx = h.wx - worldX;
         if (hx + h.b / 2 < sx - 30 || hx - h.b / 2 > sx + 30) return;
         if (h.typ === 'schranke') {
-          // Hängend: Unterkante der Schranke — nur geduckt passierbar
-          const unterkante = terrainY(h.wx) - 46;
+          // Hängend: Unterkante relativ zum Boden unter dem Schlitten gemessen —
+          // steile Hügel können Geduckte so nicht mehr unfair köpfen
+          const unterkante = terrainY(worldX + sx) - 46;
           const kopf = sledY - (ducken && amBoden ? 26 : 64);
           if (kopf < unterkante) crash();
           else h.durchgetaucht = true;
@@ -1129,7 +1171,7 @@
       leben--;
       lebenSound();
       invuln = 2.4;
-      tempo = TEMPO_START;
+      tempo = tempoBoden();
       combo = 0; comboMeter = 0; maxHalte = 0;
       popups.push({ wy: sledY - 90, txt: '💥 Leben verloren', alter: 0 });
       // Unmittelbar folgende Hindernisse räumen — fairer Neustart-Moment
