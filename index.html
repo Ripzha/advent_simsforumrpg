@@ -483,6 +483,14 @@
   let globalTestModus = false;
   let flockenFensterGesetzt = false;
   let wandererFensterGesetzt = false;
+  let wandererFenster = null;
+  // Am 24. Dezember geht Jacks Fenster an
+  function aktiviereWandererFenster() {
+    if (!wandererFenster) return;
+    wandererFenster.rect.setAttribute('fill', '#9ee4a8');
+    wandererFenster.rect.style.animationDuration = '7s';
+    wandererFenster.hit.style.display = '';
+  }
   houseDefs.forEach((h, hausIdx) => {
     const yBase = 745, yTop = yBase - h.h;
     const body = document.createElementNS(SVG_NS, 'rect');
@@ -520,19 +528,22 @@
         const w = document.createElementNS(SVG_NS, 'rect');
         w.setAttribute('x', wx); w.setAttribute('y', wy);
         w.setAttribute('width', 10); w.setAttribute('height', 14);
-        w.setAttribute('fill', istGeheim ? '#ff9a5a' : (istFlocken ? '#b8d8f0' : (istWanderer ? '#9ee4a8' : (lit ? '#f4c870' : '#1a2438'))));
+        w.setAttribute('fill', istGeheim ? '#ff9a5a' : (istFlocken ? '#b8d8f0' : (lit ? '#f4c870' : '#1a2438')));
         if (istWanderer) {
           wandererFensterGesetzt = true;
+          // Bis zum 24. ein Fenster wie jedes andere — erst dann grün und anklickbar
           w.setAttribute('class', 'window-lit');
-          w.style.animationDuration = '7s';
+          w.style.animationDuration = (3 + Math.random() * 4) + 's';
           const whit = document.createElementNS(SVG_NS, 'rect');
           whit.setAttribute('x', wx - 13); whit.setAttribute('y', wy - 13);
           whit.setAttribute('width', 36); whit.setAttribute('height', 40);
           whit.setAttribute('fill', 'transparent');
+          whit.style.display = 'none';
           whit.style.pointerEvents = 'auto';
           whit.style.cursor = 'pointer';
           whit.addEventListener('click', () => { if (typeof oeffneWandererModal === 'function') oeffneWandererModal(); });
           houses.appendChild(whit);
+          wandererFenster = { rect: w, hit: whit };
         }
         if (istFlocken) {
           flockenFensterGesetzt = true;
@@ -1373,6 +1384,7 @@
     globalJahr = jahr;
     modalState.tueren = tueren;
     modalState.today = today;
+    if (today >= 24) aktiviereWandererFenster();
 
     const kerzenEl = document.getElementById('ak-kerzen');
     kerzenEl.innerHTML = '';
