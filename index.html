@@ -484,6 +484,14 @@
   let flockenFensterGesetzt = false;
   let wandererFensterGesetzt = false;
   let wandererFenster = null;
+  let flockenFenster = null;
+  // Ab dem 6. Dezember leuchtet Anfisas Küchenfenster blau
+  function aktiviereFlockenFenster() {
+    if (!flockenFenster) return;
+    flockenFenster.rect.setAttribute('fill', '#b8d8f0');
+    flockenFenster.rect.style.animationDuration = '6s';
+    flockenFenster.hit.style.display = '';
+  }
   // Am 24. Dezember geht Jacks Fenster an
   function aktiviereWandererFenster() {
     if (!wandererFenster) return;
@@ -528,7 +536,7 @@
         const w = document.createElementNS(SVG_NS, 'rect');
         w.setAttribute('x', wx); w.setAttribute('y', wy);
         w.setAttribute('width', 10); w.setAttribute('height', 14);
-        w.setAttribute('fill', istGeheim ? '#ff9a5a' : (istFlocken ? '#b8d8f0' : (lit ? '#f4c870' : '#1a2438')));
+        w.setAttribute('fill', istGeheim ? '#ff9a5a' : (lit ? '#f4c870' : '#1a2438'));
         if (istWanderer) {
           wandererFensterGesetzt = true;
           // Bis zum 24. ein Fenster wie jedes andere — erst dann grün und anklickbar
@@ -547,16 +555,19 @@
         }
         if (istFlocken) {
           flockenFensterGesetzt = true;
+          // Bis zum 6. ein Fenster wie jedes andere — erst dann blau und anklickbar
           w.setAttribute('class', 'window-lit');
-          w.style.animationDuration = '6s';
+          w.style.animationDuration = (3 + Math.random() * 4) + 's';
           const fhit = document.createElementNS(SVG_NS, 'rect');
           fhit.setAttribute('x', wx - 13); fhit.setAttribute('y', wy - 13);
           fhit.setAttribute('width', 36); fhit.setAttribute('height', 40);
           fhit.setAttribute('fill', 'transparent');
+          fhit.style.display = 'none';
           fhit.style.pointerEvents = 'auto';
           fhit.style.cursor = 'pointer';
           fhit.addEventListener('click', () => { if (typeof oeffneFlockenModal === 'function') oeffneFlockenModal(); });
           houses.appendChild(fhit);
+          flockenFenster = { rect: w, hit: fhit };
         }
         if (istGeheim) {
           geheimFensterGesetzt = true;
@@ -1384,6 +1395,7 @@
     globalJahr = jahr;
     modalState.tueren = tueren;
     modalState.today = today;
+    if (today >= 6) aktiviereFlockenFenster();
     if (today >= 24) aktiviereWandererFenster();
 
     const kerzenEl = document.getElementById('ak-kerzen');
