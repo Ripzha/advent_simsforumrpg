@@ -600,15 +600,20 @@
   }
 
   // --- Finale-Himmel (Türchen 24): alle Fenster an + Schnuppen-Burst + Mond-Aufleuchten ---
-  function finaleHimmel() {
+  let himmelBrennt = false;
+  function finaleHimmel(sofort) {
+    if (himmelBrennt) return;
+    himmelBrennt = true;
     dunkleFenster.forEach((w, i) => {
-      setTimeout(() => {
+      const anmachen = () => {
         w.setAttribute('fill', '#f4c870');
         w.setAttribute('class', 'window-lit');
         w.style.animationDuration = (3 + Math.random() * 4) + 's';
-      }, 60 * i + Math.random() * 300);
+      };
+      if (sofort || reducedMotion) anmachen();
+      else setTimeout(anmachen, 60 * i + Math.random() * 300);
     });
-    if (!reducedMotion) {
+    if (!sofort && !reducedMotion) {
       for (let i = 0; i < 6; i++) setTimeout(spawnSternschnuppe, 400 + i * 550);
     }
   }
@@ -1165,8 +1170,11 @@
         zeigePolarlicht();
       }, reducedMotion ? 200 : 5200);
     }
+    // Alle 24 offen (egal ob pünktlich) → der Himmel brennt; nach Reload sofort
+    if (n === 24) finaleHimmel(!gerade24Geoeffnet);
   }
   let perfektGefeiert = false;
+  let gerade24Geoeffnet = false;
   // Polarlicht: dauerhafte Aurora über dem Nachthimmel — die Ehrung für 24× pünktlich
   function zeigePolarlicht() {
     if (document.getElementById('ak-aurora')) return;
@@ -1275,6 +1283,7 @@
           if (tag === 24) {
             playFinale();
             funkenBurst(door, 16);
+            gerade24Geoeffnet = true;
             finaleHimmel();
             setTimeout(() => showModal(tag), reducedMotion ? 100 : 4200);
           } else {
