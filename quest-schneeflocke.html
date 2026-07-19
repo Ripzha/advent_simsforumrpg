@@ -471,9 +471,43 @@
     label.className = 'fname';
     label.style.setProperty('--nrot', (rnd(14) - 7 - drehung) + 'deg');
     label.textContent = name;
-    karte.appendChild(c);
-    karte.appendChild(label);
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position: relative; width: 100%; max-width: 130px; margin: 0 auto;';
+    wrap.appendChild(c);
+    wrap.appendChild(label);
+    // Name auf ungeschnittenes Papier setzen
+    const platz = findeTextPlatz(c, Math.min(116, name.length * 9.5 + 10), 20);
+    if (platz) {
+      label.style.left = (platz.x / 130 * 100) + '%';
+      label.style.top = (platz.y / 130 * 100) + '%';
+    }
+    karte.appendChild(wrap);
     halter.appendChild(karte);
+  }
+  // Findet die Stelle mit dem meisten Papier für den Namens-Schriftzug
+  function findeTextPlatz(canvas, textB, textH) {
+    const ctx = canvas.getContext('2d');
+    let bild;
+    try { bild = ctx.getImageData(0, 0, canvas.width, canvas.height).data; } catch (e) { return null; }
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2;
+    let best = null, bestScore = -1;
+    for (let y = Math.ceil(textH / 2); y <= H - textH / 2; y += 5) {
+      for (let x = Math.ceil(textB / 2); x <= W - textB / 2; x += 5) {
+        let voll = 0, gesamt = 0;
+        for (let dy = -textH / 2; dy < textH / 2; dy += 4) {
+          for (let dx = -textB / 2; dx < textB / 2; dx += 4) {
+            const idx = ((Math.round(y + dy) * W) + Math.round(x + dx)) * 4 + 3;
+            gesamt++;
+            if (bild[idx] > 140) voll++;
+          }
+        }
+        const dist = Math.hypot(x - cx, y - cy) / (W / 2);
+        const score = (voll / gesamt) - dist * 0.18; // Papierdeckung, leicht Richtung Mitte gewichtet
+        if (score > bestScore) { bestScore = score; best = { x: x, y: y }; }
+      }
+    }
+    return best;
   }
   document.getElementById('galerie-neu-knopf').onclick = () => { strokes = []; zeichnePapier(); zeigeScreen('screen-editor'); };
   document.getElementById('direkt-galerie').onclick = (e) => { e.preventDefault(); zeigeScreen('screen-galerie'); ladeGalerie(); };
