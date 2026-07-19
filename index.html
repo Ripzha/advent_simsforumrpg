@@ -180,10 +180,18 @@
   .ak-flocken-fenster::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
     background:
       linear-gradient(115deg, rgba(220, 235, 255, 0.10) 0%, rgba(220, 235, 255, 0) 26%),
-      radial-gradient(140px 90px at 0% 0%, rgba(230, 242, 255, 0.16) 0%, rgba(230, 242, 255, 0) 70%),
-      radial-gradient(160px 100px at 100% 100%, rgba(230, 242, 255, 0.20) 0%, rgba(230, 242, 255, 0) 70%),
-      radial-gradient(120px 80px at 100% 0%, rgba(230, 242, 255, 0.10) 0%, rgba(230, 242, 255, 0) 70%); }
+      linear-gradient(90deg, rgba(235, 245, 255, 0.26) 0%, rgba(235, 245, 255, 0) 9%),
+      linear-gradient(-90deg, rgba(235, 245, 255, 0.26) 0%, rgba(235, 245, 255, 0) 9%),
+      linear-gradient(180deg, rgba(235, 245, 255, 0.20) 0%, rgba(235, 245, 255, 0) 11%),
+      linear-gradient(0deg, rgba(235, 245, 255, 0.28) 0%, rgba(235, 245, 255, 0) 13%),
+      radial-gradient(150px 100px at 0% 0%, rgba(230, 242, 255, 0.28) 0%, rgba(230, 242, 255, 0) 70%),
+      radial-gradient(150px 100px at 100% 0%, rgba(230, 242, 255, 0.24) 0%, rgba(230, 242, 255, 0) 70%),
+      radial-gradient(170px 110px at 0% 100%, rgba(230, 242, 255, 0.26) 0%, rgba(230, 242, 255, 0) 70%),
+      radial-gradient(170px 110px at 100% 100%, rgba(230, 242, 255, 0.30) 0%, rgba(230, 242, 255, 0) 70%); }
   /* Sprossen: hängen hinter den Flocken */
+  .ak-flocken-fenster { overflow-x: hidden; }
+  .ak-skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 46%; z-index: 0; filter: blur(2.5px); opacity: 0.85; pointer-events: none; }
+  .ak-skyline svg { width: 100%; height: 100%; display: block; }
   .ak-sprosse { position: absolute; background: linear-gradient(90deg, #5c4226, #3e2d18); z-index: 0; box-shadow: 0 0 8px rgba(0, 0, 0, 0.5); }
   .ak-sprosse.senkrecht { top: 0; bottom: 0; left: 50%; width: 9px; margin-left: -4.5px; }
   .ak-sprosse.waagrecht { left: 0; right: 0; height: 9px; background: linear-gradient(180deg, #5c4226, #3e2d18); }
@@ -391,9 +399,10 @@
 <div class="ak-modal" id="ak-flocken-modal" aria-hidden="true" role="dialog" aria-modal="true">
   <div class="ak-modal-box" style="max-width: 640px;" onclick="event.stopPropagation()">
     <button class="ak-modal-x" aria-label="Schliessen" id="ak-flocken-x">×</button>
-    <h2 class="ak-modal-title">Das grosse Fenster</h2>
-    <p class="ak-modal-text" style="margin-top: 2px;">Hier hängen die Schneeflocken aus Väterchen Frosts Werkstatt.</p>
+    <h2 class="ak-modal-title">Afisas Küchenfenster</h2>
+    <p class="ak-modal-text" style="margin-top: 2px;">Hier hängen die Schneeflocken, die in Afisas Küche geschnitten wurden.</p>
     <div class="ak-flocken-fenster">
+      <div class="ak-skyline" aria-hidden="true"><svg viewBox="0 0 1000 240" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="216" width="1000" height="24" fill="#dfe8f4" opacity="0.12"/><rect x="20" y="102" width="80" height="120" fill="#081120"/><rect x="18" y="97" width="84" height="6" fill="#e8eef8" opacity="0.18"/><rect x="73" y="114" width="9" height="13" fill="#f4c870" opacity="0.58"/><rect x="29" y="144" width="9" height="13" fill="#f4c870" opacity="0.68"/><rect x="73" y="144" width="9" height="13" fill="#f4c870" opacity="0.56"/><rect x="115" y="132" width="60" height="90" fill="#081120"/><polygon points="111,132 145,108 179,132" fill="#060d18"/><polygon points="131,125 145,108 159,125" fill="#e8eef8" opacity="0.16"/><rect x="146" y="144" width="9" height="13" fill="#f4c870" opacity="0.59"/><rect x="146" y="174" width="9" height="13" fill="#f4c870" opacity="0.88"/><rect x="185" y="82" width="90" height="140" fill="#081120"/><polygon points="181,82 230,58 279,82" fill="#060d18"/><polygon points="216,75 230,58 244,75" fill="#e8eef8" opacity="0.16"/><rect x="194" y="94" width="9" height="13" fill="#f4c870" opacity="0.69"/><rect x="216" y="94" width="9" height="13" fill="#f4c870" opacity="0.57"/><rect x="238" y="94" width="9" height="13" fill="#f4c870" opacity="0.65"/><rect x="194" y="154" width="9" height="13" fill="#f4c870" opacity="0.61"/><rect x="216" y="154" width="9" height="13" fill="#f4c870" opacity="0.77"/><rect x="194" y="184" width="9" height="13" fill="#f4c870" opacity="0.57"/><rect x="290" y="122" width="70" height="100" fill="#081120"/><rect x="288" y="117" width="74" height="6" fill="#e8eef8" opacity="0.18"/><rect x="299" y="134" width="9" height="13" fill="#f4c870" opacity="0.7"/><rect x="299" y="164" width="9" height="13" fill="#f4c870" opacity="0.71"/><rect x="372" y="87" width="100" height="135" fill="#081120"/><polygon points="368,87 422,63 476,87" fill="#060d18"/><polygon points="408,80 422,63 436,80" fill="#e8eef8" opacity="0.16"/><rect x="381" y="99" width="9" height="13" fill="#f4c870" opacity="0.79"/><rect x="425" y="99" width="9" height="13" fill="#f4c870" opacity="0.73"/><rect x="447" y="99" width="9" height="13" fill="#f4c870" opacity="0.81"/><rect x="403" y="129" width="9" height="13" fill="#f4c870" opacity="0.59"/><rect x="447" y="129" width="9" height="13" fill="#f4c870" opacity="0.6"/><rect x="381" y="159" width="9" height="13" fill="#f4c870" opacity="0.56"/><rect x="403" y="159" width="9" height="13" fill="#f4c870" opacity="0.82"/><rect x="425" y="159" width="9" height="13" fill="#f4c870" opacity="0.86"/><rect x="485" y="127" width="65" height="95" fill="#081120"/><rect x="483" y="122" width="69" height="6" fill="#e8eef8" opacity="0.18"/><rect x="494" y="139" width="9" height="13" fill="#f4c870" opacity="0.76"/><rect x="516" y="139" width="9" height="13" fill="#f4c870" opacity="0.71"/><rect x="494" y="169" width="9" height="13" fill="#f4c870" opacity="0.88"/><rect x="516" y="169" width="9" height="13" fill="#f4c870" opacity="0.78"/><rect x="562" y="97" width="85" height="125" fill="#081120"/><polygon points="558,97 604,73 651,97" fill="#060d18"/><polygon points="590,90 604,73 618,90" fill="#e8eef8" opacity="0.16"/><rect x="593" y="109" width="9" height="13" fill="#f4c870" opacity="0.78"/><rect x="615" y="109" width="9" height="13" fill="#f4c870" opacity="0.84"/><rect x="615" y="139" width="9" height="13" fill="#f4c870" opacity="0.56"/><rect x="571" y="169" width="9" height="13" fill="#f4c870" opacity="0.61"/><rect x="660" y="72" width="95" height="150" fill="#081120"/><polygon points="656,72 707,48 759,72" fill="#060d18"/><polygon points="693,65 707,48 721,65" fill="#e8eef8" opacity="0.16"/><rect x="669" y="84" width="9" height="13" fill="#f4c870" opacity="0.6"/><rect x="669" y="114" width="9" height="13" fill="#f4c870" opacity="0.58"/><rect x="713" y="114" width="9" height="13" fill="#f4c870" opacity="0.86"/><rect x="669" y="144" width="9" height="13" fill="#f4c870" opacity="0.85"/><rect x="691" y="174" width="9" height="13" fill="#f4c870" opacity="0.89"/><rect x="768" y="117" width="70" height="105" fill="#081120"/><rect x="766" y="112" width="74" height="6" fill="#e8eef8" opacity="0.18"/><rect x="799" y="159" width="9" height="13" fill="#f4c870" opacity="0.76"/><rect x="850" y="107" width="80" height="115" fill="#081120"/><polygon points="846,107 890,83 934,107" fill="#060d18"/><polygon points="876,100 890,83 904,100" fill="#e8eef8" opacity="0.16"/><rect x="903" y="119" width="9" height="13" fill="#f4c870" opacity="0.88"/><rect x="859" y="149" width="9" height="13" fill="#f4c870" opacity="0.73"/><rect x="881" y="149" width="9" height="13" fill="#f4c870" opacity="0.79"/><rect x="859" y="179" width="9" height="13" fill="#f4c870" opacity="0.82"/><rect x="881" y="179" width="9" height="13" fill="#f4c870" opacity="0.83"/><rect x="940" y="132" width="55" height="90" fill="#081120"/><polygon points="936,132 967,108 999,132" fill="#060d18"/><polygon points="953,125 967,108 981,125" fill="#e8eef8" opacity="0.16"/><rect x="949" y="174" width="9" height="13" fill="#f4c870" opacity="0.57"/></svg></div>
       <div class="ak-sprosse senkrecht" aria-hidden="true"></div>
       <div class="ak-sprosse waagrecht" style="top: 34%;" aria-hidden="true"></div>
       <div class="ak-sprosse waagrecht" style="top: 68%;" aria-hidden="true"></div>
@@ -718,7 +727,7 @@
     }
   }
 
-  // --- Flocken-Fenster: Galerie aus Väterchen Frosts Werkstatt ---
+  // --- Flocken-Fenster: Galerie aus Afisas Küche ---
   let flockenGeladen = false;
   function oeffneFlockenModal() {
     const m = document.getElementById('ak-flocken-modal');
@@ -826,7 +835,7 @@
       const data = await res.json();
       const flocken = data.flocken || [];
       if (!flocken.length) {
-        status.textContent = 'Noch hängt hier nichts — schneide die erste Flocke in Väterchen Frosts Werkstatt!';
+        status.textContent = 'Noch hängt hier nichts — schneide die erste Flocke bei Afisa in der Küche!';
         return;
       }
       status.style.display = 'none';
@@ -845,8 +854,11 @@
         const spalten = Math.max(3, Math.floor(breite / 100));
         const spalte = flockenIndex % spalten, zeile = Math.floor(flockenIndex / spalten);
         flockenIndex++;
-        karte.style.left = (((spalte + 0.5) / spalten * 100) + (rnd(16) - 8)) + '%';
-        const oben = 20 + zeile * 92 + rnd(40) - 20;
+        const randProzent = (48 * 1.18 / breite) * 100 + 1;
+        let fx = ((spalte + 0.5) / spalten * 100) + (rnd(16) - 8);
+        fx = Math.max(randProzent, Math.min(100 - randProzent, fx));
+        karte.style.left = fx + '%';
+        const oben = Math.max(8, 20 + zeile * 92 + rnd(40) - 20);
         karte.style.top = oben + 'px';
         karte.style.zIndex = 2 + Math.floor(rnd(20));
         halter.style.minHeight = Math.max(parseInt(halter.style.minHeight) || 0, oben + 130) + 'px';
