@@ -469,36 +469,45 @@
     const halter = document.getElementById('galerie');
     const status = document.getElementById('galerie-status');
     halter.innerHTML = '';
-    haengIndex = 0;
+    platziert = [];
     status.style.display = 'block';
     status.textContent = 'Die Flocken werden geholt …';
     const meine = ladeLokal();
-    let flocken = [];
+    let flocken = null; // null = Abruf fehlgeschlagen
     try {
       const res = await fetch(APPS_SCRIPT_URL + '?action=flocken');
       const data = await res.json();
       flocken = (data.flocken || []);
       status.style.display = 'none';
     } catch (e) {
-      status.textContent = meine ? 'Keine Verbindung — hier hängt vorerst nur deine eigene Flocke.' : 'Keine Verbindung zum Fenster. Versuch es später nochmal.';
+      flocken = null;
     }
-    // Eigene zuerst (falls nicht ohnehin in der Liste ganz oben)
-    if (meine && meine.s) {
-      haengeFlockeAn(halter, meine.name || 'Du', { s: meine.s, n: meine.n }, true);
-    }
-    flocken.forEach(f => {
-      let daten = null;
-      try { daten = JSON.parse(f.daten); } catch (e) { return; }
-      if (!daten || !Array.isArray(daten.s)) return;
-      if (meine && f.name === meine.name && JSON.stringify(daten.s) === JSON.stringify(meine.s)) return; // Dublette der eigenen
-      haengeFlockeAn(halter, f.name, daten, false);
-    });
-    if (!halter.children.length && status.style.display === 'none') {
-      status.style.display = 'block';
-      status.textContent = 'Noch hängt hier nichts — sei die erste Flocke am Fenster!';
+    if (flocken !== null) {
+      // Das Sheet ist die Wahrheit: NUR was dort steht, hängt am Fenster.
+      flocken.forEach(f => {
+        let daten = null;
+        try { daten = JSON.parse(f.daten); } catch (e) { return; }
+        if (!daten || !Array.isArray(daten.s)) return;
+        const istMeine = !!(meine && f.name === meine.name && JSON.stringify(daten.s) === JSON.stringify(meine.s));
+        haengeFlockeAn(halter, f.name, daten, istMeine);
+      });
+      if (!halter.children.length) {
+        status.style.display = 'block';
+        status.textContent = 'Noch hängt hier nichts — sei die erste Flocke am Fenster!';
+      }
+    } else {
+      // Offline-Trost: nur dann die lokale Kopie zeigen
+      if (meine && meine.s) {
+        haengeFlockeAn(halter, meine.name || 'Du', { s: meine.s, n: meine.n }, true);
+        status.style.display = 'block';
+        status.textContent = 'Keine Verbindung — hier hängt vorerst nur deine eigene Flocke.';
+      } else {
+        status.style.display = 'block';
+        status.textContent = 'Keine Verbindung zum Fenster. Versuch es später nochmal.';
+      }
     }
   }
-  let haengIndex = 0;
+  let platziert = [];
   function haengeFlockeAn(halter, name, daten, istMeine) {
     const karte = document.createElement('div');
     karte.className = 'flocke-karte' + (istMeine ? ' meine' : '');
@@ -506,20 +515,25 @@
     let seed = 0;
     for (let si = 0; si < name.length; si++) seed = (seed * 31 + name.charCodeAt(si)) % 9973;
     const rnd = (n) => { seed = (seed * 137 + 71) % 9973; return (seed / 9973) * n; };
-    // Frei übers Fenster verstreut, Überlappen ausdrücklich erlaubt
+    // Best-Candidate-Streuung: nimmt den freiesten Platz — Überlappen erst wenn's eng wird
     const breite = Math.max(280, halter.clientWidth || 600);
-    const spalten = Math.max(3, Math.floor(breite / 128));
-    const spalte = haengIndex % spalten, zeile = Math.floor(haengIndex / spalten);
-    haengIndex++;
-    // Randabstand: halbe Kartenbreite (inkl. maximaler Skalierung), in Prozent der Fensterbreite
-    const randProzent = (65 * 1.18 / breite) * 100 + 1;
-    let x = ((spalte + 0.5) / spalten * 100) + (rnd(18) - 9);
-    x = Math.max(randProzent, Math.min(100 - randProzent, x));
-    const y = Math.max(10, 26 + zeile * 118 + rnd(52) - 26);
-    karte.style.left = x + '%';
-    karte.style.top = y + 'px';
+    const hoehe = Math.max(320, halter.clientHeight || 500);
+    const halb = 65 * 1.18;
+    let bestX = breite / 2, bestY = hoehe / 2, bestAbstand = -1;
+    for (let versuch = 0; versuch < 26; versuch++) {
+      const kx = halb + 4 + rnd(1) * (breite - 2 * halb - 8);
+      const ky = halb + 6 + rnd(1) * (hoehe - 2 * halb - 12);
+      let minD = Infinity;
+      for (const p of platziert) {
+        const d = Math.hypot(kx - p.x, ky - p.y);
+        if (d < minD) minD = d;
+      }
+      if (minD > bestAbstand) { bestAbstand = minD; bestX = kx; bestY = ky; }
+    }
+    platziert.push({ x: bestX, y: bestY });
+    karte.style.left = (bestX / breite * 100) + '%';
+    karte.style.top = (bestY - 65) + 'px';
     karte.style.zIndex = 2 + Math.floor(rnd(20));
-    halter.style.minHeight = Math.max(parseInt(halter.style.minHeight) || 0, y + 170) + 'px';
     const drehung = rnd(24) - 12, skala = 0.85 + rnd(0.3);
     karte.style.transform = `rotate(${drehung}deg) scale(${skala})`;
     const c = document.createElement('canvas');
