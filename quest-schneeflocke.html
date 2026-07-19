@@ -112,17 +112,13 @@
       </div>
       <div class="seite">
         <div class="kasten">
-          <h3>So wird sie aussehen</h3>
-          <canvas id="vorschau" width="180" height="180"></canvas>
-        </div>
-        <div class="kasten">
           <h3>Faltung</h3>
           <div class="werkzeuge">
-            <button class="werkzeug falt aktiv" data-n="12">Fein</button>
+            <button class="werkzeug falt aktiv" data-n="16">Fein</button>
             <button class="werkzeug falt" data-n="8">Klassisch</button>
-            <button class="werkzeug falt" data-n="6">Grob</button>
+            <button class="werkzeug falt" data-n="4">Grob</button>
           </div>
-          <p class="hinweis-klein">Enger gefaltet = filigraner. Weiter gefaltet = kräftige Zacken.</p>
+          <p class="hinweis-klein">Fein = filigrane Spitze, Grob = kantige Kinderschere. Was rauskommt, siehst du erst beim Auffalten!</p>
         </div>
         <div class="kasten">
           <h3>Werkzeug</h3>
@@ -189,8 +185,8 @@
   // Schnitte werden normiert gespeichert (Spitze = Ursprung, Radius = 1000).
   const SCHNITT_W = 27;   // Schnittbreite, normiert
   const LOCH_R = 58;      // Locher-Radius, normiert
-  const FALTUNGEN = { 12: 'fein', 8: 'klassisch', 6: 'grob' };
-  let faltung = 12;                       // Anzahl Segmente
+  const KANTE_GERADE = { 4: true };       // Grob: gerade Aussenkante = eckige Silhouette
+  let faltung = 16;                       // Anzahl Segmente
   function halbWinkel(n) { return Math.PI / n; }
 
   const papier = document.getElementById('papier');
@@ -211,12 +207,16 @@
 
   function norm(x, y) { return [Math.round((x - AX) / R * 1000), Math.round((y - AY) / R * 1000)]; }
 
-  function keilPfad(ctx, ax, ay, r, halb) {
+  function keilPfad(ctx, ax, ay, r, halb, gerade) {
     ctx.beginPath();
     ctx.moveTo(ax, ay);
     const a1 = -Math.PI / 2 - halb, a2 = -Math.PI / 2 + halb;
     ctx.lineTo(ax + r * Math.cos(a1), ay + r * Math.sin(a1));
-    ctx.arc(ax, ay, r, a1, a2, false);
+    if (gerade) {
+      ctx.lineTo(ax + r * Math.cos(a2), ay + r * Math.sin(a2));
+    } else {
+      ctx.arc(ax, ay, r, a1, a2, false);
+    }
     ctx.closePath();
   }
 
@@ -230,7 +230,7 @@
     const ctx = c.getContext('2d');
     const ax = w / 2, ay = h - 3;
     ctx.save();
-    keilPfad(ctx, ax, ay, r, halb);
+    keilPfad(ctx, ax, ay, r, halb, KANTE_GERADE[n || 12]);
     ctx.clip();
     ctx.fillStyle = farbe;
     ctx.fillRect(0, 0, w, h);
@@ -290,7 +290,7 @@
     g.setLineDash([5, 5]);
     g.strokeStyle = 'rgba(168, 184, 213, 0.4)';
     g.lineWidth = 1.2;
-    keilPfad(g, AX, AY, R, halbWinkel(faltung));
+    keilPfad(g, AX, AY, R, halbWinkel(faltung), KANTE_GERADE[faltung]);
     g.stroke();
     g.setLineDash([]);
     g.fillStyle = 'rgba(168, 184, 213, 0.55)';
@@ -303,7 +303,6 @@
     pctx.clearRect(0, 0, papier.width, papier.height);
     const keil = renderKeil(strokes, R, '#f4ead0', true, faltung);
     pctx.drawImage(keil.canvas, AX - keil.ax, AY - keil.ay);
-    renderFlocke(document.getElementById('vorschau'), strokes, 76, '#eef4fc', faltung);
   }
 
   function canvasKoord(e) {
