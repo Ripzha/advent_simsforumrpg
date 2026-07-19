@@ -653,6 +653,7 @@
   let maxHalte = 0;            // Zeit auf Stufe ×4 → füllt den Rausch
   const RAUSCH_NACH = 3.5;     // s auf ×4 bis der Rausch zündet
   let rausch = false, rauschZeit = 0;
+  let magnetNachlauf = 0;
   const RAUSCH_DAUER = 6;
   function effMult() { return comboStufe() * (rausch ? 2 : 1); }
   // Leben
@@ -724,7 +725,7 @@
     sledY = terrainY(SLED_X()); vy = 0; amBoden = true;
     ducken = false; jubel = null;
     combo = 0; comboMeter = 0; maxHalte = 0;
-    rausch = false; rauschZeit = 0;
+    rausch = false; rauschZeit = 0; magnetNachlauf = 0;
     leben = 3; invuln = 0; punkteAkk = 0; airZeit = 0;
     rekordGefeiert = false; rekordFlash = 0;
     bossAktiv = false; angriff = null; yetiStolpert = 0;
@@ -1006,15 +1007,22 @@
         }
       } else {
         rauschZeit -= dt;
+        magnetNachlauf = 1.0; // Sog läuft nach Rausch-Ende kurz nach — nichts bleibt liegen
         if (rauschZeit <= 0) { rausch = false; maxHalte = 0; }
-        // Magnet: Teile fliegen zum Schlitten
+      }
+      // Magnet: aktiv im Rausch + kurzer Nachlauf danach
+      if (rausch || magnetNachlauf > 0) {
+        if (!rausch) magnetNachlauf -= dt;
         sammel.forEach(o => {
           if (o.weg) return;
           const dx = o.wx - wxSled;
-          if (Math.abs(dx) < 260) {
-            o.wx -= dx * Math.min(1, dt * 5);
+          if (Math.abs(dx) < 320) {
+            // Vorschub: Teile hinter dem Schlitten halten erst Schritt …
+            if (dx < 0) o.wx += tempo * dt;
+            // … und schliessen dann zügig auf
+            o.wx -= dx * Math.min(1, dt * 9);
             const zielHoehe = terrainY(o.wx) - sledY + 28;
-            o.hoehe += (zielHoehe - o.hoehe) * Math.min(1, dt * 7);
+            o.hoehe += (zielHoehe - o.hoehe) * Math.min(1, dt * 9);
           }
         });
       }
