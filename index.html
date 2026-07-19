@@ -174,6 +174,10 @@
   .ak-modal-image { width: 100%; border-radius: 5px; display: block; max-height: 320px; object-fit: cover; cursor: zoom-in; }
   .ak-modal-image-rahmen { position: relative; }
   .ak-modal-image-rahmen::after { content: "⤢"; position: absolute; right: 11px; bottom: 11px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: rgba(10, 20, 40, 0.72); color: var(--gold-hell); border-radius: 6px; font-size: 14px; pointer-events: none; opacity: 0.85; }
+  .ak-notiz { display: flex; gap: 12px; padding: 9px 2px; border-bottom: 1px solid rgba(58, 74, 106, 0.35); }
+  .ak-notiz:last-child { border-bottom: none; }
+  .ak-notiz b { font-family: var(--serif); font-weight: 500; color: var(--gold); min-width: 26px; text-align: right; font-size: 14px; }
+  .ak-notiz span { font-size: 14px; line-height: 1.55; color: var(--cream); }
   .ak-flocken-fenster { position: relative; border: 10px solid transparent; border-image: linear-gradient(160deg, #6a4e2c 0%, #4a3520 40%, #5c4226 70%, #3a2a18 100%) 1; border-radius: 4px; background: radial-gradient(ellipse at 50% -10%, #1e3358 0%, #0d1c38 55%, #091428 100%); padding: 16px 12px 26px; max-height: 46vh; overflow-y: auto; box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.55), inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 4px 18px rgba(0, 0, 0, 0.4); }
   /* Glas-Schimmer + Frost in den Ecken */
   .ak-flocken-fenster::before { content: ""; position: sticky; display: block; top: -16px; margin: -16px -12px 0; height: 0; z-index: 3; }
@@ -396,6 +400,32 @@
     </div>
   </div>
 </div>
+<div class="ak-modal" id="ak-wanderer-modal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="ak-modal-box" style="max-width: 480px;" onclick="event.stopPropagation()">
+    <button class="ak-modal-x" aria-label="Schliessen" id="ak-wanderer-x">×</button>
+    <h2 class="ak-modal-title" id="ak-wanderer-titel">Wer bin ich?</h2>
+    <p class="ak-modal-text" id="ak-wanderer-frage">Hinter diesem Fenster wartet einer, der jeden Tag ein Stück von sich erzählt hat. Wenn du zugehört hast, weisst du seinen Namen.</p>
+    <div class="ak-modal-image-rahmen" id="ak-wanderer-bild-rahmen" style="display:none">
+      <img class="ak-modal-image" id="ak-wanderer-bild" alt="">
+    </div>
+    <p class="ak-modal-text" id="ak-wanderer-text" style="display:none"></p>
+    <div id="ak-wanderer-eingabe">
+      <input id="ak-wanderer-input" maxlength="30" placeholder="Sein Name …" autocomplete="off" style="width: 100%; background: var(--nacht-tief, #060d1c); border: 1px solid var(--panel-rand); border-radius: 8px; color: var(--cream); padding: 11px 13px; font-size: 15px; font-family: inherit; text-align: center;">
+      <p id="ak-wanderer-fehler" style="display:none; color: #e8849a; font-size: 13px; margin: 8px 0 0; text-align: center;">Das ist er nicht. Hör nochmal hin.</p>
+      <div style="display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
+        <button class="ak-modal-close" id="ak-wanderer-senden">Das ist er</button>
+        <button class="ak-modal-close" id="ak-wanderer-notizbuch">Was er erzählt hat</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ak-modal" id="ak-notizbuch-modal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="ak-modal-box" style="max-width: 520px;" onclick="event.stopPropagation()">
+    <button class="ak-modal-x" aria-label="Schliessen" id="ak-notizbuch-x">×</button>
+    <h2 class="ak-modal-title">Was der Laternenmann erzählt hat</h2>
+    <div id="ak-notizbuch-liste" style="max-height: 52vh; overflow-y: auto; margin-top: 10px;"></div>
+  </div>
+</div>
 <div class="ak-modal" id="ak-flocken-modal" aria-hidden="true" role="dialog" aria-modal="true">
   <div class="ak-modal-box" style="max-width: 640px;" onclick="event.stopPropagation()">
     <button class="ak-modal-x" aria-label="Schliessen" id="ak-flocken-x">×</button>
@@ -450,6 +480,7 @@
   let geheimFensterGesetzt = false;
   let globalTestModus = false;
   let flockenFensterGesetzt = false;
+  let wandererFensterGesetzt = false;
   houseDefs.forEach((h, hausIdx) => {
     const yBase = 745, yTop = yBase - h.h;
     const body = document.createElementNS(SVG_NS, 'rect');
@@ -482,11 +513,25 @@
         if (wx + 10 > h.x + h.w - 4) continue;
         const istGeheim = !geheimFensterGesetzt && hausIdx === 7 && row === Math.max(0, winRows - 2) && col === 1;
         const istFlocken = !flockenFensterGesetzt && hausIdx === 4 && row === Math.max(0, winRows - 2) && col === 1;
-        const lit = (istGeheim || istFlocken) ? true : Math.random() > 0.42;
+        const istWanderer = !wandererFensterGesetzt && hausIdx === 1 && row === Math.max(0, winRows - 2) && col === 0;
+        const lit = (istGeheim || istFlocken || istWanderer) ? true : Math.random() > 0.42;
         const w = document.createElementNS(SVG_NS, 'rect');
         w.setAttribute('x', wx); w.setAttribute('y', wy);
         w.setAttribute('width', 10); w.setAttribute('height', 14);
-        w.setAttribute('fill', istGeheim ? '#ff9a5a' : (istFlocken ? '#b8d8f0' : (lit ? '#f4c870' : '#1a2438')));
+        w.setAttribute('fill', istGeheim ? '#ff9a5a' : (istFlocken ? '#b8d8f0' : (istWanderer ? '#9ee4a8' : (lit ? '#f4c870' : '#1a2438'))));
+        if (istWanderer) {
+          wandererFensterGesetzt = true;
+          w.setAttribute('class', 'window-lit');
+          w.style.animationDuration = '7s';
+          const whit = document.createElementNS(SVG_NS, 'rect');
+          whit.setAttribute('x', wx - 13); whit.setAttribute('y', wy - 13);
+          whit.setAttribute('width', 36); whit.setAttribute('height', 40);
+          whit.setAttribute('fill', 'transparent');
+          whit.style.pointerEvents = 'auto';
+          whit.style.cursor = 'pointer';
+          whit.addEventListener('click', () => { if (typeof oeffneWandererModal === 'function') oeffneWandererModal(); });
+          houses.appendChild(whit);
+        }
         if (istFlocken) {
           flockenFensterGesetzt = true;
           w.setAttribute('class', 'window-lit');
@@ -732,6 +777,103 @@
       setTimeout(() => f.remove(), 950);
     }
   }
+
+  // --- Wanderer-Rätsel: drittes Fenster ---
+  function oeffneWandererModal() {
+    const m = document.getElementById('ak-wanderer-modal');
+    if (!m) return;
+    document.getElementById('ak-wanderer-fehler').style.display = 'none';
+    document.getElementById('ak-wanderer-input').value = '';
+    m.classList.add('show');
+    m.setAttribute('aria-hidden', 'false');
+    setTimeout(() => { const i = document.getElementById('ak-wanderer-input'); if (i) i.focus(); }, 150);
+  }
+  function schliesseWandererModal() {
+    const m = document.getElementById('ak-wanderer-modal');
+    m.classList.remove('show');
+    m.setAttribute('aria-hidden', 'true');
+  }
+  function zeigeNotizbuch() {
+    const m = document.getElementById('ak-notizbuch-modal');
+    const liste = document.getElementById('ak-notizbuch-liste');
+    if (!m || !liste) return;
+    liste.innerHTML = '';
+    const bis = modalState.today || 0;
+    let gefunden = 0;
+    for (let t = 1; t <= bis; t++) {
+      if (!sprueche[t]) continue;
+      gefunden++;
+      const zeile = document.createElement('div');
+      zeile.className = 'ak-notiz';
+      const nr = document.createElement('b');
+      nr.textContent = t + '.';
+      const txt = document.createElement('span');
+      txt.textContent = sprueche[t];
+      zeile.appendChild(nr); zeile.appendChild(txt);
+      liste.appendChild(zeile);
+    }
+    if (!gefunden) {
+      const leer = document.createElement('p');
+      leer.className = 'ak-modal-text';
+      leer.textContent = 'Noch hat er nichts erzählt. Klick ihn an, wenn er unten vorbeigeht.';
+      liste.appendChild(leer);
+    }
+    m.classList.add('show');
+    m.setAttribute('aria-hidden', 'false');
+  }
+  async function pruefeWandererName() {
+    const eingabe = document.getElementById('ak-wanderer-input').value.trim();
+    if (!eingabe) return;
+    const fehlerEl = document.getElementById('ak-wanderer-fehler');
+    fehlerEl.style.display = 'none';
+    const knopf = document.getElementById('ak-wanderer-senden');
+    knopf.disabled = true;
+    try {
+      const res = await fetch(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'wer=' + encodeURIComponent(eingabe));
+      const data = await res.json();
+      knopf.disabled = false;
+      if (data.wanderer) {
+        const w = data.wanderer;
+        document.getElementById('ak-wanderer-titel').textContent = w.titel || 'Da bist du ja.';
+        document.getElementById('ak-wanderer-frage').style.display = 'none';
+        document.getElementById('ak-wanderer-eingabe').style.display = 'none';
+        const txt = document.getElementById('ak-wanderer-text');
+        txt.textContent = w.text || '';
+        txt.style.display = w.text ? 'block' : 'none';
+        const rahmen = document.getElementById('ak-wanderer-bild-rahmen');
+        if (w.bild_url) {
+          document.getElementById('ak-wanderer-bild').src = w.bild_url;
+          rahmen.style.display = 'block';
+        }
+        funkenBurst(document.querySelector('#ak-wanderer-modal .ak-modal-box'), 14);
+      } else {
+        fehlerEl.style.display = 'block';
+      }
+    } catch (e) {
+      knopf.disabled = false;
+      fehlerEl.textContent = 'Keine Verbindung — versuch es später nochmal.';
+      fehlerEl.style.display = 'block';
+    }
+  }
+  (function initWanderer() {
+    const m = document.getElementById('ak-wanderer-modal');
+    if (!m) return;
+    m.addEventListener('click', schliesseWandererModal);
+    const x = document.getElementById('ak-wanderer-x');
+    if (x) x.addEventListener('click', schliesseWandererModal);
+    const senden = document.getElementById('ak-wanderer-senden');
+    if (senden) senden.addEventListener('click', pruefeWandererName);
+    const input = document.getElementById('ak-wanderer-input');
+    if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') pruefeWandererName(); });
+    const nb = document.getElementById('ak-wanderer-notizbuch');
+    if (nb) nb.addEventListener('click', zeigeNotizbuch);
+    const nbm = document.getElementById('ak-notizbuch-modal');
+    if (nbm) {
+      nbm.addEventListener('click', () => { nbm.classList.remove('show'); nbm.setAttribute('aria-hidden', 'true'); });
+      const nbx = document.getElementById('ak-notizbuch-x');
+      if (nbx) nbx.addEventListener('click', () => { nbm.classList.remove('show'); nbm.setAttribute('aria-hidden', 'true'); });
+    }
+  })();
 
   // --- Pünktlich-Zähler: Teaser für die Belohnung ---
   (function initStreakTeaser() {
