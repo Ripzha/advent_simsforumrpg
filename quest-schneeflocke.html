@@ -185,7 +185,7 @@
   // Schnitte werden normiert gespeichert (Spitze = Ursprung, Radius = 1000).
   const SCHNITT_W = 27;   // Schnittbreite, normiert
   const LOCH_R = 58;      // Locher-Radius, normiert
-  const KANTE_GERADE = { 4: true };       // Grob: gerade Aussenkante = eckige Silhouette
+  const KANTE_GERADE = {};                // Alle Faltungen mit runder Aussenkante
   let faltung = 16;                       // Anzahl Segmente
   function halbWinkel(n) { return Math.PI / n; }
 
