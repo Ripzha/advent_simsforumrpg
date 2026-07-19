@@ -1127,6 +1127,11 @@
     return String(s || '').toLowerCase().trim().replace(/[.,!?"'’«»„“]/g, '').replace(/\s+/g, ' ');
   }
   function oeffnePwModal() {
+    // Das geheime Fenster öffnet sich erst am 24. Dezember
+    if (!modalState.today || modalState.today < 24) {
+      showToast('Hinter diesem Fenster regt sich etwas … aber erst am 24. Dezember.');
+      return;
+    }
     const m = document.getElementById('ak-pw-modal');
     document.getElementById('ak-pw-fehler').classList.remove('zeig');
     document.getElementById('ak-pw-input').value = '';
