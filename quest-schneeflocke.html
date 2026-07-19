@@ -70,8 +70,9 @@
       radial-gradient(190px 120px at 100% 100%, rgba(230, 242, 255, 0.20) 0%, rgba(230, 242, 255, 0) 70%),
       radial-gradient(140px 90px at 100% 0%, rgba(230, 242, 255, 0.10) 0%, rgba(230, 242, 255, 0) 70%); }
   .fenster::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(1.2px 1.2px at 12% 18%, rgba(244, 234, 208, 0.8) 50%, transparent 51%), radial-gradient(1px 1px at 34% 8%, rgba(244, 234, 208, 0.6) 50%, transparent 51%), radial-gradient(1.4px 1.4px at 58% 14%, rgba(244, 234, 208, 0.7) 50%, transparent 51%), radial-gradient(1px 1px at 79% 22%, rgba(244, 234, 208, 0.55) 50%, transparent 51%), radial-gradient(1.2px 1.2px at 92% 9%, rgba(244, 234, 208, 0.65) 50%, transparent 51%); pointer-events: none; }
-  .galerie { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 22px 8px; }
-  .flocke-karte { position: relative; text-align: center; }
+  .fenster { min-height: min(66vh, 600px); }
+  .galerie { position: relative; z-index: 2; min-height: min(58vh, 520px); }
+  .flocke-karte { position: absolute; width: 130px; text-align: center; margin-left: -65px; }
   .flocke-karte::before { content: ""; position: absolute; left: 50%; top: -18px; width: 1px; height: 20px; background: rgba(244, 234, 208, 0.3); }
   .flocke-karte canvas { display: block; width: 100%; max-width: 130px; margin: 0 auto; filter: drop-shadow(0 0 8px rgba(184, 216, 240, 0.35)); }
   .flocke-karte .fname { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(var(--nrot, -4deg)); font-family: "Caveat", cursive; font-size: 21px; font-weight: 600; color: #2a3a5c; text-shadow: 0 0 3px rgba(255, 255, 255, 0.9), 0 0 7px rgba(255, 255, 255, 0.7); pointer-events: none; max-width: 94%; overflow: hidden; white-space: nowrap; }
@@ -113,6 +114,15 @@
         <div class="kasten">
           <h3>So wird sie aussehen</h3>
           <canvas id="vorschau" width="180" height="180"></canvas>
+        </div>
+        <div class="kasten">
+          <h3>Faltung</h3>
+          <div class="werkzeuge">
+            <button class="werkzeug falt aktiv" data-n="12">Fein</button>
+            <button class="werkzeug falt" data-n="8">Klassisch</button>
+            <button class="werkzeug falt" data-n="6">Grob</button>
+          </div>
+          <p class="hinweis-klein">Enger gefaltet = filigraner. Weiter gefaltet = kräftige Zacken.</p>
         </div>
         <div class="kasten">
           <h3>Werkzeug</h3>
@@ -177,14 +187,23 @@
   // ---------- Geometrie ----------
   // Keil: Spitze unten, Radius nach oben, halber Öffnungswinkel 15° → 12-fache Symmetrie.
   // Schnitte werden normiert gespeichert (Spitze = Ursprung, Radius = 1000).
-  const HALB = 15 * Math.PI / 180;
   const SCHNITT_W = 27;   // Schnittbreite, normiert
   const LOCH_R = 58;      // Locher-Radius, normiert
+  const FALTUNGEN = { 12: 'fein', 8: 'klassisch', 6: 'grob' };
+  let faltung = 12;                       // Anzahl Segmente
+  function halbWinkel(n) { return Math.PI / n; }
 
   const papier = document.getElementById('papier');
   const pctx = papier.getContext('2d');
   const guide = document.getElementById('guide');
-  const AX = papier.width / 2, AY = papier.height - 26, R = papier.height - 78;
+  let AX, AY, R;
+  function berechneKeilMasse() {
+    const halb = halbWinkel(faltung);
+    R = Math.min(papier.height - 78, (papier.width - 20) / (2 * Math.sin(halb)));
+    AX = papier.width / 2;
+    AY = (papier.height + R) / 2 + 8;
+  }
+  berechneKeilMasse();
 
   let strokes = [];       // {t:'s', p:[nx,ny,...]} | {t:'l', p:[nx,ny]}
   let werkzeug = 's';
@@ -192,25 +211,26 @@
 
   function norm(x, y) { return [Math.round((x - AX) / R * 1000), Math.round((y - AY) / R * 1000)]; }
 
-  function keilPfad(ctx, ax, ay, r) {
+  function keilPfad(ctx, ax, ay, r, halb) {
     ctx.beginPath();
     ctx.moveTo(ax, ay);
-    const a1 = -Math.PI / 2 - HALB, a2 = -Math.PI / 2 + HALB;
+    const a1 = -Math.PI / 2 - halb, a2 = -Math.PI / 2 + halb;
     ctx.lineTo(ax + r * Math.cos(a1), ay + r * Math.sin(a1));
     ctx.arc(ax, ay, r, a1, a2, false);
     ctx.closePath();
   }
 
   // Keil mit Schnitten in beliebiger Grösse/Farbe rendern (für Editor, Vorschau, Galerie)
-  function renderKeil(strokeListe, r, farbe, kanten) {
-    const w = Math.ceil(2 * r * Math.sin(HALB)) + 8;
+  function renderKeil(strokeListe, r, farbe, kanten, n) {
+    const halb = halbWinkel(n || 12);
+    const w = Math.ceil(2 * r * Math.sin(halb)) + 8;
     const h = Math.ceil(r) + 8;
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
     const ctx = c.getContext('2d');
     const ax = w / 2, ay = h - 3;
     ctx.save();
-    keilPfad(ctx, ax, ay, r);
+    keilPfad(ctx, ax, ay, r, halb);
     ctx.clip();
     ctx.fillStyle = farbe;
     ctx.fillRect(0, 0, w, h);
@@ -247,15 +267,16 @@
   }
 
   // Volle Flocke: 12 Kopien (rotiert, jede zweite gespiegelt = Papierfaltung)
-  function renderFlocke(ziel, strokeListe, radius, farbe) {
+  function renderFlocke(ziel, strokeListe, radius, farbe, n) {
+    n = n || 12;
     const zctx = ziel.getContext('2d');
     zctx.clearRect(0, 0, ziel.width, ziel.height);
-    const keil = renderKeil(strokeListe, radius, farbe, false);
+    const keil = renderKeil(strokeListe, radius, farbe, false, n);
     const cx = ziel.width / 2, cy = ziel.height / 2;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < n; i++) {
       zctx.save();
       zctx.translate(cx, cy);
-      zctx.rotate(i * Math.PI / 6);
+      zctx.rotate(i * 2 * Math.PI / n);
       if (i % 2) zctx.scale(-1, 1);
       zctx.drawImage(keil.canvas, -keil.ax, -keil.ay);
       zctx.restore();
@@ -269,7 +290,7 @@
     g.setLineDash([5, 5]);
     g.strokeStyle = 'rgba(168, 184, 213, 0.4)';
     g.lineWidth = 1.2;
-    keilPfad(g, AX, AY, R);
+    keilPfad(g, AX, AY, R, halbWinkel(faltung));
     g.stroke();
     g.setLineDash([]);
     g.fillStyle = 'rgba(168, 184, 213, 0.55)';
@@ -280,9 +301,9 @@
 
   function zeichnePapier() {
     pctx.clearRect(0, 0, papier.width, papier.height);
-    const keil = renderKeil(strokes, R, '#f4ead0', true);
+    const keil = renderKeil(strokes, R, '#f4ead0', true, faltung);
     pctx.drawImage(keil.canvas, AX - keil.ax, AY - keil.ay);
-    renderFlocke(document.getElementById('vorschau'), strokes, 76, '#eef4fc');
+    renderFlocke(document.getElementById('vorschau'), strokes, 76, '#eef4fc', faltung);
   }
 
   function canvasKoord(e) {
@@ -332,6 +353,16 @@
   papier.addEventListener('pointerup', schnittEnde);
   papier.addEventListener('pointercancel', schnittEnde);
 
+  document.querySelectorAll('.werkzeug.falt').forEach(btn => {
+    btn.onclick = () => {
+      faltung = Number(btn.dataset.n);
+      document.querySelectorAll('.werkzeug.falt').forEach(b => b.classList.remove('aktiv'));
+      btn.classList.add('aktiv');
+      berechneKeilMasse();
+      zeichneGuide();
+      zeichnePapier();
+    };
+  });
   document.getElementById('wz-schere').onclick = (e) => { werkzeug = 's'; setzeWerkzeugKnopf(e.target); };
   document.getElementById('wz-locher').onclick = (e) => { werkzeug = 'l'; setzeWerkzeugKnopf(e.target); };
   function setzeWerkzeugKnopf(el) {
@@ -355,28 +386,30 @@
   function faltAnimation() {
     const zctx = faltCanvas.getContext('2d');
     const radius = 150;
-    const keil = renderKeil(strokes, radius, '#eef4fc', false);
+    const n = faltung;
+    const keil = renderKeil(strokes, radius, '#eef4fc', false, n);
     const cx = faltCanvas.width / 2, cy = faltCanvas.height / 2;
     const startZeit = performance.now();
+    const schritt = Math.round(1560 / n);
     function frame(now) {
       const t = now - startZeit;
-      const sichtbar = Math.min(12, 1 + Math.floor(t / 130));
+      const sichtbar = Math.min(n, 1 + Math.floor(t / schritt));
       zctx.clearRect(0, 0, faltCanvas.width, faltCanvas.height);
       for (let i = 0; i < sichtbar; i++) {
         zctx.save();
         zctx.translate(cx, cy);
-        zctx.rotate(i * Math.PI / 6);
+        zctx.rotate(i * 2 * Math.PI / n);
         if (i % 2) zctx.scale(-1, 1);
         // Die neueste Kopie klappt herein
-        if (i === sichtbar - 1 && sichtbar < 12) {
-          const f = Math.min(1, (t - (sichtbar - 1) * 130) / 130);
+        if (i === sichtbar - 1 && sichtbar < n) {
+          const f = Math.min(1, (t - (sichtbar - 1) * schritt) / schritt);
           zctx.globalAlpha = f;
           zctx.rotate((1 - f) * -0.4);
         }
         zctx.drawImage(keil.canvas, -keil.ax, -keil.ay);
         zctx.restore();
       }
-      if (sichtbar < 12) {
+      if (sichtbar < n) {
         requestAnimationFrame(frame);
       } else {
         klang([720, 900, 1080]);
@@ -402,7 +435,7 @@
       status.classList.add('fehler');
       return;
     }
-    const daten = JSON.stringify({ s: strokes });
+    const daten = JSON.stringify({ s: strokes, n: faltung });
     status.textContent = 'Wird ans Fenster gehängt …';
     try {
       const res = await fetch(APPS_SCRIPT_URL, {
@@ -412,12 +445,12 @@
       });
       const antwort = await res.json();
       if (!antwort.ok) throw new Error(antwort.grund || 'abgelehnt');
-      localStorage.setItem('flocke_meine', JSON.stringify({ name: name, s: strokes }));
+      localStorage.setItem('flocke_meine', JSON.stringify({ name: name, s: strokes, n: faltung }));
       flockenRegen();
       setTimeout(() => { zeigeScreen('screen-galerie'); ladeGalerie(); }, 900);
     } catch (e) {
       // Offline / Sandbox: wenigstens lokal behalten
-      localStorage.setItem('flocke_meine', JSON.stringify({ name: name, s: strokes }));
+      localStorage.setItem('flocke_meine', JSON.stringify({ name: name, s: strokes, n: faltung }));
       status.textContent = 'Keine Verbindung zum Fenster — deine Flocke ist lokal gespeichert und wird in der Galerie gezeigt.';
       status.classList.add('fehler');
       setTimeout(() => { zeigeScreen('screen-galerie'); ladeGalerie(); }, 1600);
@@ -428,6 +461,7 @@
     const halter = document.getElementById('galerie');
     const status = document.getElementById('galerie-status');
     halter.innerHTML = '';
+    haengIndex = 0;
     status.style.display = 'block';
     status.textContent = 'Die Flocken werden geholt …';
     const meine = ladeLokal();
@@ -442,7 +476,7 @@
     }
     // Eigene zuerst (falls nicht ohnehin in der Liste ganz oben)
     if (meine && meine.s) {
-      haengeFlockeAn(halter, meine.name || 'Du', { s: meine.s }, true);
+      haengeFlockeAn(halter, meine.name || 'Du', { s: meine.s, n: meine.n }, true);
     }
     flocken.forEach(f => {
       let daten = null;
@@ -456,6 +490,7 @@
       status.textContent = 'Noch hängt hier nichts — sei die erste Flocke am Fenster!';
     }
   }
+  let haengIndex = 0;
   function haengeFlockeAn(halter, name, daten, istMeine) {
     const karte = document.createElement('div');
     karte.className = 'flocke-karte' + (istMeine ? ' meine' : '');
@@ -463,11 +498,22 @@
     let seed = 0;
     for (let si = 0; si < name.length; si++) seed = (seed * 31 + name.charCodeAt(si)) % 9973;
     const rnd = (n) => { seed = (seed * 137 + 71) % 9973; return (seed / 9973) * n; };
-    const drehung = rnd(24) - 12, versatzX = rnd(16) - 8, versatzY = rnd(14) - 5, skala = 0.85 + rnd(0.3);
-    karte.style.transform = `translate(${versatzX}px, ${versatzY}px) rotate(${drehung}deg) scale(${skala})`;
+    // Frei übers Fenster verstreut, Überlappen ausdrücklich erlaubt
+    const breite = Math.max(280, halter.clientWidth || 600);
+    const spalten = Math.max(3, Math.floor(breite / 128));
+    const spalte = haengIndex % spalten, zeile = Math.floor(haengIndex / spalten);
+    haengIndex++;
+    const x = ((spalte + 0.5) / spalten * 100) + (rnd(18) - 9);
+    const y = 26 + zeile * 118 + rnd(52) - 26;
+    karte.style.left = x + '%';
+    karte.style.top = y + 'px';
+    karte.style.zIndex = 2 + Math.floor(rnd(20));
+    halter.style.minHeight = Math.max(parseInt(halter.style.minHeight) || 0, y + 170) + 'px';
+    const drehung = rnd(24) - 12, skala = 0.85 + rnd(0.3);
+    karte.style.transform = `rotate(${drehung}deg) scale(${skala})`;
     const c = document.createElement('canvas');
     c.width = 130; c.height = 130;
-    renderFlocke(c, daten.s, 56, 'rgba(240, 248, 255, 0.95)');
+    renderFlocke(c, daten.s, 56, 'rgba(240, 248, 255, 0.95)', daten.n || 12);
     const label = document.createElement('span');
     label.className = 'fname';
     label.style.setProperty('--nrot', (rnd(14) - 7 - drehung) + 'deg');
