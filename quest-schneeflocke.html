@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Väterchen Frosts Werkstatt — Schneeflocken schneiden</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600;700&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --nacht: #0a1428; --nacht-tief: #060d1c; --panel: #101d36; --panel-rand: #3a4a6a;
@@ -58,13 +58,24 @@
   .status.fehler { color: #e8849a; }
 
   /* ---------- Galerie: das grosse Fenster ---------- */
-  .fenster { position: relative; border: 12px solid #4a3520; border-radius: 14px; box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5), 0 8px 30px rgba(0, 0, 0, 0.5); padding: 22px 16px; background: radial-gradient(ellipse at 50% -10%, #1e3358 0%, #0d1c38 55%, #091428 100%); overflow: hidden; }
+  .fenster { position: relative; border: 14px solid transparent; border-image: linear-gradient(160deg, #6a4e2c 0%, #4a3520 40%, #5c4226 70%, #3a2a18 100%) 1; border-radius: 4px; box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55), inset 0 3px 10px rgba(0, 0, 0, 0.5), 0 8px 30px rgba(0, 0, 0, 0.5); padding: 24px 16px 34px; background: radial-gradient(ellipse at 50% -10%, #1e3358 0%, #0d1c38 55%, #091428 100%); overflow: hidden; }
+  .fenster .sprosse { position: absolute; background: linear-gradient(90deg, #5c4226, #3e2d18); z-index: 1; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
+  .fenster .sprosse.senkrecht { top: 0; bottom: 0; left: 50%; width: 10px; margin-left: -5px; }
+  .fenster .sprosse.waagrecht { left: 0; right: 0; height: 10px; background: linear-gradient(180deg, #5c4226, #3e2d18); }
+  .fenster .fensterbank { position: absolute; left: -14px; right: -14px; bottom: -14px; height: 20px; background: linear-gradient(180deg, #6a4e2c, #3a2a18); border-top: 3px solid #e8eef8; z-index: 4; }
+  .fenster .glas { position: absolute; inset: 0; pointer-events: none; z-index: 3;
+    background:
+      linear-gradient(115deg, rgba(220, 235, 255, 0.10) 0%, rgba(220, 235, 255, 0) 26%),
+      radial-gradient(160px 100px at 0% 0%, rgba(230, 242, 255, 0.16) 0%, rgba(230, 242, 255, 0) 70%),
+      radial-gradient(190px 120px at 100% 100%, rgba(230, 242, 255, 0.20) 0%, rgba(230, 242, 255, 0) 70%),
+      radial-gradient(140px 90px at 100% 0%, rgba(230, 242, 255, 0.10) 0%, rgba(230, 242, 255, 0) 70%); }
   .fenster::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(1.2px 1.2px at 12% 18%, rgba(244, 234, 208, 0.8) 50%, transparent 51%), radial-gradient(1px 1px at 34% 8%, rgba(244, 234, 208, 0.6) 50%, transparent 51%), radial-gradient(1.4px 1.4px at 58% 14%, rgba(244, 234, 208, 0.7) 50%, transparent 51%), radial-gradient(1px 1px at 79% 22%, rgba(244, 234, 208, 0.55) 50%, transparent 51%), radial-gradient(1.2px 1.2px at 92% 9%, rgba(244, 234, 208, 0.65) 50%, transparent 51%); pointer-events: none; }
-  .galerie { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 16px 10px; }
-  .flocke-karte { text-align: center; }
+  .galerie { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 22px 8px; }
+  .flocke-karte { position: relative; text-align: center; }
+  .flocke-karte::before { content: ""; position: absolute; left: 50%; top: -18px; width: 1px; height: 20px; background: rgba(244, 234, 208, 0.3); }
   .flocke-karte canvas { display: block; width: 100%; max-width: 130px; margin: 0 auto; filter: drop-shadow(0 0 8px rgba(184, 216, 240, 0.35)); }
-  .flocke-karte .fname { display: inline-block; margin-top: 4px; font-size: 12px; color: var(--eis); background: rgba(6, 13, 28, 0.55); border-radius: 5px; padding: 2px 8px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .flocke-karte.meine .fname { color: var(--gold-hell); border: 1px solid rgba(200, 146, 72, 0.4); }
+  .flocke-karte .fname { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(var(--nrot, -4deg)); font-family: "Caveat", cursive; font-size: 21px; font-weight: 600; color: #2a3a5c; text-shadow: 0 0 3px rgba(255, 255, 255, 0.9), 0 0 7px rgba(255, 255, 255, 0.7); pointer-events: none; max-width: 94%; overflow: hidden; white-space: nowrap; }
+  .flocke-karte.meine .fname { color: #7a4a10; }
   .galerie-leer { position: relative; text-align: center; color: var(--himmel-text); font-size: 14px; padding: 30px 10px; }
   .galerie-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; }
   .galerie-kopf h2 { font-family: var(--serif); font-weight: 500; font-size: 20px; margin: 0; }
@@ -144,8 +155,13 @@
       <button class="knopf neben" id="galerie-neu-knopf">✂ Eigene Flocke schneiden</button>
     </div>
     <div class="fenster">
+      <div class="sprosse senkrecht" aria-hidden="true"></div>
+      <div class="sprosse waagrecht" style="top: 33%;" aria-hidden="true"></div>
+      <div class="sprosse waagrecht" style="top: 66%;" aria-hidden="true"></div>
+      <div class="glas" aria-hidden="true"></div>
       <div class="galerie" id="galerie"></div>
       <div class="galerie-leer" id="galerie-status">Die Flocken werden geholt …</div>
+      <div class="fensterbank" aria-hidden="true"></div>
     </div>
   </div>
 
@@ -442,12 +458,19 @@
   function haengeFlockeAn(halter, name, daten, istMeine) {
     const karte = document.createElement('div');
     karte.className = 'flocke-karte' + (istMeine ? ' meine' : '');
+    // Deterministischer Zufall aus dem Namen: jede Flocke hängt ein bisschen anders
+    let seed = 0;
+    for (let si = 0; si < name.length; si++) seed = (seed * 31 + name.charCodeAt(si)) % 9973;
+    const rnd = (n) => { seed = (seed * 137 + 71) % 9973; return (seed / 9973) * n; };
+    const drehung = rnd(24) - 12, versatzX = rnd(16) - 8, versatzY = rnd(14) - 5, skala = 0.85 + rnd(0.3);
+    karte.style.transform = `translate(${versatzX}px, ${versatzY}px) rotate(${drehung}deg) scale(${skala})`;
     const c = document.createElement('canvas');
     c.width = 130; c.height = 130;
     renderFlocke(c, daten.s, 56, 'rgba(240, 248, 255, 0.95)');
     const label = document.createElement('span');
     label.className = 'fname';
-    label.textContent = istMeine ? name + ' (du)' : name;
+    label.style.setProperty('--nrot', (rnd(14) - 7 - drehung) + 'deg');
+    label.textContent = name;
     karte.appendChild(c);
     karte.appendChild(label);
     halter.appendChild(karte);
