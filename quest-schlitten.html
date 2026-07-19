@@ -682,7 +682,8 @@
   function comboStufe() { return combo >= 20 ? 4 : combo >= 12 ? 3 : combo >= 5 ? 2 : 1; }
   const DRAIN_ZEIT = { 1: 5.0, 2: 4.0, 3: 3.2, 4: 2.6 }; // höhere Stufe = läuft schneller ab
   let maxHalte = 0;            // Zeit auf Stufe ×4 → füllt den Rausch
-  const RAUSCH_NACH = 3.5;     // s auf ×4 bis der Rausch zündet
+  const RAUSCH_NACH = 6.0;     // s auf ×4 bis der Rausch zündet
+  let rauschCooldown = 0;      // Sperrzeit nach einem Rausch
   let rausch = false, rauschZeit = 0;
   let magnetNachlauf = 0;
   const RAUSCH_DAUER = 6;
@@ -752,6 +753,7 @@
   }
   function schwierigkeit() { return Math.max(0, Math.min(1, (tempo - TEMPO_START) / (TEMPO_MAX - TEMPO_START))); }
   // Ab 20k Punkten wird der Hang steiler — und bleibt es, auch nach einem Crash
+  function tempoStufe() { return punkte >= 20000 ? 3 : punkte >= 15000 ? 2 : punkte >= 10000 ? 1 : 0; }
   function maxTempo() {
     if (punkte >= 20000) return TEMPO_MAX + 440;
     if (punkte >= 15000) return TEMPO_MAX + 300;
@@ -772,7 +774,7 @@
     sledY = terrainY(SLED_X()); vy = 0; amBoden = true;
     ducken = false; jubel = null;
     combo = 0; comboMeter = 0; maxHalte = 0;
-    rausch = false; rauschZeit = 0; magnetNachlauf = 0;
+    rausch = false; rauschZeit = 0; magnetNachlauf = 0; rauschCooldown = 0;
     leben = 3; invuln = 0; punkteAkk = 0; airZeit = 0;
     rekordGefeiert = false; rekordFlash = 0;
     bossAktiv = false; angriff = null; yetiStolpert = 0;
@@ -806,10 +808,11 @@
         continue;
       }
       // Schranken erst nach Eingewöhnung, Anteil steigt mit Schwierigkeit
-      const wirdSchranke = !bossAktiv && naechstesHindernis > 2400 && Math.random() < 0.18 + s * 0.16;
+      const wirdSchranke = !bossAktiv && naechstesHindernis > 2400 && Math.random() < 0.18 + s * 0.16 + tempoStufe() * 0.05;
       // FAIRNESS: Mindestabstand abhängig von Tempo und Typ-Kombination
       const tProg = Math.min(maxTempo(), tempo + 25); // Tempo bis zur Ankunft eingerechnet
-      let minAb = Math.max(360, tProg * 0.95);
+      const reakt = [0.95, 0.84, 0.74, 0.64][tempoStufe()];
+      let minAb = Math.max(360, tProg * reakt);
       if (wirdSchranke && !letztesWarSchranke) minAb = Math.max(minAb, tProg * 1.35); // Landepuffer vor Schranke
       if (!wirdSchranke && letztesWarSchranke) minAb = Math.max(minAb, tProg * 1.05); // Aufsteh-Puffer nach Schranke
       if (letztesWarDoppel) minAb += 200;
@@ -832,12 +835,19 @@
         hindernisse.push({ wx: naechstesHindernis, ...t });
         letztesHindernisWx = naechstesHindernis;
         // Doppel-Hindernis (ein langer Sprung) — nur wenn die Sprungweite sicher reicht
-        if (tempo > 420 && Math.random() < s * 0.5) {
+        if (tempo > 420 && Math.random() < s * 0.5 + tempoStufe() * 0.12) {
           const t2 = HINDERNIS_TYPEN[Math.floor(Math.random() * HINDERNIS_TYPEN.length)];
           const wx2 = naechstesHindernis + 80 + Math.random() * 25;
           hindernisse.push({ wx: wx2, ...t2 });
           letztesHindernisWx = wx2;
           warDoppel = true;
+          // Ab Stufe 2: gelegentlich ein drittes — ein richtig langer Sprung
+          if (tempoStufe() >= 2 && Math.random() < 0.3) {
+            const t3 = HINDERNIS_TYPEN[Math.floor(Math.random() * HINDERNIS_TYPEN.length)];
+            const wx3 = wx2 + 80 + Math.random() * 25;
+            hindernisse.push({ wx: wx3, ...t3 });
+            letztesHindernisWx = wx3;
+          }
         }
       }
       letztesWarSchranke = wirdSchranke;
@@ -854,7 +864,7 @@
       let jw = 0;
       while (jw < 6 && hindernisse.some(hd => Math.abs(hd.wx - jwx) < 220)) { jwx += 260; jw++; }
       sammel.push({ wx: jwx, hoehe: 30, typ: 'jack', wert: 0, rot: 0 });
-      naechsteJackWx = jwx + 12000 + Math.random() * 8000;
+      naechsteJackWx = jwx + 40000 + Math.random() * 30000;
     }
     let wache2 = 0;
     while (naechstesSammel < rechteKante) {
@@ -1085,8 +1095,9 @@
         }
       }
       // Rausch: ×4 lange genug halten → zündet
+      if (rauschCooldown > 0) rauschCooldown -= dt;
       if (!rausch) {
-        if (comboStufe() === 4) {
+        if (comboStufe() === 4 && rauschCooldown <= 0) {
           maxHalte += dt;
           if (maxHalte >= RAUSCH_NACH) {
             rausch = true;
@@ -1100,7 +1111,7 @@
       } else {
         rauschZeit -= dt;
         magnetNachlauf = 1.0; // Sog läuft nach Rausch-Ende kurz nach — nichts bleibt liegen
-        if (rauschZeit <= 0) { rausch = false; maxHalte = 0; }
+        if (rauschZeit <= 0) { rausch = false; maxHalte = 0; rauschCooldown = 14; }
       }
       // Magnet: aktiv im Rausch + kurzer Nachlauf danach
       if (rausch || magnetNachlauf > 0) {
@@ -1164,7 +1175,7 @@
               bossAktiv = false;
               angriff = null;
               yetiStolpert = 0.01; // zieht sich trotzdem zurück
-              zeitBisBoss = 60 + Math.random() * 25;
+              zeitBisBoss = Math.max(28, 60 + Math.random() * 25 - tempoStufe() * 10);
               boomSagt(BOOM_TREFFER);
             }
           } else if (angriff && angriff.phase === 'swipe' && angriff.t >= 0.35) {
@@ -1183,7 +1194,7 @@
               jubel = { t: 0, txt: 'Zu langsam, ' + BOSS_NAME + '!' };
               boomSagt(BOOM_ABGANG);
               document.getElementById('hud-punkte').textContent = punkte;
-              zeitBisBoss = 75 + Math.random() * 30;
+              zeitBisBoss = Math.max(32, 75 + Math.random() * 30 - tempoStufe() * 13);
               // Trostpflaster: fehlt ein Leben, taucht bald eine Ersatzteil-Kiste auf
               if (leben < 3) sammel.push({ wx: worldX + W + 500, hoehe: 40, typ: 'herz', wert: 0, rot: 0 });
             }
