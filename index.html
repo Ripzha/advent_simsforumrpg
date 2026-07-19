@@ -174,10 +174,10 @@
   .ak-modal-image { width: 100%; border-radius: 5px; display: block; max-height: 320px; object-fit: cover; cursor: zoom-in; }
   .ak-modal-image-rahmen { position: relative; }
   .ak-modal-image-rahmen::after { content: "⤢"; position: absolute; right: 11px; bottom: 11px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: rgba(10, 20, 40, 0.72); color: var(--gold-hell); border-radius: 6px; font-size: 14px; pointer-events: none; opacity: 0.85; }
-  .ak-notiz { display: flex; gap: 12px; padding: 9px 2px; border-bottom: 1px solid rgba(58, 74, 106, 0.35); }
+  .ak-notiz { display: flex; gap: 12px; padding: 9px 2px; border-bottom: 1px solid var(--cream-tief); }
   .ak-notiz:last-child { border-bottom: none; }
-  .ak-notiz b { font-family: var(--serif); font-weight: 500; color: var(--gold); min-width: 26px; text-align: right; font-size: 14px; }
-  .ak-notiz span { font-size: 14px; line-height: 1.55; color: var(--cream); }
+  .ak-notiz b { font-family: var(--serif); font-weight: 500; color: var(--tinte-hell); min-width: 26px; text-align: right; font-size: 14px; }
+  .ak-notiz span { font-size: 14px; line-height: 1.55; color: var(--tinte-mittel); }
   .ak-flocken-fenster { position: relative; border: 10px solid transparent; border-image: linear-gradient(160deg, #6a4e2c 0%, #4a3520 40%, #5c4226 70%, #3a2a18 100%) 1; border-radius: 4px; background: radial-gradient(ellipse at 50% -10%, #1e3358 0%, #0d1c38 55%, #091428 100%); padding: 16px 12px 26px; max-height: 46vh; overflow-y: auto; box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.55), inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 4px 18px rgba(0, 0, 0, 0.4); }
   /* Glas-Schimmer + Frost in den Ecken */
   .ak-flocken-fenster::before { content: ""; position: sticky; display: block; top: -16px; margin: -16px -12px 0; height: 0; z-index: 3; }
@@ -401,7 +401,7 @@
   </div>
 </div>
 <div class="ak-modal" id="ak-wanderer-modal" aria-hidden="true" role="dialog" aria-modal="true">
-  <div class="ak-modal-box" style="max-width: 480px;" onclick="event.stopPropagation()">
+  <div class="ak-modal-card" style="max-width: 480px;" onclick="event.stopPropagation()">
     <button class="ak-modal-x" aria-label="Schliessen" id="ak-wanderer-x">×</button>
     <h2 class="ak-modal-title" id="ak-wanderer-titel">Wer bin ich?</h2>
     <p class="ak-modal-text" id="ak-wanderer-frage">Hinter diesem Fenster wartet einer, der jeden Tag ein Stück von sich erzählt hat. Wenn du zugehört hast, weisst du seinen Namen.</p>
@@ -410,8 +410,8 @@
     </div>
     <p class="ak-modal-text" id="ak-wanderer-text" style="display:none"></p>
     <div id="ak-wanderer-eingabe">
-      <input id="ak-wanderer-input" maxlength="30" placeholder="Sein Name …" autocomplete="off" style="width: 100%; background: var(--nacht-tief, #060d1c); border: 1px solid var(--panel-rand); border-radius: 8px; color: var(--cream); padding: 11px 13px; font-size: 15px; font-family: inherit; text-align: center;">
-      <p id="ak-wanderer-fehler" style="display:none; color: #e8849a; font-size: 13px; margin: 8px 0 0; text-align: center;">Das ist er nicht. Hör nochmal hin.</p>
+      <input type="text" id="ak-wanderer-input" class="ak-pw-input" maxlength="30" placeholder="Sein Name …" autocomplete="off" style="text-align: center;">
+      <p id="ak-wanderer-fehler" style="display:none; color: #b04a30; font-size: 13px; margin: 4px 0 0; text-align: center;">Das ist er nicht. Hör nochmal hin.</p>
       <div style="display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
         <button class="ak-modal-close" id="ak-wanderer-senden">Das ist er</button>
         <button class="ak-modal-close" id="ak-wanderer-notizbuch">Was er erzählt hat</button>
@@ -420,14 +420,14 @@
   </div>
 </div>
 <div class="ak-modal" id="ak-notizbuch-modal" aria-hidden="true" role="dialog" aria-modal="true">
-  <div class="ak-modal-box" style="max-width: 520px;" onclick="event.stopPropagation()">
+  <div class="ak-modal-card" style="max-width: 520px;" onclick="event.stopPropagation()">
     <button class="ak-modal-x" aria-label="Schliessen" id="ak-notizbuch-x">×</button>
     <h2 class="ak-modal-title">Was der Laternenmann erzählt hat</h2>
     <div id="ak-notizbuch-liste" style="max-height: 52vh; overflow-y: auto; margin-top: 10px;"></div>
   </div>
 </div>
 <div class="ak-modal" id="ak-flocken-modal" aria-hidden="true" role="dialog" aria-modal="true">
-  <div class="ak-modal-box" style="max-width: 640px;" onclick="event.stopPropagation()">
+  <div class="ak-modal-card" style="max-width: 640px;" onclick="event.stopPropagation()">
     <button class="ak-modal-x" aria-label="Schliessen" id="ak-flocken-x">×</button>
     <h2 class="ak-modal-title">Anfisas Küchenfenster</h2>
     <p class="ak-modal-text" style="margin-top: 2px;">Hier hängen die Schneeflocken, die in Anfisas Küche geschnitten wurden.</p>
@@ -845,8 +845,15 @@
           document.getElementById('ak-wanderer-bild').src = w.bild_url;
           rahmen.style.display = 'block';
         }
-        funkenBurst(document.querySelector('#ak-wanderer-modal .ak-modal-box'), 14);
+        funkenBurst(document.querySelector('#ak-wanderer-modal .ak-modal-card'), 14);
+      } else if (data.wanderer_fehler === 'kein-wanderer-tab') {
+        fehlerEl.textContent = 'Der Tab „wanderer" wird nicht gefunden oder hat keine Datenzeile.';
+        fehlerEl.style.display = 'block';
+      } else if (data.config || data.tueren) {
+        fehlerEl.textContent = 'Das Apps Script ist noch nicht neu bereitgestellt (Version „Neu").';
+        fehlerEl.style.display = 'block';
       } else {
+        fehlerEl.textContent = 'Das ist er nicht. Hör nochmal hin.';
         fehlerEl.style.display = 'block';
       }
     } catch (e) {
