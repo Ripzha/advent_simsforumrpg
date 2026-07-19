@@ -754,9 +754,9 @@
   // Ab 20k Punkten wird der Hang steiler — und bleibt es, auch nach einem Crash
   function maxTempo() { return TEMPO_MAX + (tempoBoden() - TEMPO_START); }
   function tempoBoden() {
-    if (punkte >= 60000) return TEMPO_START + 240;
-    if (punkte >= 40000) return TEMPO_START + 170;
-    if (punkte >= 20000) return TEMPO_START + 100;
+    if (punkte >= 20000) return TEMPO_START + 240;
+    if (punkte >= 15000) return TEMPO_START + 170;
+    if (punkte >= 10000) return TEMPO_START + 100;
     return TEMPO_START;
   }
   let letzteTempoStufe = 0;
@@ -841,7 +841,7 @@
     }
     // Jack wartet am Streckenrand — nur im allerschnellsten Modus, und nur wenn sie
     // nicht schon mitfährt. Nach einem Sturz dauert es, bis sie wieder auftaucht.
-    if (punkte >= 60000 && !jackAnBord && !bossAktiv
+    if (punkte >= 20000 && !jackAnBord && !bossAktiv
         && !sammel.some(o => o.typ === 'jack' && !o.weg)
         && worldX >= naechsteJackWx) {
       let jwx = worldX + W + 700;
