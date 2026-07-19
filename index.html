@@ -728,13 +728,12 @@
   }
 
   // --- Flocken-Fenster: Galerie aus Afisas Küche ---
-  let flockenGeladen = false;
   function oeffneFlockenModal() {
     const m = document.getElementById('ak-flocken-modal');
     if (!m) return;
     m.classList.add('show');
     m.setAttribute('aria-hidden', 'false');
-    if (!flockenGeladen) { flockenGeladen = true; ladeFlocken(); }
+    ladeFlocken(); // Immer frisch: das Sheet ist die Wahrheit
   }
   function schliesseFlockenModal() {
     const m = document.getElementById('ak-flocken-modal');
@@ -829,7 +828,10 @@
   async function ladeFlocken() {
     const halter = document.getElementById('ak-flocken-galerie');
     const status = document.getElementById('ak-flocken-status');
-    let flockenIndex = 0;
+    halter.innerHTML = '';
+    status.style.display = 'block';
+    status.textContent = 'Die Flocken werden geholt …';
+    const platziert = [];
     try {
       const res = await fetch(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'action=flocken');
       const data = await res.json();
@@ -849,19 +851,25 @@
         let seed = 0;
         for (let si = 0; si < f.name.length; si++) seed = (seed * 31 + f.name.charCodeAt(si)) % 9973;
         const rnd = (n) => { seed = (seed * 137 + 71) % 9973; return (seed / 9973) * n; };
-        // Frei verstreut, Überlappen erlaubt
+        // Best-Candidate-Streuung: nimmt den freiesten Platz — Überlappen erst wenn's eng wird
         const breite = Math.max(240, halter.clientWidth || 500);
-        const spalten = Math.max(3, Math.floor(breite / 100));
-        const spalte = flockenIndex % spalten, zeile = Math.floor(flockenIndex / spalten);
-        flockenIndex++;
-        const randProzent = (48 * 1.18 / breite) * 100 + 1;
-        let fx = ((spalte + 0.5) / spalten * 100) + (rnd(16) - 8);
-        fx = Math.max(randProzent, Math.min(100 - randProzent, fx));
-        karte.style.left = fx + '%';
-        const oben = Math.max(8, 20 + zeile * 92 + rnd(40) - 20);
-        karte.style.top = oben + 'px';
+        const hoehe = Math.max(240, halter.clientHeight || 360);
+        const halb = 48 * 1.18;
+        let bestX = breite / 2, bestY = hoehe / 2, bestAbstand = -1;
+        for (let versuch = 0; versuch < 26; versuch++) {
+          const kx = halb + 3 + rnd(1) * (breite - 2 * halb - 6);
+          const ky = halb + 4 + rnd(1) * (hoehe - 2 * halb - 8);
+          let minD = Infinity;
+          for (const p of platziert) {
+            const d = Math.hypot(kx - p.x, ky - p.y);
+            if (d < minD) minD = d;
+          }
+          if (minD > bestAbstand) { bestAbstand = minD; bestX = kx; bestY = ky; }
+        }
+        platziert.push({ x: bestX, y: bestY });
+        karte.style.left = (bestX / breite * 100) + '%';
+        karte.style.top = (bestY - 48) + 'px';
         karte.style.zIndex = 2 + Math.floor(rnd(20));
-        halter.style.minHeight = Math.max(parseInt(halter.style.minHeight) || 0, oben + 130) + 'px';
         const drehung = rnd(24) - 12, skala = 0.85 + rnd(0.3);
         karte.style.transform = `rotate(${drehung}deg) scale(${skala})`;
         const c = document.createElement('canvas');
