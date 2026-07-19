@@ -6,7 +6,7 @@
 <title>Adventskalender</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --nacht: #0a1428;
@@ -174,11 +174,28 @@
   .ak-modal-image { width: 100%; border-radius: 5px; display: block; max-height: 320px; object-fit: cover; cursor: zoom-in; }
   .ak-modal-image-rahmen { position: relative; }
   .ak-modal-image-rahmen::after { content: "⤢"; position: absolute; right: 11px; bottom: 11px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: rgba(10, 20, 40, 0.72); color: var(--gold-hell); border-radius: 6px; font-size: 14px; pointer-events: none; opacity: 0.85; }
-  .ak-flocken-fenster { position: relative; border: 8px solid #4a3520; border-radius: 10px; background: radial-gradient(ellipse at 50% -10%, #1e3358 0%, #0d1c38 55%, #091428 100%); padding: 14px 10px; max-height: 46vh; overflow-y: auto; box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5); }
-  .ak-flocken-galerie { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 12px 8px; }
-  .ak-flocken-galerie canvas { display: block; width: 100%; max-width: 96px; margin: 0 auto; filter: drop-shadow(0 0 6px rgba(184, 216, 240, 0.35)); }
-  .ak-flocken-galerie .fname { display: block; text-align: center; margin-top: 2px; font-size: 11px; color: #b8d8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ak-flocken-status { text-align: center; color: var(--himmel-text); font-size: 13px; padding: 18px 6px; }
+  .ak-flocken-fenster { position: relative; border: 10px solid transparent; border-image: linear-gradient(160deg, #6a4e2c 0%, #4a3520 40%, #5c4226 70%, #3a2a18 100%) 1; border-radius: 4px; background: radial-gradient(ellipse at 50% -10%, #1e3358 0%, #0d1c38 55%, #091428 100%); padding: 16px 12px 26px; max-height: 46vh; overflow-y: auto; box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.55), inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 4px 18px rgba(0, 0, 0, 0.4); }
+  /* Glas-Schimmer + Frost in den Ecken */
+  .ak-flocken-fenster::before { content: ""; position: sticky; display: block; top: -16px; margin: -16px -12px 0; height: 0; z-index: 3; }
+  .ak-flocken-fenster::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    background:
+      linear-gradient(115deg, rgba(220, 235, 255, 0.10) 0%, rgba(220, 235, 255, 0) 26%),
+      radial-gradient(140px 90px at 0% 0%, rgba(230, 242, 255, 0.16) 0%, rgba(230, 242, 255, 0) 70%),
+      radial-gradient(160px 100px at 100% 100%, rgba(230, 242, 255, 0.20) 0%, rgba(230, 242, 255, 0) 70%),
+      radial-gradient(120px 80px at 100% 0%, rgba(230, 242, 255, 0.10) 0%, rgba(230, 242, 255, 0) 70%); }
+  /* Sprossen: hängen hinter den Flocken */
+  .ak-sprosse { position: absolute; background: linear-gradient(90deg, #5c4226, #3e2d18); z-index: 0; box-shadow: 0 0 8px rgba(0, 0, 0, 0.5); }
+  .ak-sprosse.senkrecht { top: 0; bottom: 0; left: 50%; width: 9px; margin-left: -4.5px; }
+  .ak-sprosse.waagrecht { left: 0; right: 0; height: 9px; background: linear-gradient(180deg, #5c4226, #3e2d18); }
+  /* Fensterbank mit Schnee */
+  .ak-fensterbank { position: sticky; bottom: -27px; margin: 10px -12px -26px; height: 18px; background: linear-gradient(180deg, #6a4e2c, #3a2a18); border-top: 3px solid #e8eef8; box-shadow: 0 -1px 0 rgba(232, 238, 248, 0.4); z-index: 4; }
+  .ak-flocken-galerie { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 16px 6px; }
+  .ak-flocken-karte { position: relative; text-align: center; }
+  /* Faden, an dem die Flocke hängt */
+  .ak-flocken-karte::before { content: ""; position: absolute; left: 50%; top: -14px; width: 1px; height: 16px; background: rgba(244, 234, 208, 0.3); }
+  .ak-flocken-karte canvas { display: block; width: 100%; max-width: 96px; margin: 0 auto; filter: drop-shadow(0 0 6px rgba(184, 216, 240, 0.35)); }
+  .ak-flocken-karte .fname { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(var(--nrot, -4deg)); font-family: "Caveat", cursive; font-size: 17px; font-weight: 600; color: #2a3a5c; text-shadow: 0 0 3px rgba(255, 255, 255, 0.9), 0 0 6px rgba(255, 255, 255, 0.7); pointer-events: none; max-width: 92%; overflow: hidden; white-space: nowrap; }
+  .ak-flocken-status { position: relative; z-index: 1; text-align: center; color: var(--himmel-text); font-size: 13px; padding: 18px 6px; }
   .ak-lightbox { position: fixed; inset: 0; z-index: 2000; background: rgba(4, 9, 20, 0.94); display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transition: opacity 0.28s ease, visibility 0.28s ease; cursor: zoom-out; }
   .ak-lightbox.offen { opacity: 1; visibility: visible; }
   .ak-lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7); object-fit: contain; }
@@ -376,8 +393,12 @@
     <h2 class="ak-modal-title">Das grosse Fenster</h2>
     <p class="ak-modal-text" style="margin-top: 2px;">Hier hängen die Schneeflocken aus Väterchen Frosts Werkstatt.</p>
     <div class="ak-flocken-fenster">
+      <div class="ak-sprosse senkrecht" aria-hidden="true"></div>
+      <div class="ak-sprosse waagrecht" style="top: 34%;" aria-hidden="true"></div>
+      <div class="ak-sprosse waagrecht" style="top: 68%;" aria-hidden="true"></div>
       <div class="ak-flocken-galerie" id="ak-flocken-galerie"></div>
       <div class="ak-flocken-status" id="ak-flocken-status">Die Flocken werden geholt …</div>
+      <div class="ak-fensterbank" aria-hidden="true"></div>
     </div>
     <a class="ak-modal-link" href="quest-schneeflocke.html" style="display: inline-block; margin-top: 12px;">✂ Eigene Flocke schneiden →</a>
   </div>
@@ -768,6 +789,31 @@
       zctx.restore();
     }
   }
+  // Findet die Stelle mit dem meisten Papier für den Namens-Schriftzug
+  function findeTextPlatz(canvas, textB, textH) {
+    const ctx = canvas.getContext('2d');
+    let bild;
+    try { bild = ctx.getImageData(0, 0, canvas.width, canvas.height).data; } catch (e) { return null; }
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2;
+    let best = null, bestScore = -1;
+    for (let y = Math.ceil(textH / 2); y <= H - textH / 2; y += 5) {
+      for (let x = Math.ceil(textB / 2); x <= W - textB / 2; x += 5) {
+        let voll = 0, gesamt = 0;
+        for (let dy = -textH / 2; dy < textH / 2; dy += 4) {
+          for (let dx = -textB / 2; dx < textB / 2; dx += 4) {
+            const idx = ((Math.round(y + dy) * W) + Math.round(x + dx)) * 4 + 3;
+            gesamt++;
+            if (bild[idx] > 140) voll++;
+          }
+        }
+        const dist = Math.hypot(x - cx, y - cy) / (W / 2);
+        const score = (voll / gesamt) - dist * 0.18; // Papierdeckung, leicht Richtung Mitte gewichtet
+        if (score > bestScore) { bestScore = score; best = { x: x, y: y }; }
+      }
+    }
+    return best;
+  }
   async function ladeFlocken() {
     const halter = document.getElementById('ak-flocken-galerie');
     const status = document.getElementById('ak-flocken-status');
@@ -785,14 +831,31 @@
         try { daten = JSON.parse(f.daten); } catch (e) { return; }
         if (!daten || !Array.isArray(daten.s)) return;
         const karte = document.createElement('div');
+        karte.className = 'ak-flocken-karte';
+        // Deterministischer Zufall aus dem Namen: jede Flocke hängt ein bisschen anders
+        let seed = 0;
+        for (let si = 0; si < f.name.length; si++) seed = (seed * 31 + f.name.charCodeAt(si)) % 9973;
+        const rnd = (n) => { seed = (seed * 137 + 71) % 9973; return (seed / 9973) * n; };
+        const drehung = rnd(24) - 12, versatzX = rnd(14) - 7, versatzY = rnd(12) - 4, skala = 0.85 + rnd(0.3);
+        karte.style.transform = `translate(${versatzX}px, ${versatzY}px) rotate(${drehung}deg) scale(${skala})`;
         const c = document.createElement('canvas');
         c.width = 96; c.height = 96;
         flRender(c, daten.s, 42);
         const label = document.createElement('span');
         label.className = 'fname';
+        label.style.setProperty('--nrot', (rnd(14) - 7 - drehung) + 'deg');
         label.textContent = f.name;
-        karte.appendChild(c);
-        karte.appendChild(label);
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position: relative; width: 100%; max-width: 96px; margin: 0 auto;';
+        wrap.appendChild(c);
+        wrap.appendChild(label);
+        // Name auf ungeschnittenes Papier setzen
+        const platz = findeTextPlatz(c, Math.min(84, f.name.length * 7.5 + 8), 16);
+        if (platz) {
+          label.style.left = (platz.x / 96 * 100) + '%';
+          label.style.top = (platz.y / 96 * 100) + '%';
+        }
+        karte.appendChild(wrap);
         halter.appendChild(karte);
       });
     } catch (e) {
