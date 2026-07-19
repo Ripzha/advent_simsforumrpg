@@ -365,6 +365,10 @@
     </div>
   </div>
 </div>
+<div class="ak-lightbox" id="ak-lightbox" role="dialog" aria-label="Bild in voller Grösse" aria-hidden="true">
+  <button class="ak-lightbox-zu" id="ak-lightbox-zu" aria-label="Schliessen">✕</button>
+  <img id="ak-lightbox-bild" alt="">
+</div>
 <script>
   // >>> URL DEINER APPS SCRIPT WEB APP HIER EINSETZEN <<<
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxKRKsfh_2YFkS5a5kpDYWSQImA1lEq3ndnVJj4YpPqWcLrqmUinp-l4WA93e5U79MPA/exec';
@@ -664,6 +668,8 @@
   (function initLightbox() {
     const box = document.getElementById('ak-lightbox');
     const gross = document.getElementById('ak-lightbox-bild');
+    const zuKnopf = document.getElementById('ak-lightbox-zu');
+    if (!box || !gross) return;
     function oeffne(src, alt) {
       if (!src) return;
       gross.src = src;
@@ -681,7 +687,7 @@
       if (el) el.addEventListener('click', (e) => { e.stopPropagation(); oeffne(el.src, el.alt); });
     });
     box.addEventListener('click', schliesse);
-    document.getElementById('ak-lightbox-zu').addEventListener('click', (e) => { e.stopPropagation(); schliesse(); });
+    if (zuKnopf) zuKnopf.addEventListener('click', (e) => { e.stopPropagation(); schliesse(); });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && box.classList.contains('offen')) { e.stopPropagation(); schliesse(); }
     }, true);
@@ -1196,9 +1202,5 @@
 
   init();
 </script>
-<div class="ak-lightbox" id="ak-lightbox" role="dialog" aria-label="Bild in voller Grösse" aria-hidden="true">
-  <button class="ak-lightbox-zu" id="ak-lightbox-zu" aria-label="Schliessen">✕</button>
-  <img id="ak-lightbox-bild" alt="">
-</div>
 </body>
 </html>
