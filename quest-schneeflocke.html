@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Väterchen Frosts Werkstatt — Schneeflocken schneiden</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --nacht: #0a1428; --nacht-tief: #060d1c; --panel: #101d36; --panel-rand: #3a4a6a;
+    --gold: #c89248; --gold-hell: #f4d484; --cream: #f4ead0; --tinte: #2a1a0a;
+    --himmel-text: #a8b8d5; --eis: #b8d8f0;
+    --serif: "Fraunces", Georgia, serif; --sans: "Karla", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--nacht); color: var(--cream); font-family: var(--sans); min-height: 100%; }
+  .buehne { max-width: 860px; margin: 0 auto; padding: 20px 12px 44px; }
+  h1 { font-family: var(--serif); font-size: clamp(21px, 5vw, 29px); font-weight: 500; margin: 0 0 4px; text-align: center; }
+  h1 em { font-style: italic; color: var(--gold-hell); }
+  .unter { color: var(--himmel-text); font-size: 13.5px; text-align: center; margin: 0 0 16px; line-height: 1.55; }
+
+  .screen { display: none; }
+  .screen.aktiv { display: block; }
+
+  /* ---------- Intro ---------- */
+  .intro-karte { background: var(--panel); border: 1px solid var(--panel-rand); border-radius: 14px; padding: 26px 22px; max-width: 520px; margin: 0 auto; text-align: center; }
+  .intro-karte p { color: var(--himmel-text); font-size: 14.5px; line-height: 1.65; margin: 0 0 14px; }
+  .intro-karte p strong { color: var(--cream); }
+  .knopf { background: var(--gold); color: var(--tinte); border: 1px solid var(--gold-hell); padding: 12px 26px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--sans); }
+  .knopf:hover { background: #dba458; }
+  .knopf.neben { background: transparent; color: var(--himmel-text); border-color: var(--panel-rand); font-weight: 500; }
+  .knopf.neben:hover { color: var(--cream); background: rgba(244, 234, 208, 0.06); }
+
+  /* ---------- Editor ---------- */
+  .werkstatt { display: flex; gap: 18px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+  .papier-wrap { position: relative; width: min(340px, 92vw); }
+  .papier-wrap canvas { display: block; width: 100%; touch-action: none; }
+  #guide { position: absolute; inset: 0; pointer-events: none; }
+  #papier { position: relative; cursor: crosshair; }
+  .seite { min-width: 200px; max-width: 260px; display: flex; flex-direction: column; gap: 12px; }
+  .kasten { background: var(--panel); border: 1px solid var(--panel-rand); border-radius: 12px; padding: 14px; }
+  .kasten h3 { margin: 0 0 8px; font-family: var(--serif); font-weight: 500; font-size: 15px; color: var(--gold-hell); }
+  #vorschau { display: block; width: 100%; max-width: 180px; margin: 0 auto; }
+  .werkzeuge { display: flex; gap: 8px; flex-wrap: wrap; }
+  .werkzeug { flex: 1; min-width: 72px; background: rgba(244, 234, 208, 0.06); border: 1px solid var(--panel-rand); border-radius: 8px; color: var(--himmel-text); padding: 9px 6px; font-size: 13px; font-family: var(--sans); cursor: pointer; }
+  .werkzeug.aktiv { background: rgba(200, 146, 72, 0.22); border-color: var(--gold); color: var(--gold-hell); }
+  .aktion-reihe { display: flex; gap: 8px; }
+  .aktion-reihe .werkzeug { flex: 1; }
+  .hinweis-klein { font-size: 12px; color: var(--himmel-text); line-height: 1.5; margin: 6px 0 0; }
+
+  /* ---------- Auffalten ---------- */
+  .falt-mitte { text-align: center; }
+  #falt-canvas { display: block; margin: 6px auto 14px; width: min(360px, 88vw); }
+  .name-reihe { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+  #flocke-name { background: var(--nacht-tief); border: 1px solid var(--panel-rand); border-radius: 8px; color: var(--cream); padding: 11px 13px; font-size: 15px; font-family: var(--sans); width: 200px; text-align: center; }
+  #flocke-name:focus { outline: none; border-color: var(--gold); }
+  .status { min-height: 20px; font-size: 13px; color: var(--himmel-text); margin-top: 10px; }
+  .status.fehler { color: #e8849a; }
+
+  /* ---------- Galerie: das grosse Fenster ---------- */
+  .fenster { position: relative; border: 12px solid #4a3520; border-radius: 14px; box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5), 0 8px 30px rgba(0, 0, 0, 0.5); padding: 22px 16px; background: radial-gradient(ellipse at 50% -10%, #1e3358 0%, #0d1c38 55%, #091428 100%); overflow: hidden; }
+  .fenster::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(1.2px 1.2px at 12% 18%, rgba(244, 234, 208, 0.8) 50%, transparent 51%), radial-gradient(1px 1px at 34% 8%, rgba(244, 234, 208, 0.6) 50%, transparent 51%), radial-gradient(1.4px 1.4px at 58% 14%, rgba(244, 234, 208, 0.7) 50%, transparent 51%), radial-gradient(1px 1px at 79% 22%, rgba(244, 234, 208, 0.55) 50%, transparent 51%), radial-gradient(1.2px 1.2px at 92% 9%, rgba(244, 234, 208, 0.65) 50%, transparent 51%); pointer-events: none; }
+  .galerie { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 16px 10px; }
+  .flocke-karte { text-align: center; }
+  .flocke-karte canvas { display: block; width: 100%; max-width: 130px; margin: 0 auto; filter: drop-shadow(0 0 8px rgba(184, 216, 240, 0.35)); }
+  .flocke-karte .fname { display: inline-block; margin-top: 4px; font-size: 12px; color: var(--eis); background: rgba(6, 13, 28, 0.55); border-radius: 5px; padding: 2px 8px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .flocke-karte.meine .fname { color: var(--gold-hell); border: 1px solid rgba(200, 146, 72, 0.4); }
+  .galerie-leer { position: relative; text-align: center; color: var(--himmel-text); font-size: 14px; padding: 30px 10px; }
+  .galerie-kopf { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; }
+  .galerie-kopf h2 { font-family: var(--serif); font-weight: 500; font-size: 20px; margin: 0; }
+  .zurueck { display: block; text-align: center; margin-top: 22px; }
+  .zurueck a { color: var(--himmel-text); font-size: 13px; text-decoration: none; }
+  .zurueck a:hover { color: var(--gold-hell); }
+  .flocke-fall { position: fixed; top: -20px; color: var(--eis); z-index: 30; animation: fallen linear forwards; pointer-events: none; }
+  @keyframes fallen { to { transform: translateY(110vh) rotate(360deg); opacity: 0.3; } }
+</style>
+</head>
+<body>
+<div class="buehne">
+  <h1>Väterchen Frosts <em>Werkstatt</em></h1>
+  <p class="unter">Ein gefaltetes Blatt, eine Schere — und beim Auffalten geschieht das kleine Wunder.</p>
+
+  <!-- Intro -->
+  <div class="screen aktiv" id="screen-intro">
+    <div class="intro-karte">
+      <p><strong>«S nowym godom!»</strong> — Bei uns zuhause gab es keinen Baum ohne Schneeflocken am Fenster. Babuschka faltete das Papier, wir schnitten hinein, und keiner wusste vorher, was beim Auffalten herauskommt.</p>
+      <p>Schneide in das gefaltete Blatt. Kerben, Bögen, Löcher — alles, was du schneidest, spiegelt sich zwölffach. Und wenn du fertig bist, hängen wir deine Flocke ans grosse Fenster. Mit deinem Namen dran, damit alle wissen, wer sie gemacht hat.</p>
+      <button class="knopf" id="start-knopf">Papier falten</button>
+      <p class="hinweis-klein" style="margin-top: 14px;"><a href="#" id="direkt-galerie" style="color: var(--himmel-text);">Nur die Galerie ansehen →</a></p>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <div class="screen" id="screen-editor">
+    <div class="werkstatt">
+      <div class="papier-wrap">
+        <canvas id="papier" width="340" height="560"></canvas>
+        <canvas id="guide" width="340" height="560"></canvas>
+      </div>
+      <div class="seite">
+        <div class="kasten">
+          <h3>So wird sie aussehen</h3>
+          <canvas id="vorschau" width="180" height="180"></canvas>
+        </div>
+        <div class="kasten">
+          <h3>Werkzeug</h3>
+          <div class="werkzeuge">
+            <button class="werkzeug aktiv" id="wz-schere">✂ Schere</button>
+            <button class="werkzeug" id="wz-locher">◯ Locher</button>
+          </div>
+          <div class="aktion-reihe" style="margin-top: 8px;">
+            <button class="werkzeug" id="wz-undo">↶ Zurück</button>
+            <button class="werkzeug" id="wz-neu">Neu</button>
+          </div>
+          <p class="hinweis-klein">Mit der Schere ziehst du Schnitte, der Locher stanzt mit einem Tipp.</p>
+        </div>
+        <button class="knopf" id="auffalten-knopf">✦ Auffalten</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auffalten + Name -->
+  <div class="screen" id="screen-falten">
+    <div class="falt-mitte">
+      <canvas id="falt-canvas" width="380" height="380"></canvas>
+      <div id="falt-form" style="visibility: hidden;">
+        <p class="unter" style="margin-bottom: 8px;">Da ist sie. Wie soll sie heissen — oder besser: wie heisst du?</p>
+        <div class="name-reihe">
+          <input id="flocke-name" maxlength="16" placeholder="Dein Name" autocomplete="off">
+          <button class="knopf" id="haengen-knopf">Ans Fenster hängen</button>
+        </div>
+        <div class="name-reihe" style="margin-top: 10px;">
+          <button class="knopf neben" id="nochmal-knopf">Noch eine schneiden</button>
+        </div>
+        <p class="status" id="haeng-status"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Galerie -->
+  <div class="screen" id="screen-galerie">
+    <div class="galerie-kopf">
+      <h2>Das grosse Fenster</h2>
+      <button class="knopf neben" id="galerie-neu-knopf">✂ Eigene Flocke schneiden</button>
+    </div>
+    <div class="fenster">
+      <div class="galerie" id="galerie"></div>
+      <div class="galerie-leer" id="galerie-status">Die Flocken werden geholt …</div>
+    </div>
+  </div>
+
+  <p class="zurueck"><a href="index.html">← Zurück zum Kalender</a></p>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxKRKsfh_2YFkS5a5kpDYWSQImA1lEq3ndnVJj4YpPqWcLrqmUinp-l4WA93e5U79MPA/exec';
+
+  // ---------- Geometrie ----------
+  // Keil: Spitze unten, Radius nach oben, halber Öffnungswinkel 15° → 12-fache Symmetrie.
+  // Schnitte werden normiert gespeichert (Spitze = Ursprung, Radius = 1000).
+  const HALB = 15 * Math.PI / 180;
+  const SCHNITT_W = 27;   // Schnittbreite, normiert
+  const LOCH_R = 58;      // Locher-Radius, normiert
+
+  const papier = document.getElementById('papier');
+  const pctx = papier.getContext('2d');
+  const guide = document.getElementById('guide');
+  const AX = papier.width / 2, AY = papier.height - 26, R = papier.height - 78;
+
+  let strokes = [];       // {t:'s', p:[nx,ny,...]} | {t:'l', p:[nx,ny]}
+  let werkzeug = 's';
+  let aktiverStroke = null;
+
+  function norm(x, y) { return [Math.round((x - AX) / R * 1000), Math.round((y - AY) / R * 1000)]; }
+
+  function keilPfad(ctx, ax, ay, r) {
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    const a1 = -Math.PI / 2 - HALB, a2 = -Math.PI / 2 + HALB;
+    ctx.lineTo(ax + r * Math.cos(a1), ay + r * Math.sin(a1));
+    ctx.arc(ax, ay, r, a1, a2, false);
+    ctx.closePath();
+  }
+
+  // Keil mit Schnitten in beliebiger Grösse/Farbe rendern (für Editor, Vorschau, Galerie)
+  function renderKeil(strokeListe, r, farbe, kanten) {
+    const w = Math.ceil(2 * r * Math.sin(HALB)) + 8;
+    const h = Math.ceil(r) + 8;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    const ax = w / 2, ay = h - 3;
+    ctx.save();
+    keilPfad(ctx, ax, ay, r);
+    ctx.clip();
+    ctx.fillStyle = farbe;
+    ctx.fillRect(0, 0, w, h);
+    if (kanten) {
+      // Zarte Falz-Andeutung auf dem Papier
+      ctx.strokeStyle = 'rgba(160, 130, 80, 0.16)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay); ctx.lineTo(ax, ay - r);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // Schnitte ausradieren
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    strokeListe.forEach(s => {
+      if (s.t === 'l') {
+        ctx.beginPath();
+        ctx.arc(ax + s.p[0] * r / 1000, ay + s.p[1] * r / 1000, LOCH_R * r / 1000, 0, 7);
+        ctx.fill();
+      } else {
+        ctx.lineWidth = SCHNITT_W * r / 1000;
+        ctx.beginPath();
+        for (let i = 0; i < s.p.length; i += 2) {
+          const x = ax + s.p[i] * r / 1000, y = ay + s.p[i + 1] * r / 1000;
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        if (s.p.length === 2) ctx.lineTo(ax + s.p[0] * r / 1000 + 0.5, ay + s.p[1] * r / 1000);
+        ctx.stroke();
+      }
+    });
+    ctx.globalCompositeOperation = 'source-over';
+    return { canvas: c, ax: ax, ay: ay };
+  }
+
+  // Volle Flocke: 12 Kopien (rotiert, jede zweite gespiegelt = Papierfaltung)
+  function renderFlocke(ziel, strokeListe, radius, farbe) {
+    const zctx = ziel.getContext('2d');
+    zctx.clearRect(0, 0, ziel.width, ziel.height);
+    const keil = renderKeil(strokeListe, radius, farbe, false);
+    const cx = ziel.width / 2, cy = ziel.height / 2;
+    for (let i = 0; i < 12; i++) {
+      zctx.save();
+      zctx.translate(cx, cy);
+      zctx.rotate(i * Math.PI / 6);
+      if (i % 2) zctx.scale(-1, 1);
+      zctx.drawImage(keil.canvas, -keil.ax, -keil.ay);
+      zctx.restore();
+    }
+  }
+
+  // ---------- Editor ----------
+  function zeichneGuide() {
+    const g = guide.getContext('2d');
+    g.clearRect(0, 0, guide.width, guide.height);
+    g.setLineDash([5, 5]);
+    g.strokeStyle = 'rgba(168, 184, 213, 0.4)';
+    g.lineWidth = 1.2;
+    keilPfad(g, AX, AY, R);
+    g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = 'rgba(168, 184, 213, 0.55)';
+    g.font = '11px Karla, sans-serif';
+    g.textAlign = 'center';
+    g.fillText('gefaltetes Papier — schneide hinein', AX, 18);
+  }
+
+  function zeichnePapier() {
+    pctx.clearRect(0, 0, papier.width, papier.height);
+    const keil = renderKeil(strokes, R, '#f4ead0', true);
+    pctx.drawImage(keil.canvas, AX - keil.ax, AY - keil.ay);
+    renderFlocke(document.getElementById('vorschau'), strokes, 76, '#eef4fc');
+  }
+
+  function canvasKoord(e) {
+    const rect = papier.getBoundingClientRect();
+    return [
+      (e.clientX - rect.left) * papier.width / rect.width,
+      (e.clientY - rect.top) * papier.height / rect.height
+    ];
+  }
+
+  papier.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    papier.setPointerCapture(e.pointerId);
+    const [x, y] = canvasKoord(e);
+    const n = norm(x, y);
+    if (werkzeug === 'l') {
+      strokes.push({ t: 'l', p: n });
+      schnipp(600);
+      zeichnePapier();
+      return;
+    }
+    aktiverStroke = { t: 's', p: [n[0], n[1]] };
+    strokes.push(aktiverStroke);
+  });
+  papier.addEventListener('pointermove', (e) => {
+    if (!aktiverStroke) return;
+    e.preventDefault();
+    const [x, y] = canvasKoord(e);
+    const n = norm(x, y);
+    const p = aktiverStroke.p;
+    const dx = n[0] - p[p.length - 2], dy = n[1] - p[p.length - 1];
+    if (dx * dx + dy * dy < 100) return; // Punkte ausdünnen
+    p.push(n[0], n[1]);
+    if (p.length > 240) p.splice(0, 2); // Sicherheits-Kappe pro Schnitt
+    zeichnePapier();
+  });
+  function schnittEnde() {
+    if (!aktiverStroke) return;
+    if (aktiverStroke.p.length <= 2) {
+      // Nur getippt: Mini-Kerbe
+      aktiverStroke.p.push(aktiverStroke.p[0] + 4, aktiverStroke.p[1] + 4);
+    }
+    aktiverStroke = null;
+    schnipp(420 + Math.random() * 200);
+    zeichnePapier();
+  }
+  papier.addEventListener('pointerup', schnittEnde);
+  papier.addEventListener('pointercancel', schnittEnde);
+
+  document.getElementById('wz-schere').onclick = (e) => { werkzeug = 's'; setzeWerkzeugKnopf(e.target); };
+  document.getElementById('wz-locher').onclick = (e) => { werkzeug = 'l'; setzeWerkzeugKnopf(e.target); };
+  function setzeWerkzeugKnopf(el) {
+    document.querySelectorAll('#wz-schere, #wz-locher').forEach(b => b.classList.remove('aktiv'));
+    el.classList.add('aktiv');
+  }
+  document.getElementById('wz-undo').onclick = () => { strokes.pop(); zeichnePapier(); };
+  document.getElementById('wz-neu').onclick = () => { strokes = []; zeichnePapier(); };
+
+  // ---------- Auffalten ----------
+  const faltCanvas = document.getElementById('falt-canvas');
+  document.getElementById('auffalten-knopf').onclick = () => {
+    if (!strokes.length) {
+      strokes.push({ t: 'l', p: [0, -520] }); // Ganz leeres Blatt bekommt wenigstens ein Loch
+    }
+    zeigeScreen('screen-falten');
+    document.getElementById('falt-form').style.visibility = 'hidden';
+    document.getElementById('haeng-status').textContent = '';
+    faltAnimation();
+  };
+  function faltAnimation() {
+    const zctx = faltCanvas.getContext('2d');
+    const radius = 150;
+    const keil = renderKeil(strokes, radius, '#eef4fc', false);
+    const cx = faltCanvas.width / 2, cy = faltCanvas.height / 2;
+    const startZeit = performance.now();
+    function frame(now) {
+      const t = now - startZeit;
+      const sichtbar = Math.min(12, 1 + Math.floor(t / 130));
+      zctx.clearRect(0, 0, faltCanvas.width, faltCanvas.height);
+      for (let i = 0; i < sichtbar; i++) {
+        zctx.save();
+        zctx.translate(cx, cy);
+        zctx.rotate(i * Math.PI / 6);
+        if (i % 2) zctx.scale(-1, 1);
+        // Die neueste Kopie klappt herein
+        if (i === sichtbar - 1 && sichtbar < 12) {
+          const f = Math.min(1, (t - (sichtbar - 1) * 130) / 130);
+          zctx.globalAlpha = f;
+          zctx.rotate((1 - f) * -0.4);
+        }
+        zctx.drawImage(keil.canvas, -keil.ax, -keil.ay);
+        zctx.restore();
+      }
+      if (sichtbar < 12) {
+        requestAnimationFrame(frame);
+      } else {
+        klang([720, 900, 1080]);
+        document.getElementById('falt-form').style.visibility = 'visible';
+        const gespeichert = ladeLokal();
+        if (gespeichert && gespeichert.name) document.getElementById('flocke-name').value = gespeichert.name;
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  document.getElementById('nochmal-knopf').onclick = () => zeigeScreen('screen-editor');
+
+  // ---------- Speichern + Galerie ----------
+  function ladeLokal() {
+    try { return JSON.parse(localStorage.getItem('flocke_meine') || 'null'); } catch (e) { return null; }
+  }
+  document.getElementById('haengen-knopf').onclick = async () => {
+    const name = document.getElementById('flocke-name').value.trim().slice(0, 16);
+    const status = document.getElementById('haeng-status');
+    status.classList.remove('fehler');
+    if (name.length < 2) {
+      status.textContent = 'Der Name braucht mindestens 2 Zeichen.';
+      status.classList.add('fehler');
+      return;
+    }
+    const daten = JSON.stringify({ s: strokes });
+    status.textContent = 'Wird ans Fenster gehängt …';
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'flocke_save', name: name, daten: daten })
+      });
+      const antwort = await res.json();
+      if (!antwort.ok) throw new Error(antwort.grund || 'abgelehnt');
+      localStorage.setItem('flocke_meine', JSON.stringify({ name: name, s: strokes }));
+      flockenRegen();
+      setTimeout(() => { zeigeScreen('screen-galerie'); ladeGalerie(); }, 900);
+    } catch (e) {
+      // Offline / Sandbox: wenigstens lokal behalten
+      localStorage.setItem('flocke_meine', JSON.stringify({ name: name, s: strokes }));
+      status.textContent = 'Keine Verbindung zum Fenster — deine Flocke ist lokal gespeichert und wird in der Galerie gezeigt.';
+      status.classList.add('fehler');
+      setTimeout(() => { zeigeScreen('screen-galerie'); ladeGalerie(); }, 1600);
+    }
+  };
+
+  async function ladeGalerie() {
+    const halter = document.getElementById('galerie');
+    const status = document.getElementById('galerie-status');
+    halter.innerHTML = '';
+    status.style.display = 'block';
+    status.textContent = 'Die Flocken werden geholt …';
+    const meine = ladeLokal();
+    let flocken = [];
+    try {
+      const res = await fetch(APPS_SCRIPT_URL + '?action=flocken');
+      const data = await res.json();
+      flocken = (data.flocken || []);
+      status.style.display = 'none';
+    } catch (e) {
+      status.textContent = meine ? 'Keine Verbindung — hier hängt vorerst nur deine eigene Flocke.' : 'Keine Verbindung zum Fenster. Versuch es später nochmal.';
+    }
+    // Eigene zuerst (falls nicht ohnehin in der Liste ganz oben)
+    if (meine && meine.s) {
+      haengeFlockeAn(halter, meine.name || 'Du', { s: meine.s }, true);
+    }
+    flocken.forEach(f => {
+      let daten = null;
+      try { daten = JSON.parse(f.daten); } catch (e) { return; }
+      if (!daten || !Array.isArray(daten.s)) return;
+      if (meine && f.name === meine.name && JSON.stringify(daten.s) === JSON.stringify(meine.s)) return; // Dublette der eigenen
+      haengeFlockeAn(halter, f.name, daten, false);
+    });
+    if (!halter.children.length && status.style.display === 'none') {
+      status.style.display = 'block';
+      status.textContent = 'Noch hängt hier nichts — sei die erste Flocke am Fenster!';
+    }
+  }
+  function haengeFlockeAn(halter, name, daten, istMeine) {
+    const karte = document.createElement('div');
+    karte.className = 'flocke-karte' + (istMeine ? ' meine' : '');
+    const c = document.createElement('canvas');
+    c.width = 130; c.height = 130;
+    renderFlocke(c, daten.s, 56, 'rgba(240, 248, 255, 0.95)');
+    const label = document.createElement('span');
+    label.className = 'fname';
+    label.textContent = istMeine ? name + ' (du)' : name;
+    karte.appendChild(c);
+    karte.appendChild(label);
+    halter.appendChild(karte);
+  }
+  document.getElementById('galerie-neu-knopf').onclick = () => { strokes = []; zeichnePapier(); zeigeScreen('screen-editor'); };
+  document.getElementById('direkt-galerie').onclick = (e) => { e.preventDefault(); zeigeScreen('screen-galerie'); ladeGalerie(); };
+
+  // ---------- Sound ----------
+  let actx = null;
+  function audio() {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  function schnipp(freq) {
+    try {
+      const a = audio(), now = a.currentTime;
+      const dauer = 0.07;
+      const buf = a.createBuffer(1, a.sampleRate * dauer, a.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      const src = a.createBufferSource(); src.buffer = buf;
+      const f = a.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq * 3; f.Q.value = 1.2;
+      const g = a.createGain(); g.gain.value = 0.09;
+      src.connect(f).connect(g).connect(a.destination);
+      src.start(now);
+    } catch (e) {}
+  }
+  function klang(freqs) {
+    try {
+      const a = audio(), now = a.currentTime;
+      freqs.forEach((fr, i) => {
+        const o = a.createOscillator(), g = a.createGain();
+        o.type = 'sine'; o.frequency.value = fr;
+        g.gain.setValueAtTime(0, now + i * 0.12);
+        g.gain.linearRampToValueAtTime(0.11, now + i * 0.12 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.5);
+        o.connect(g).connect(a.destination);
+        o.start(now + i * 0.12); o.stop(now + i * 0.12 + 0.55);
+      });
+    } catch (e) {}
+  }
+  function flockenRegen() {
+    for (let i = 0; i < 16; i++) {
+      setTimeout(() => {
+        const f = document.createElement('span');
+        f.className = 'flocke-fall';
+        f.textContent = ['❄', '❅', '✻'][i % 3];
+        f.style.left = Math.random() * 100 + 'vw';
+        f.style.fontSize = (12 + Math.random() * 14) + 'px';
+        f.style.animationDuration = (2.4 + Math.random() * 2) + 's';
+        document.body.appendChild(f);
+        setTimeout(() => f.remove(), 5200);
+      }, i * 120);
+    }
+  }
+
+  // ---------- Screens ----------
+  function zeigeScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('aktiv'));
+    document.getElementById(id).classList.add('aktiv');
+  }
+  document.getElementById('start-knopf').onclick = () => { zeigeScreen('screen-editor'); };
+
+  // ---------- Start ----------
+  zeichneGuide();
+  zeichnePapier();
+})();
+</script>
+</body>
+</html>
