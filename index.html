@@ -173,6 +173,8 @@
   .ak-modal-image-rahmen { border: 1px solid var(--cream-tief); border-radius: 8px; padding: 5px; background: #fff8ea; margin-bottom: 16px; }
   .ak-modal-image { width: 100%; border-radius: 5px; display: block; max-height: 320px; object-fit: cover; cursor: zoom-in; }
   .ak-modal-image-rahmen { position: relative; }
+  /* Wanderer-Auflösung: Hochformat komplett zeigen, nichts abschneiden */
+  #ak-wanderer-bild { object-fit: contain; max-height: 58vh; width: auto; max-width: 100%; margin: 0 auto; }
   .ak-modal-image-rahmen::after { content: "⤢"; position: absolute; right: 11px; bottom: 11px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: rgba(10, 20, 40, 0.72); color: var(--gold-hell); border-radius: 6px; font-size: 14px; pointer-events: none; opacity: 0.85; }
   .ak-notiz { display: flex; gap: 12px; padding: 9px 2px; border-bottom: 1px solid var(--cream-tief); }
   .ak-notiz:last-child { border-bottom: none; }
@@ -1084,7 +1086,7 @@
       box.setAttribute('aria-hidden', 'true');
       setTimeout(() => { if (!box.classList.contains('offen')) gross.removeAttribute('src'); }, 320);
     }
-    ['ak-modal-image', 'ak-geheim-bild'].forEach(id => {
+    ['ak-modal-image', 'ak-geheim-bild', 'ak-wanderer-bild'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('click', (e) => { e.stopPropagation(); oeffne(el.src, el.alt); });
     });
