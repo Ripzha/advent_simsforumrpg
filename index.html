@@ -171,7 +171,14 @@
   .ak-modal-day { font-family: var(--sans); font-size: 11.5px; color: var(--tinte-hell); font-weight: 600; margin: 0 0 6px; letter-spacing: 0.14em; padding-right: 44px; text-transform: uppercase; }
   .ak-modal-title { font-family: var(--serif); font-size: 25px; font-weight: 500; margin: 0 0 18px; color: var(--tinte); padding-right: 44px; line-height: 1.25; }
   .ak-modal-image-rahmen { border: 1px solid var(--cream-tief); border-radius: 8px; padding: 5px; background: #fff8ea; margin-bottom: 16px; }
-  .ak-modal-image { width: 100%; border-radius: 5px; display: block; max-height: 320px; object-fit: cover; }
+  .ak-modal-image { width: 100%; border-radius: 5px; display: block; max-height: 320px; object-fit: cover; cursor: zoom-in; }
+  .ak-modal-image-rahmen { position: relative; }
+  .ak-modal-image-rahmen::after { content: "⤢"; position: absolute; right: 11px; bottom: 11px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: rgba(10, 20, 40, 0.72); color: var(--gold-hell); border-radius: 6px; font-size: 14px; pointer-events: none; opacity: 0.85; }
+  .ak-lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(4, 9, 20, 0.94); display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transition: opacity 0.28s ease, visibility 0.28s ease; cursor: zoom-out; }
+  .ak-lightbox.offen { opacity: 1; visibility: visible; }
+  .ak-lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7); object-fit: contain; }
+  .ak-lightbox-zu { position: absolute; top: 14px; right: 16px; width: 40px; height: 40px; border-radius: 50%; background: rgba(244, 234, 208, 0.12); border: 1px solid var(--panel-rand); color: var(--cream); font-size: 20px; line-height: 1; cursor: pointer; }
+  .ak-lightbox-zu:hover { background: rgba(244, 234, 208, 0.22); }
   .ak-modal-text { font-size: 14.5px; line-height: 1.65; color: var(--tinte-mittel); margin: 0 0 16px; white-space: pre-wrap; }
   .ak-modal-link { display: inline-block; color: var(--tinte-hell); text-decoration: underline; text-underline-offset: 3px; font-size: 13.5px; font-weight: 500; margin-bottom: 16px; }
   .ak-modal-link:hover { color: var(--tinte); }
@@ -652,6 +659,33 @@
       setTimeout(() => f.remove(), 950);
     }
   }
+
+  // --- Lightbox: Türchen-Bilder in voller Grösse ---
+  (function initLightbox() {
+    const box = document.getElementById('ak-lightbox');
+    const gross = document.getElementById('ak-lightbox-bild');
+    function oeffne(src, alt) {
+      if (!src) return;
+      gross.src = src;
+      gross.alt = alt || '';
+      box.classList.add('offen');
+      box.setAttribute('aria-hidden', 'false');
+    }
+    function schliesse() {
+      box.classList.remove('offen');
+      box.setAttribute('aria-hidden', 'true');
+      setTimeout(() => { if (!box.classList.contains('offen')) gross.removeAttribute('src'); }, 320);
+    }
+    ['ak-modal-image', 'ak-geheim-bild'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', (e) => { e.stopPropagation(); oeffne(el.src, el.alt); });
+    });
+    box.addEventListener('click', schliesse);
+    document.getElementById('ak-lightbox-zu').addEventListener('click', (e) => { e.stopPropagation(); schliesse(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && box.classList.contains('offen')) { e.stopPropagation(); schliesse(); }
+    }, true);
+  })();
 
   // --- Datum + Test-Modus ---
   function calcToday(jahr, testMode) {
@@ -1162,5 +1196,9 @@
 
   init();
 </script>
+<div class="ak-lightbox" id="ak-lightbox" role="dialog" aria-label="Bild in voller Grösse" aria-hidden="true">
+  <button class="ak-lightbox-zu" id="ak-lightbox-zu" aria-label="Schliessen">✕</button>
+  <img id="ak-lightbox-bild" alt="">
+</div>
 </body>
 </html>
