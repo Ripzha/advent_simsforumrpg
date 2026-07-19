@@ -481,7 +481,7 @@
         const wy = yTop + 14 + row * 28;
         if (wx + 10 > h.x + h.w - 4) continue;
         const istGeheim = !geheimFensterGesetzt && hausIdx === 7 && row === 1 && col === 1;
-        const istFlocken = !flockenFensterGesetzt && hausIdx === 4 && row === winRows - 1 && col === 1;
+        const istFlocken = !flockenFensterGesetzt && hausIdx === 4 && row === Math.max(0, winRows - 2) && col === 1;
         const lit = (istGeheim || istFlocken) ? true : Math.random() > 0.42;
         const w = document.createElementNS(SVG_NS, 'rect');
         w.setAttribute('x', wx); w.setAttribute('y', wy);
