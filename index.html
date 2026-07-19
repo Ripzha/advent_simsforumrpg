@@ -174,6 +174,11 @@
   .ak-modal-image { width: 100%; border-radius: 5px; display: block; max-height: 320px; object-fit: cover; cursor: zoom-in; }
   .ak-modal-image-rahmen { position: relative; }
   .ak-modal-image-rahmen::after { content: "⤢"; position: absolute; right: 11px; bottom: 11px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: rgba(10, 20, 40, 0.72); color: var(--gold-hell); border-radius: 6px; font-size: 14px; pointer-events: none; opacity: 0.85; }
+  .ak-flocken-fenster { position: relative; border: 8px solid #4a3520; border-radius: 10px; background: radial-gradient(ellipse at 50% -10%, #1e3358 0%, #0d1c38 55%, #091428 100%); padding: 14px 10px; max-height: 46vh; overflow-y: auto; box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5); }
+  .ak-flocken-galerie { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 12px 8px; }
+  .ak-flocken-galerie canvas { display: block; width: 100%; max-width: 96px; margin: 0 auto; filter: drop-shadow(0 0 6px rgba(184, 216, 240, 0.35)); }
+  .ak-flocken-galerie .fname { display: block; text-align: center; margin-top: 2px; font-size: 11px; color: #b8d8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ak-flocken-status { text-align: center; color: var(--himmel-text); font-size: 13px; padding: 18px 6px; }
   .ak-lightbox { position: fixed; inset: 0; z-index: 2000; background: rgba(4, 9, 20, 0.94); display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transition: opacity 0.28s ease, visibility 0.28s ease; cursor: zoom-out; }
   .ak-lightbox.offen { opacity: 1; visibility: visible; }
   .ak-lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7); object-fit: contain; }
@@ -365,6 +370,18 @@
     </div>
   </div>
 </div>
+<div class="ak-modal" id="ak-flocken-modal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="ak-modal-box" style="max-width: 640px;" onclick="event.stopPropagation()">
+    <button class="ak-modal-x" aria-label="Schliessen" id="ak-flocken-x">×</button>
+    <h2 class="ak-modal-title">Das grosse Fenster</h2>
+    <p class="ak-modal-text" style="margin-top: 2px;">Hier hängen die Schneeflocken aus Väterchen Frosts Werkstatt.</p>
+    <div class="ak-flocken-fenster">
+      <div class="ak-flocken-galerie" id="ak-flocken-galerie"></div>
+      <div class="ak-flocken-status" id="ak-flocken-status">Die Flocken werden geholt …</div>
+    </div>
+    <a class="ak-modal-link" href="quest-schneeflocke.html" style="display: inline-block; margin-top: 12px;">✂ Eigene Flocke schneiden →</a>
+  </div>
+</div>
 <div class="ak-lightbox" id="ak-lightbox" role="dialog" aria-label="Bild in voller Grösse" aria-hidden="true">
   <button class="ak-lightbox-zu" id="ak-lightbox-zu" aria-label="Schliessen">✕</button>
   <img id="ak-lightbox-bild" alt="">
@@ -400,6 +417,7 @@
   ];
   const dunkleFenster = [];
   let geheimFensterGesetzt = false;
+  let flockenFensterGesetzt = false;
   houseDefs.forEach((h, hausIdx) => {
     const yBase = 745, yTop = yBase - h.h;
     const body = document.createElementNS(SVG_NS, 'rect');
@@ -431,11 +449,25 @@
         const wy = yTop + 14 + row * 28;
         if (wx + 10 > h.x + h.w - 4) continue;
         const istGeheim = !geheimFensterGesetzt && hausIdx === 7 && row === 1 && col === 1;
-        const lit = istGeheim ? true : Math.random() > 0.42;
+        const istFlocken = !flockenFensterGesetzt && hausIdx === 2 && row === 0 && col === 0;
+        const lit = (istGeheim || istFlocken) ? true : Math.random() > 0.42;
         const w = document.createElementNS(SVG_NS, 'rect');
         w.setAttribute('x', wx); w.setAttribute('y', wy);
         w.setAttribute('width', 10); w.setAttribute('height', 14);
-        w.setAttribute('fill', istGeheim ? '#ff9a5a' : (lit ? '#f4c870' : '#1a2438'));
+        w.setAttribute('fill', istGeheim ? '#ff9a5a' : (istFlocken ? '#b8d8f0' : (lit ? '#f4c870' : '#1a2438')));
+        if (istFlocken) {
+          flockenFensterGesetzt = true;
+          w.setAttribute('class', 'window-lit');
+          w.style.animationDuration = '6s';
+          const fhit = document.createElementNS(SVG_NS, 'rect');
+          fhit.setAttribute('x', wx - 8); fhit.setAttribute('y', wy - 8);
+          fhit.setAttribute('width', 26); fhit.setAttribute('height', 30);
+          fhit.setAttribute('fill', 'transparent');
+          fhit.style.pointerEvents = 'auto';
+          fhit.style.cursor = 'pointer';
+          fhit.addEventListener('click', () => { if (typeof oeffneFlockenModal === 'function') oeffneFlockenModal(); });
+          houses.appendChild(fhit);
+        }
         if (istGeheim) {
           geheimFensterGesetzt = true;
           w.setAttribute('class', 'window-lit');
@@ -661,6 +693,110 @@
       f.style.setProperty('--fy', (Math.sin(winkel) * dist - 22) + 'px');
       wrap.appendChild(f);
       setTimeout(() => f.remove(), 950);
+    }
+  }
+
+  // --- Flocken-Fenster: Galerie aus Väterchen Frosts Werkstatt ---
+  let flockenGeladen = false;
+  function oeffneFlockenModal() {
+    const m = document.getElementById('ak-flocken-modal');
+    if (!m) return;
+    m.classList.add('show');
+    m.setAttribute('aria-hidden', 'false');
+    if (!flockenGeladen) { flockenGeladen = true; ladeFlocken(); }
+  }
+  function schliesseFlockenModal() {
+    const m = document.getElementById('ak-flocken-modal');
+    m.classList.remove('show');
+    m.setAttribute('aria-hidden', 'true');
+  }
+  (function initFlockenModal() {
+    const m = document.getElementById('ak-flocken-modal');
+    if (!m) return;
+    m.addEventListener('click', schliesseFlockenModal);
+    const x = document.getElementById('ak-flocken-x');
+    if (x) x.addEventListener('click', schliesseFlockenModal);
+  })();
+  // Flocken-Geometrie (identisch zur Werkstatt: 12-fach, Radius normiert auf 1000)
+  const FL_HALB = 15 * Math.PI / 180, FL_SCHNITT = 27, FL_LOCH = 58;
+  function flKeil(strokeListe, r) {
+    const w = Math.ceil(2 * r * Math.sin(FL_HALB)) + 8, hh = Math.ceil(r) + 8;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = hh;
+    const ctx = c.getContext('2d');
+    const ax = w / 2, ay = hh - 3;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    const a1 = -Math.PI / 2 - FL_HALB, a2 = -Math.PI / 2 + FL_HALB;
+    ctx.lineTo(ax + r * Math.cos(a1), ay + r * Math.sin(a1));
+    ctx.arc(ax, ay, r, a1, a2, false);
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = 'rgba(240, 248, 255, 0.95)';
+    ctx.fillRect(0, 0, w, hh);
+    ctx.restore();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    strokeListe.forEach(s => {
+      if (s.t === 'l') {
+        ctx.beginPath();
+        ctx.arc(ax + s.p[0] * r / 1000, ay + s.p[1] * r / 1000, FL_LOCH * r / 1000, 0, 7);
+        ctx.fill();
+      } else {
+        ctx.lineWidth = FL_SCHNITT * r / 1000;
+        ctx.beginPath();
+        for (let i = 0; i < s.p.length; i += 2) {
+          const px = ax + s.p[i] * r / 1000, py = ay + s.p[i + 1] * r / 1000;
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+    });
+    return { canvas: c, ax: ax, ay: ay };
+  }
+  function flRender(ziel, strokeListe, radius) {
+    const zctx = ziel.getContext('2d');
+    const keil = flKeil(strokeListe, radius);
+    const cx = ziel.width / 2, cy = ziel.height / 2;
+    for (let i = 0; i < 12; i++) {
+      zctx.save();
+      zctx.translate(cx, cy);
+      zctx.rotate(i * Math.PI / 6);
+      if (i % 2) zctx.scale(-1, 1);
+      zctx.drawImage(keil.canvas, -keil.ax, -keil.ay);
+      zctx.restore();
+    }
+  }
+  async function ladeFlocken() {
+    const halter = document.getElementById('ak-flocken-galerie');
+    const status = document.getElementById('ak-flocken-status');
+    try {
+      const res = await fetch(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'action=flocken');
+      const data = await res.json();
+      const flocken = data.flocken || [];
+      if (!flocken.length) {
+        status.textContent = 'Noch hängt hier nichts — schneide die erste Flocke in Väterchen Frosts Werkstatt!';
+        return;
+      }
+      status.style.display = 'none';
+      flocken.forEach(f => {
+        let daten = null;
+        try { daten = JSON.parse(f.daten); } catch (e) { return; }
+        if (!daten || !Array.isArray(daten.s)) return;
+        const karte = document.createElement('div');
+        const c = document.createElement('canvas');
+        c.width = 96; c.height = 96;
+        flRender(c, daten.s, 42);
+        const label = document.createElement('span');
+        label.className = 'fname';
+        label.textContent = f.name;
+        karte.appendChild(c);
+        karte.appendChild(label);
+        halter.appendChild(karte);
+      });
+    } catch (e) {
+      status.textContent = 'Das Fenster ist gerade beschlagen — versuch es später nochmal.';
     }
   }
 
