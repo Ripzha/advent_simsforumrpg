@@ -91,8 +91,8 @@
   .ak-door.opened .door-licht { opacity: 1; }
 
   .door-back { position: absolute; inset: 0; background: linear-gradient(160deg, #101f38 0%, #0c1828 100%); border: 1px solid #1e3050; border-radius: 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px; overflow: hidden; z-index: 1; }
-  .door-thumb { width: 100%; flex: 1; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--cream); font-size: 10px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; padding: 4px; text-align: center; line-height: 1.3; overflow: hidden; }
-  .door-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
+  .door-thumb { width: 100%; flex: 1; min-height: 0; position: relative; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--cream); font-size: 10px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; padding: 4px; text-align: center; line-height: 1.3; overflow: hidden; }
+  .door-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 4px; display: block; }
   .door-back-num { font-family: var(--serif); font-size: 11px; color: var(--himmel-text); margin-top: 5px; }
 
   .door-front { position: absolute; inset: 0; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 26px; font-weight: 500; font-variant-numeric: oldstyle-nums; font-size: 24px; transition: transform 0.85s cubic-bezier(0.55, -0.12, 0.25, 1.12); transform-origin: left center; backface-visibility: hidden; z-index: 2; overflow: hidden;
@@ -171,7 +171,7 @@
   .ak-modal-day { font-family: var(--sans); font-size: 11.5px; color: var(--tinte-hell); font-weight: 600; margin: 0 0 6px; letter-spacing: 0.14em; padding-right: 44px; text-transform: uppercase; }
   .ak-modal-title { font-family: var(--serif); font-size: 25px; font-weight: 500; margin: 0 0 18px; color: var(--tinte); padding-right: 44px; line-height: 1.25; }
   .ak-modal-image-rahmen { border: 1px solid var(--cream-tief); border-radius: 8px; padding: 5px; background: #fff8ea; margin-bottom: 16px; }
-  .ak-modal-image { width: 100%; border-radius: 5px; display: block; max-height: 320px; object-fit: cover; cursor: zoom-in; }
+  .ak-modal-image { width: auto; max-width: 100%; border-radius: 5px; display: block; max-height: 340px; object-fit: contain; margin: 0 auto; cursor: zoom-in; }
   .ak-modal-image-rahmen { position: relative; }
   /* Wanderer-Auflösung: Hochformat komplett zeigen, nichts abschneiden */
   #ak-wanderer-bild { object-fit: contain; max-height: 58vh; width: auto; max-width: 100%; margin: 0 auto; }
