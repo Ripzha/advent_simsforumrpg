@@ -173,6 +173,9 @@
   .ak-modal-image-rahmen { border: 1px solid var(--cream-tief); border-radius: 8px; padding: 5px; background: #fff8ea; margin-bottom: 16px; }
   .ak-modal-image { width: auto; max-width: 100%; border-radius: 5px; display: block; max-height: 340px; object-fit: contain; margin: 0 auto; cursor: zoom-in; }
   .ak-modal-image-rahmen { position: relative; }
+  .ak-modal-video-rahmen { border: 1px solid var(--cream-tief); border-radius: 8px; padding: 5px; background: #fff8ea; margin-bottom: 16px; }
+  .ak-modal-video-box { position: relative; width: 100%; padding-top: 56.25%; border-radius: 5px; overflow: hidden; background: #0a1220; }
+  .ak-modal-video-box iframe, .ak-modal-video-box video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
   /* Wanderer-Auflösung: Hochformat komplett zeigen, nichts abschneiden */
   #ak-wanderer-bild { object-fit: contain; max-height: 58vh; width: auto; max-width: 100%; margin: 0 auto; }
   .ak-modal-image-rahmen::after { content: "⤢"; position: absolute; right: 11px; bottom: 11px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: rgba(10, 20, 40, 0.72); color: var(--gold-hell); border-radius: 6px; font-size: 14px; pointer-events: none; opacity: 0.85; }
@@ -356,6 +359,9 @@
     <button class="ak-modal-x" aria-label="Schliessen" id="ak-modal-x">×</button>
     <p class="ak-modal-day" id="ak-modal-day"></p>
     <h2 class="ak-modal-title" id="ak-modal-title"></h2>
+    <div class="ak-modal-video-rahmen" id="ak-modal-video-rahmen" style="display:none">
+      <div class="ak-modal-video-box" id="ak-modal-video-box"></div>
+    </div>
     <div class="ak-modal-image-rahmen" id="ak-modal-image-rahmen" style="display:none">
       <img class="ak-modal-image" id="ak-modal-image" alt="">
     </div>
@@ -1222,6 +1228,26 @@
     document.getElementById('ak-modal-next').disabled = idx < 0 || idx >= tage.length - 1;
   }
 
+  // Baut das Einbettungs-Markup: YouTube (alle Link-Formen) oder direkte Videodatei
+  function videoEinbetten(url, posterUrl) {
+    const u = String(url || '').trim();
+    if (!u) return '';
+    let id = '';
+    let m = u.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if (m) id = m[1];
+    else if (/^[A-Za-z0-9_-]{11}$/.test(u)) id = u;   // reine Video-ID im Sheet
+    if (id) {
+      return '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?rel=0&modestbranding=1" '
+        + 'title="Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" '
+        + 'allowfullscreen loading="lazy"></iframe>';
+    }
+    if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(u)) {
+      const poster = posterUrl ? ' poster="' + posterUrl + '"' : '';
+      return '<video controls preload="metadata" playsinline' + poster + ' src="' + u + '"></video>';
+    }
+    return '';
+  }
+
   function showModal(tag) {
     modalState.tag = tag;
     const daten = getTuerData(tag, modalState.tueren);
@@ -1229,8 +1255,21 @@
     document.getElementById('ak-modal-title').textContent = daten.titel || `Türchen ${tag}`;
     const rahmen = document.getElementById('ak-modal-image-rahmen');
     const img = document.getElementById('ak-modal-image');
-    if (daten.bild_url) { img.src = daten.bild_url; img.alt = daten.titel || ''; rahmen.style.display = 'block'; }
-    else { rahmen.style.display = 'none'; img.removeAttribute('src'); }
+    // Video hat Vorrang: wenn video_url gesetzt ist, ersetzt es das Bild im Modal
+    const videoRahmen = document.getElementById('ak-modal-video-rahmen');
+    const videoBox = document.getElementById('ak-modal-video-box');
+    videoBox.innerHTML = '';   // Immer leeren: sonst läuft der Ton beim Weiterblättern weiter
+    const eingebettet = videoEinbetten(daten.video_url, daten.bild_url);
+    if (eingebettet) {
+      videoBox.innerHTML = eingebettet;
+      videoRahmen.style.display = 'block';
+      rahmen.style.display = 'none';
+      img.removeAttribute('src');
+    } else {
+      videoRahmen.style.display = 'none';
+      if (daten.bild_url) { img.src = daten.bild_url; img.alt = daten.titel || ''; rahmen.style.display = 'block'; }
+      else { rahmen.style.display = 'none'; img.removeAttribute('src'); }
+    }
     document.getElementById('ak-modal-text').textContent = daten.text || '';
     const link = document.getElementById('ak-modal-link');
     if (daten.link) {
@@ -1281,6 +1320,11 @@
     const modal = document.getElementById('ak-modal');
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
+    // Video anhalten: iframe/video entfernen, sonst laeuft der Ton im Hintergrund weiter
+    const vBox = document.getElementById('ak-modal-video-box');
+    if (vBox) vBox.innerHTML = '';
+    const vRahmen = document.getElementById('ak-modal-video-rahmen');
+    if (vRahmen) vRahmen.style.display = 'none';
   }
   function modalNav(richtung) {
     const tage = navigierbareTage();
