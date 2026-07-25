@@ -2,12 +2,22 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Lillys Ständchen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+
+  /* --- Touch-Härtung iOS: kein Doppeltipp-Zoom, keine Halte-Auswahl --- */
+  html, body {
+    touch-action: manipulation;
+    -webkit-user-select: none; -moz-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
   :root {
     --nacht: #0a1428;
     --nacht-tief: #060d1c;
@@ -509,6 +519,28 @@
     spielfeld.querySelectorAll('.note').forEach(n => n.remove());
     document.getElementById('screen-intro').classList.remove('hidden');
   };
+})();
+</script>
+<script>
+/* Touch-Härtung iOS: Doppeltipp-Zoom, Pinch und Halte-Menü unterbinden.
+   Betrifft nur das Verhalten des Browsers, nicht die Spielsteuerung. */
+(function(){
+  var letzterTipp = 0;
+  document.addEventListener('touchend', function(e){
+    var jetzt = Date.now();
+    if (jetzt - letzterTipp < 350) e.preventDefault();  // zweiter schneller Tipp -> kein Zoom
+    letzterTipp = jetzt;
+  }, { passive: false });
+  // Pinch-Zoom (zwei Finger) blocken
+  document.addEventListener('touchmove', function(e){
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  // Halte-Menü / Textauswahl / Safari-Gesten
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+  document.addEventListener('gesturechange', function(e){ e.preventDefault(); });
+  document.addEventListener('selectstart', function(e){ e.preventDefault(); });
+  document.addEventListener('dblclick', function(e){ e.preventDefault(); });
 })();
 </script>
 </body>
