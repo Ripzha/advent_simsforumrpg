@@ -505,7 +505,7 @@ body.justiert .thema, body.justiert .binde, body.justiert .monitor {
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v17 · Bildausschnitt je Kachel",
+  fassung: "v18 · Kalender zuckt nicht mehr",
 
   ident: "clips/ElevenLabs_Simswelt_News_Intro.mp4",   // Sender-Ident mit Ton
   clip:  "clips/News_TV_Studio.mp4",                  // Studioaufnahme
@@ -676,9 +676,9 @@ function setzeRahmen(r) {
   function passeFlaecheAn() {
     const r = monitor.getBoundingClientRect();
     if (!r.width || !r.height) return;
-    const b = Math.max(120, Math.round(r.width));
-    const h = Math.max(120, Math.round(r.height));
-    if (c.width !== b || c.height !== h) {
+    const b = Math.max(120, Math.round(r.width  / 4) * 4);
+    const h = Math.max(120, Math.round(r.height / 4) * 4);
+    if (Math.abs(c.width - b) > 3 || Math.abs(c.height - h) > 3) {
       c.width = b; c.height = h;
       B = b; H = h;
     }
@@ -698,25 +698,26 @@ function setzeRahmen(r) {
 
   // Die Seite bekommt exakt das Seitenverhaeltnis des Monitors.
   // Dadurch fuellt sie ihn randlos und nichts wird abgeschnitten.
-  let letzteMasse = "";
-  function passeSeiteEin() {
+  let letzteBreite = 0, letzteHöhe = 0;
+
+  // Nur neu einpassen, wenn sich wirklich etwas aendert. Sonst baut die
+  // eingebettete Seite staendig neu auf und das Bild zuckt.
+  function passeSeiteEin(erzwingen) {
     if (!hatSeite) return;
     const r = monitor.getBoundingClientRect();
     if (!r.width || !r.height) return;
     const z = KONFIG.monitorSeiteZoom || 2.5;
-    const bw = Math.round(r.width  * z);
-    const bh = Math.round(r.height * z);
-    const masse = bw + "x" + bh;
-    if (masse !== letzteMasse) {
-      letzteMasse = masse;
+    const bw = Math.round(r.width  * z / 4) * 4;   // auf 4 Pixel gerundet
+    const bh = Math.round(r.height * z / 4) * 4;
+    if (erzwingen || Math.abs(bw - letzteBreite) > 3 || Math.abs(bh - letzteHöhe) > 3) {
+      letzteBreite = bw; letzteHöhe = bh;
       rahmen.style.width  = bw + "px";
       rahmen.style.height = bh + "px";
+      rahmen.style.transform = "scale(" + (1 / z) + ")";
     }
-    rahmen.style.transform = "scale(" + (1 / z) + ")";
   }
-  window.addEventListener("resize", passeSeiteEin);
-  setInterval(passeSeiteEin, 500);
-  passeSeiteEin();
+  window.addEventListener("resize", function () { passeSeiteEin(true); });
+  passeSeiteEin(true);
 
   // Welcher Eintrag gilt gerade
   function eintragJetzt() {
@@ -819,10 +820,13 @@ function setzeRahmen(r) {
     rahmen.style.opacity = zeigeSeite ? "1" : "0";
 
     // Jeder Eintrag darf eine eigene Groesse haben
-    if (eintrag && eintrag.rahmen && eintrag !== letzterEintrag) {
-      setzeRahmen(eintrag.rahmen);
+    if (eintrag !== letzterEintrag) {
+      if (eintrag && eintrag.rahmen) setzeRahmen(eintrag.rahmen);
+      // Der Kalender wird nur neu eingepasst, wenn er selbst dran ist.
+      // Sonst rechnet er waehrend des Ausblendens noch einmal um.
+      if (eintrag && eintrag.seite) requestAnimationFrame(function () { passeSeiteEin(true); });
+      letzterEintrag = eintrag;
     }
-    letzterEintrag = eintrag;
 
     // Bilder laufen ueber ein eigenes Bildelement, damit nichts verzerrt
     const pfad = (!zeigeSeite && eintrag && eintrag.bild) ? eintrag.bild : "";
