@@ -81,6 +81,7 @@ html, body {
   border: 0; z-index: 1;
   transform-origin: 0 0; pointer-events: none;
   background: #0a1730;
+  opacity: 0; transition: opacity 0.6s ease;
 }
 .monitor .mwort {
   position: absolute; left: 0; right: 0; bottom: 6%; text-align: center;
@@ -497,21 +498,25 @@ const KONFIG = {
   monitorMischung: "normal",  // "normal" = wie ein Bildschirm, "screen" = durchscheinend
   ende:      132.0,    // hier haelt die Sendung an
 
-  /* Der echte Kalender als eingebettete Seite im Studiomonitor.
-     Leer lassen, dann gelten die Bilder aus der Liste darunter.
-     Lokal: "index.html" neben dieser Datei. Online: die volle Adresse.  */
+  /* Der echte Kalender als eingebettete Seite.
+     Lokal und auf GitHub: "index.html" neben dieser Datei.              */
   monitorSeite: "index.html",
-  monitorSeiteBreite: 1500,   // Breite, mit der die Seite gerendert wird
-  monitorSeiteHöhe:   1000,   // Hoehe dazu
+  monitorSeiteBreite:  620,   // Breite, mit der die Seite gerendert wird.
+  monitorSeiteHöhe:   1150,   // Schmal und hoch = der Kalender nutzt sein
+                              // Handy-Layout und passt in den Hochkant-Monitor.
+  monitorSeitePassen: "contain",  // "contain" = alles sichtbar, Raender moeglich
+                                  // "cover"   = formatfuellend, schneidet ab
   monitorSeiteX:        50,   // Ausschnitt verschieben, in Prozent
-  monitorSeiteY:         8,
+  monitorSeiteY:        10,
 
-  /* Studiomonitor links neben Konstanze. Beliebig viele Eintraege,
-     jeder mit eigener Zeit. Ueber Z genauso setzbar wie der Themenkasten.
-     Leere Liste = gezeichnete Ersatzszene mit Schnee.                   */
+  /* Studiomonitor links neben Konstanze.
+     seite: true  zeigt den Kalender
+     bild: "..."  zeigt ein Bild
+     Zeiten ueber Z setzbar, genauso wie beim Themenkasten.              */
   monitor: [
-    { ein:  0.0, aus: 14.0, bild: "bilder/kalender.png" },
-    { ein: 14.0, aus: 30.0, bild: "bilder/kalender-2.png" }
+    { ein:  0.0, aus: 14.4, seite: true },
+    { ein: 14.4, aus: 20.1, bild: "bilder/monitor-2.png" },
+    { ein: 20.1, aus: 30.0, bild: "bilder/artjom-frosch.png" }
   ],
 
   uhrzeit: "20:00",
@@ -624,10 +629,11 @@ KONFIG.strecke.map((x) => x.bild)
   const g = c.getContext("2d");
   const B = c.width, H = c.height;
 
-  // Eingebettete Seite einrichten und formatfuellend einpassen
+  // Eingebettete Seite einrichten
   const rahmen = el("mon-seite");
-  const seiteAn = !!KONFIG.monitorSeite;
-  if (seiteAn) {
+  const hatSeite = !!KONFIG.monitorSeite &&
+    (KONFIG.monitor || []).some(function (m) { return m.seite; });
+  if (hatSeite) {
     rahmen.src = KONFIG.monitorSeite;
     rahmen.style.width  = KONFIG.monitorSeiteBreite + "px";
     rahmen.style.height = KONFIG.monitorSeiteHöhe + "px";
@@ -635,19 +641,30 @@ KONFIG.strecke.map((x) => x.bild)
     rahmen.style.display = "none";
   }
 
+  // Seitenverhaeltnis bleibt erhalten, nur der Massstab aendert sich
   function passeSeiteEin() {
-    if (!seiteAn) return;
+    if (!hatSeite) return;
     const r = monitor.getBoundingClientRect();
     if (!r.width) return;
-    const f = Math.max(r.width / KONFIG.monitorSeiteBreite, r.height / KONFIG.monitorSeiteHöhe);
+    const bx = r.width  / KONFIG.monitorSeiteBreite;
+    const by = r.height / KONFIG.monitorSeiteHöhe;
+    const f = (KONFIG.monitorSeitePassen === "cover") ? Math.max(bx, by) : Math.min(bx, by);
     const bw = KONFIG.monitorSeiteBreite * f, bh = KONFIG.monitorSeiteHöhe * f;
-    const x = -(bw - r.width)  * (KONFIG.monitorSeiteX / 100);
-    const y = -(bh - r.height) * (KONFIG.monitorSeiteY / 100);
+    const x = (r.width  - bw) * (KONFIG.monitorSeiteX / 100);
+    const y = (r.height - bh) * (KONFIG.monitorSeiteY / 100);
     rahmen.style.transform = "translate(" + x + "px," + y + "px) scale(" + f + ")";
   }
   window.addEventListener("resize", passeSeiteEin);
   setInterval(passeSeiteEin, 500);
   passeSeiteEin();
+
+  // Welcher Eintrag gilt gerade
+  function eintragJetzt() {
+    const t = clip.currentTime;
+    return (KONFIG.monitor || []).filter(function (m) {
+      return t >= m.ein && t < m.aus;
+    })[0] || null;
+  }
 
   // Alle Monitorbilder vorladen
   const bilder = {};
@@ -660,13 +677,9 @@ KONFIG.strecke.map((x) => x.bild)
     bilder[m.bild] = v;
   });
 
-  // Welches Bild gehoert zur aktuellen Sekunde
   window.monitorBildJetzt = function () {
-    const t = clip.currentTime;
-    const m = (KONFIG.monitor || []).filter(function (x) {
-      return t >= x.ein && t < x.aus;
-    })[0];
-    if (!m) return null;
+    const m = eintragJetzt();
+    if (!m || !m.bild) return null;
     const v = bilder[m.bild];
     return (v && v.complete && v.naturalWidth) ? v : null;
   };
@@ -741,8 +754,12 @@ KONFIG.strecke.map((x) => x.bild)
 
     g.clearRect(0, 0, B, H);
 
-    const bild = seiteAn ? null : (window.monitorBildJetzt ? window.monitorBildJetzt() : null);
-    if (seiteAn) {
+    const eintrag = eintragJetzt();
+    const zeigeSeite = !!(eintrag && eintrag.seite && hatSeite);
+    rahmen.style.opacity = zeigeSeite ? "1" : "0";
+
+    const bild = zeigeSeite ? null : (window.monitorBildJetzt ? window.monitorBildJetzt() : null);
+    if (zeigeSeite) {
       // Hintergrund kommt aus der eingebetteten Seite, hier nur Schnee
     } else if (bild) {
       const sv = Math.max(B / bild.naturalWidth, H / bild.naturalHeight);
@@ -763,7 +780,7 @@ KONFIG.strecke.map((x) => x.bild)
     g.globalAlpha = 1;
 
     // Leichter Glanz auf der Scheibe
-    if (seiteAn) { requestAnimationFrame(zeichne); return; }
+    if (zeigeSeite) { requestAnimationFrame(zeichne); return; }
     const glanz = g.createLinearGradient(0, 0, B, H);
     glanz.addColorStop(0,    "rgba(255,255,255,0.10)");
     glanz.addColorStop(0.35, "rgba(255,255,255,0)");
@@ -1033,7 +1050,7 @@ function baueZeiten() {
   });
 
   (KONFIG.monitor || []).forEach(function (m, i) {
-    const name = m.bild ? m.bild.split("/").pop().replace(".png", "") : "gezeichnet";
+    const name = m.seite ? "Kalender" : (m.bild ? m.bild.split("/").pop().replace(".png", "") : "gezeichnet");
     const z = document.createElement("div");
     z.className = "zeile"; z.dataset.art = "monitor"; z.dataset.i = String(i);
     z.innerHTML = '<span class="titel">Monitor: ' + name +
@@ -1082,7 +1099,8 @@ function schreibeAusgabe() {
       '", ort: "' + x.ort + '" },';
   }).join("\n");
   const m = (KONFIG.monitor || []).map(function (x) {
-    return '    { ein: ' + x.ein + ', aus: ' + x.aus + ', bild: "' + x.bild + '" },';
+    return '    { ein: ' + x.ein + ', aus: ' + x.aus +
+      (x.seite ? ', seite: true' : ', bild: "' + x.bild + '"') + ' },';
   }).join("\n");
   el("zeiten-text").value =
     "monitor: [\n" + m + "\n  ],\n\n  thema: [\n" + t + "\n  ],\n\n  strecke: [\n" + b + "\n  ]";
