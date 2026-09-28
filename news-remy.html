@@ -505,7 +505,7 @@ body.justiert .thema, body.justiert .binde, body.justiert .monitor {
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v12 · Artjom 0-23.8, danach Kalender",
+  fassung: "v13 · 8.2 Bild · 14.4 Kalender · 20.1 Artjom · 24.3 aus",
 
   ident: "clips/ElevenLabs_Simswelt_News_Intro.mp4",   // Sender-Ident mit Ton
   clip:  "clips/News_TV_Studio.mp4",                  // Studioaufnahme
@@ -537,9 +537,11 @@ const KONFIG = {
      Jeder Eintrag darf eine eigene Groesse haben. Im Ausrichtemodus J
      schiebst du den gerade laufenden Eintrag, C zeigt die Werte.        */
   monitor: [
-    { ein:  0.0, aus: 23.8, bild: "bilder/artjom-frosch.png",
+    { ein:  8.2, aus: 14.4, bild: "bilder/monitor-1.png",
       rahmen: [7.5, 31.2, 41.6, 43.3] },
-    { ein: 23.8, aus: 30.0, seite: true,
+    { ein: 14.4, aus: 20.1, seite: true,
+      rahmen: [7.5, 31.2, 41.6, 43.3] },
+    { ein: 20.1, aus: 24.3, bild: "bilder/artjom-frosch.png",
       rahmen: [7.5, 31.2, 41.6, 43.3] }
   ],
 
