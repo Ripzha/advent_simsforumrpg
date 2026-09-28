@@ -500,7 +500,7 @@ const KONFIG = {
   /* Der echte Kalender als eingebettete Seite im Studiomonitor.
      Leer lassen, dann gelten die Bilder aus der Liste darunter.
      Lokal: "index.html" neben dieser Datei. Online: die volle Adresse.  */
-  monitorSeite: "https://ripzha.github.io/advent/",
+  monitorSeite: "index.html",
   monitorSeiteBreite: 1500,   // Breite, mit der die Seite gerendert wird
   monitorSeiteHöhe:   1000,   // Hoehe dazu
   monitorSeiteX:        50,   // Ausschnitt verschieben, in Prozent
@@ -891,21 +891,47 @@ function starteSendung() {
 
 let identUhr = null;
 
+let identFertig = false;
+
+// Der Schnitt haengt an der tatsaechlichen Abspielzeit des Idents,
+// nicht am Klick. Sonst schneidet eine langsame Leitung mitten hinein.
+function identTakt() {
+  if (identFertig) return;
+  if (ident.currentTime >= KONFIG.identDauer) {
+    identFertig = true;
+    starteSendung();
+    return;
+  }
+  requestAnimationFrame(identTakt);
+}
+
 function start() {
   el("start").classList.add("weg");
+  identFertig = false;
   phaseIdent.classList.remove("fort");
   phaseIdent.classList.add("aktiv");
   ident.currentTime = 0;
+
   const lauf = ident.play();
   if (lauf && lauf.catch) lauf.catch(function () {});
+
+  requestAnimationFrame(identTakt);
+
+  // Notbremse: laeuft der Ident gar nicht an, geht es trotzdem weiter
   clearTimeout(identUhr);
-  identUhr = setTimeout(starteSendung, KONFIG.identDauer * 1000);
+  identUhr = setTimeout(function () {
+    if (!identFertig && ident.currentTime < 0.3) { identFertig = true; starteSendung(); }
+  }, (KONFIG.identDauer + 8) * 1000);
 }
+
+ident.addEventListener("ended", function () {
+  if (!identFertig) { identFertig = true; starteSendung(); }
+});
 
 // Faellt der Ident aus, geht es ohne ihn direkt ins Studio
 ident.addEventListener("error", function () {
   clearTimeout(identUhr);
-  starteSendung();
+  if (!identFertig) { identFertig = true; starteSendung(); }
 });
 
 el("start-knopf").addEventListener("click", start);
@@ -1268,7 +1294,7 @@ document.addEventListener("keydown", function (e) {
   if (e.key === "ArrowLeft")  { e.preventDefault(); springe(clip.currentTime - weite); }
   if (e.key === "r" || e.key === "R") {
     clip.pause();
-    aktiverThema = -1; aktivesBild = -1; inOff = false;
+    aktiverThema = -1; aktivesBild = -1; inOff = false; identFertig = false;
     setzeThema(-1);
     binde.classList.remove("sichtbar");
     ortmarke.classList.remove("sichtbar");
