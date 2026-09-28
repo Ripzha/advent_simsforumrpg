@@ -33,10 +33,10 @@
   --thema-breite: 36.0%;
   --binde-links:   4.5%;
   --binde-unten:  15.0%;
-  --mon-links:    13.0%;
-  --mon-oben:     31.9%;
-  --mon-breite:    9.1%;
-  --mon-höhe:    23.7%;
+  --mon-links:     7.5%;
+  --mon-oben:     31.2%;
+  --mon-breite:   41.6%;
+  --mon-höhe:     43.3%;
 
   --marke: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --eng:   "Barlow Condensed", "Arial Narrow", sans-serif;
@@ -75,7 +75,12 @@ html, body {
   opacity: 0; transition: opacity 0.9s ease;
 }
 .monitor.sichtbar { opacity: var(--mon-deckkraft, 1); }
-.monitor canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 2; }
+.monitor canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 3; }
+.monitor img.mon-bild {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; z-index: 2;
+  opacity: 0; transition: opacity 0.6s ease;
+}
 .monitor iframe {
   position: absolute; top: 0; left: 0;
   border: 0; z-index: 1;
@@ -420,6 +425,7 @@ body.justiert .thema, body.justiert .binde, body.justiert .monitor {
   <!-- Studiomonitor: liegt über dem Video -->
   <div class="monitor" id="monitor">
     <iframe id="mon-seite" title="Adventskalender" scrolling="no" tabindex="-1"></iframe>
+    <img class="mon-bild" id="mon-bild" alt="">
     <canvas id="mon-canvas" width="220" height="580"></canvas>
     <div class="mwort">S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></div>
   </div>
@@ -513,11 +519,10 @@ const KONFIG = {
   /* Der echte Kalender als eingebettete Seite.
      Lokal und auf GitHub: "index.html" neben dieser Datei.              */
   monitorSeite: "index.html",
-  monitorSeiteBreite:  620,   // Breite, mit der die Seite gerendert wird.
-  monitorSeiteHöhe:   1150,   // Schmal und hoch = der Kalender nutzt sein
-                              // Handy-Layout und passt in den Hochkant-Monitor.
-  monitorSeitePassen: "contain",  // "contain" = alles sichtbar, Raender moeglich
-                                  // "cover"   = formatfuellend, schneidet ab
+  monitorSeiteBreite:  500,   // Unter 520 nutzt der Kalender sein Handy-Layout.
+  monitorSeiteHöhe:    900,   // Hoehe, mit der die Seite gerendert wird.
+  monitorSeitePassen: "cover",    // "cover" = fuellt den Monitor, schneidet ab
+                                  // "contain" = alles sichtbar, mit Raendern
   monitorSeiteX:        50,   // Ausschnitt verschieben, in Prozent
   monitorSeiteY:        10,
 
@@ -639,7 +644,23 @@ KONFIG.strecke.map((x) => x.bild)
 (function kalenderMonitor() {
   const c = el("mon-canvas");
   const g = c.getContext("2d");
-  const B = c.width, H = c.height;
+  const bildEl = el("mon-bild");
+  let B = c.width, H = c.height;
+
+  // Die Zeichenflaeche uebernimmt das Seitenverhaeltnis des Monitors,
+  // sonst wird alles Gezeichnete in die Breite oder Hoehe gezogen.
+  function passeFlaecheAn() {
+    const r = monitor.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const b = Math.max(120, Math.round(r.width));
+    const h = Math.max(120, Math.round(r.height));
+    if (c.width !== b || c.height !== h) {
+      c.width = b; c.height = h;
+      B = b; H = h;
+    }
+  }
+  setInterval(passeFlaecheAn, 400);
+  passeFlaecheAn();
 
   // Eingebettete Seite einrichten
   const rahmen = el("mon-seite");
@@ -770,16 +791,17 @@ KONFIG.strecke.map((x) => x.bild)
     const zeigeSeite = !!(eintrag && eintrag.seite && hatSeite);
     rahmen.style.opacity = zeigeSeite ? "1" : "0";
 
-    const bild = zeigeSeite ? null : (window.monitorBildJetzt ? window.monitorBildJetzt() : null);
-    if (zeigeSeite) {
-      // Hintergrund kommt aus der eingebetteten Seite, hier nur Schnee
-    } else if (bild) {
-      const sv = Math.max(B / bild.naturalWidth, H / bild.naturalHeight);
-      const bw = bild.naturalWidth * sv, bh = bild.naturalHeight * sv;
-      g.drawImage(bild, (B - bw) / 2, (H - bh) / 2, bw, bh);
-    } else {
-      szene(t);
+    // Bilder laufen ueber ein eigenes Bildelement, damit nichts verzerrt
+    const pfad = (!zeigeSeite && eintrag && eintrag.bild) ? eintrag.bild : "";
+    if (bildEl.getAttribute("src") !== pfad) {
+      if (pfad) { bildEl.src = pfad; } else { bildEl.removeAttribute("src"); }
     }
+    bildEl.style.opacity = pfad ? "1" : "0";
+
+    if (!zeigeSeite && !pfad) szene(t);
+
+    // Schnee gehoert zum Kalender, nicht ueber Portraets
+    if (!zeigeSeite) { requestAnimationFrame(zeichne); return; }
 
     flocken.forEach((f) => {
       f.y += f.v * dt;
@@ -1232,10 +1254,10 @@ const werte = {
   "--thema-breite": 36.0,
   "--binde-links":   4.5,
   "--binde-unten":  15.0,
-  "--mon-links":    13.0,
-  "--mon-oben":     31.9,
-  "--mon-breite":    9.1,
-  "--mon-höhe":    23.7
+  "--mon-links":     7.5,
+  "--mon-oben":     31.2,
+  "--mon-breite":   41.6,
+  "--mon-höhe":     43.3
 };
 const schlüssel = Object.keys(werte);
 let zielIndex = 0;
