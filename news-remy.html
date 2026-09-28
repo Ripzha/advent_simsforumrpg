@@ -530,10 +530,14 @@ const KONFIG = {
      seite: true  zeigt den Kalender
      bild: "..."  zeigt ein Bild
      Zeiten ueber Z setzbar, genauso wie beim Themenkasten.              */
+  /* rahmen: [links, oben, breite, hoehe] in Prozent der Buehne.
+     Jeder Eintrag darf eine eigene Groesse haben. Im Ausrichtemodus J
+     schiebst du den gerade laufenden Eintrag, C zeigt die Werte.        */
   monitor: [
-    { ein:  0.0, aus: 14.4, seite: true },
-    { ein: 14.4, aus: 20.1, bild: "bilder/monitor-2.png" },
-    { ein: 20.1, aus: 30.0, bild: "bilder/artjom-frosch.png" }
+    { ein:  0.0, aus: 20.1, seite: true,
+      rahmen: [7.5, 31.2, 41.6, 43.3] },
+    { ein: 20.1, aus: 30.0, bild: "bilder/artjom-frosch.png",
+      rahmen: [7.5, 31.2, 41.6, 43.3] }
   ],
 
   uhrzeit: "20:00",
@@ -636,6 +640,15 @@ KONFIG.strecke.map((x) => x.bild)
   .concat(KONFIG.thema.reduce((a, t) => a.concat(t.bilder), []))
   .forEach((pfad) => { const v = new Image(); v.src = pfad; });
 
+// Setzt die vier Monitorwerte auf einmal
+function setzeRahmen(r) {
+  const namen = ["--mon-links", "--mon-oben", "--mon-breite", "--mon-höhe"];
+  namen.forEach(function (n, i) {
+    document.documentElement.style.setProperty(n, r[i].toFixed(1) + "%");
+    if (typeof werte !== "undefined") werte[n] = r[i];
+  });
+}
+
 /* ===================================================================
    Studiomonitor: Adventskalender mit fallendem Schnee
    Ist KONFIG.monitorBild gesetzt, wird dieses Bild gezeigt und der
@@ -645,6 +658,8 @@ KONFIG.strecke.map((x) => x.bild)
   const c = el("mon-canvas");
   const g = c.getContext("2d");
   const bildEl = el("mon-bild");
+  bildEl.addEventListener("error", function () { bildEl.style.opacity = "0"; });
+  let letzterEintrag = null;
   let B = c.width, H = c.height;
 
   // Die Zeichenflaeche uebernimmt das Seitenverhaeltnis des Monitors,
@@ -790,6 +805,12 @@ KONFIG.strecke.map((x) => x.bild)
     const eintrag = eintragJetzt();
     const zeigeSeite = !!(eintrag && eintrag.seite && hatSeite);
     rahmen.style.opacity = zeigeSeite ? "1" : "0";
+
+    // Jeder Eintrag darf eine eigene Groesse haben
+    if (eintrag && eintrag.rahmen && eintrag !== letzterEintrag) {
+      setzeRahmen(eintrag.rahmen);
+    }
+    letzterEintrag = eintrag;
 
     // Bilder laufen ueber ein eigenes Bildelement, damit nichts verzerrt
     const pfad = (!zeigeSeite && eintrag && eintrag.bild) ? eintrag.bild : "";
@@ -1134,7 +1155,9 @@ function schreibeAusgabe() {
   }).join("\n");
   const m = (KONFIG.monitor || []).map(function (x) {
     return '    { ein: ' + x.ein + ', aus: ' + x.aus +
-      (x.seite ? ', seite: true' : ', bild: "' + x.bild + '"') + ' },';
+      (x.seite ? ', seite: true' : ', bild: "' + x.bild + '"') +
+      (x.rahmen ? ',\n      rahmen: [' + x.rahmen.map(function (n) { return n.toFixed(1); }).join(", ") + ']' : '') +
+      ' },';
   }).join("\n");
   el("zeiten-text").value =
     "monitor: [\n" + m + "\n  ],\n\n  thema: [\n" + t + "\n  ],\n\n  strecke: [\n" + b + "\n  ]";
@@ -1278,6 +1301,18 @@ function zeichneJustier() {
 function setzeWert(k, v) {
   werte[k] = v;
   document.documentElement.style.setProperty(k, v.toFixed(1) + "%");
+
+  // Aenderungen am Monitor landen im gerade laufenden Eintrag
+  if (k.indexOf("--mon-") === 0) {
+    const t = clip.currentTime;
+    const e = (KONFIG.monitor || []).filter(function (m) { return t >= m.ein && t < m.aus; })[0];
+    if (e) {
+      if (!e.rahmen) e.rahmen = [werte["--mon-links"], werte["--mon-oben"],
+                                 werte["--mon-breite"], werte["--mon-höhe"]];
+      const i = ["--mon-links", "--mon-oben", "--mon-breite", "--mon-höhe"].indexOf(k);
+      if (i >= 0) e.rahmen[i] = v;
+    }
+  }
 }
 
 // Das gerade gewaehlte Element gruen umranden, die anderen messingfarben
