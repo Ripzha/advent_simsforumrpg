@@ -519,12 +519,12 @@ const KONFIG = {
   /* Der echte Kalender als eingebettete Seite.
      Lokal und auf GitHub: "index.html" neben dieser Datei.              */
   monitorSeite: "index.html",
-  monitorSeiteBreite:  500,   // Unter 520 nutzt der Kalender sein Handy-Layout.
-  monitorSeiteHöhe:    900,   // Hoehe, mit der die Seite gerendert wird.
-  monitorSeitePassen: "cover",    // "cover" = fuellt den Monitor, schneidet ab
-                                  // "contain" = alles sichtbar, mit Raendern
-  monitorSeiteX:        50,   // Ausschnitt verschieben, in Prozent
-  monitorSeiteY:        10,
+  /* Der Kalender wird immer genau im Seitenverhaeltnis des Monitors
+     gerendert, dadurch wird nichts beschnitten und nichts verzerrt.
+     Die Zahl sagt, wie gross die Seite dabei gedacht wird:
+     2.5 = zweieinhalbmal so gross wie der Monitor, dann verkleinert.
+     Groesser = mehr Inhalt und kleinere Schrift, kleiner = umgekehrt.  */
+  monitorSeiteZoom: 2.6,
 
   /* Studiomonitor links neben Konstanze.
      seite: true  zeigt den Kalender
@@ -534,9 +534,9 @@ const KONFIG = {
      Jeder Eintrag darf eine eigene Groesse haben. Im Ausrichtemodus J
      schiebst du den gerade laufenden Eintrag, C zeigt die Werte.        */
   monitor: [
-    { ein:  0.0, aus: 20.1, seite: true,
+    { ein:  0.0, aus: 23.8, bild: "bilder/artjom-frosch.png",
       rahmen: [7.5, 31.2, 41.6, 43.3] },
-    { ein: 20.1, aus: 30.0, bild: "bilder/artjom-frosch.png",
+    { ein: 23.8, aus: 30.0, seite: true,
       rahmen: [7.5, 31.2, 41.6, 43.3] }
   ],
 
@@ -683,24 +683,27 @@ function setzeRahmen(r) {
     (KONFIG.monitor || []).some(function (m) { return m.seite; });
   if (hatSeite) {
     rahmen.src = KONFIG.monitorSeite;
-    rahmen.style.width  = KONFIG.monitorSeiteBreite + "px";
-    rahmen.style.height = KONFIG.monitorSeiteHöhe + "px";
   } else {
     rahmen.style.display = "none";
   }
 
-  // Seitenverhaeltnis bleibt erhalten, nur der Massstab aendert sich
+  // Die Seite bekommt exakt das Seitenverhaeltnis des Monitors.
+  // Dadurch fuellt sie ihn randlos und nichts wird abgeschnitten.
+  let letzteMasse = "";
   function passeSeiteEin() {
     if (!hatSeite) return;
     const r = monitor.getBoundingClientRect();
-    if (!r.width) return;
-    const bx = r.width  / KONFIG.monitorSeiteBreite;
-    const by = r.height / KONFIG.monitorSeiteHöhe;
-    const f = (KONFIG.monitorSeitePassen === "cover") ? Math.max(bx, by) : Math.min(bx, by);
-    const bw = KONFIG.monitorSeiteBreite * f, bh = KONFIG.monitorSeiteHöhe * f;
-    const x = (r.width  - bw) * (KONFIG.monitorSeiteX / 100);
-    const y = (r.height - bh) * (KONFIG.monitorSeiteY / 100);
-    rahmen.style.transform = "translate(" + x + "px," + y + "px) scale(" + f + ")";
+    if (!r.width || !r.height) return;
+    const z = KONFIG.monitorSeiteZoom || 2.5;
+    const bw = Math.round(r.width  * z);
+    const bh = Math.round(r.height * z);
+    const masse = bw + "x" + bh;
+    if (masse !== letzteMasse) {
+      letzteMasse = masse;
+      rahmen.style.width  = bw + "px";
+      rahmen.style.height = bh + "px";
+    }
+    rahmen.style.transform = "scale(" + (1 / z) + ")";
   }
   window.addEventListener("resize", passeSeiteEin);
   setInterval(passeSeiteEin, 500);
