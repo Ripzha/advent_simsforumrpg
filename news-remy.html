@@ -468,7 +468,8 @@ body.justiert .thema, body.justiert .binde, body.justiert .monitor {
     <span class="spur2" id="leiste-spur"><span class="fuell" id="leiste-fuell"></span></span>
     <button id="knopf-ident" title="Ident-Video auswaehlen">Ident…</button>
     <button id="knopf-studio" title="Studio-Video auswaehlen">Studio…</button>
-    <span class="hinweis">M Monitorlupe · Z Zeiten · J ausrichten · T ausblenden</span>
+    <span class="hinweis" id="fassung"></span>
+    <span class="hinweis">M Lupe · Z Zeiten · J ausrichten · T ausblenden</span>
   </div>
 
   <div class="zeiten" id="zeiten">
@@ -503,6 +504,8 @@ body.justiert .thema, body.justiert .binde, body.justiert .monitor {
    KONFIG
    =================================================================== */
 const KONFIG = {
+
+  fassung: "v12 · Artjom 0-23.8, danach Kalender",
 
   ident: "clips/ElevenLabs_Simswelt_News_Intro.mp4",   // Sender-Ident mit Ton
   clip:  "clips/News_TV_Studio.mp4",                  // Studioaufnahme
@@ -608,6 +611,7 @@ let aktivesBild  = -1;
 let inOff = false;
 
 el("uhr").textContent         = KONFIG.uhrzeit;
+el("fassung").textContent     = KONFIG.fassung;
 document.documentElement.style.setProperty("--mon-deckkraft", String(KONFIG.monitorDeckkraft));
 monitor.style.mixBlendMode = KONFIG.monitorMischung || "normal";
 el("binde-name").textContent  = KONFIG.binde.name;
@@ -1108,7 +1112,7 @@ function baueZeiten() {
   });
 
   (KONFIG.monitor || []).forEach(function (m, i) {
-    const name = m.seite ? "Kalender" : (m.bild ? m.bild.split("/").pop().replace(".png", "") : "gezeichnet");
+    const name = m.seite ? "Kalender (Seite)" : (m.bild ? m.bild.split("/").pop().replace(".png", "") : "gezeichnete Szene");
     const z = document.createElement("div");
     z.className = "zeile"; z.dataset.art = "monitor"; z.dataset.i = String(i);
     z.innerHTML = '<span class="titel">Monitor: ' + name +
