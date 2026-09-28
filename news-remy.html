@@ -306,6 +306,18 @@ html, body {
 }
 .leiste button:hover { background: var(--weiss); }
 
+/* ---------- Monitor-Lupe: M zeigt den Monitorinhalt gross ---------- */
+body.lupe .monitor {
+  left: 50% !important; top: 50% !important;
+  width: auto !important; height: 84% !important;
+  aspect-ratio: var(--mon-verhaeltnis, 620 / 1150);
+  transform: translate(-50%, -50%);
+  opacity: 1 !important;
+  z-index: 93;
+  outline: 3px solid var(--messing);
+  box-shadow: 0 0 0 9999px rgba(4,10,20,0.88);
+}
+
 /* ---------- Ziehen und Groesse aendern ---------- */
 body.justiert .thema, body.justiert .binde, body.justiert .monitor { cursor: move; }
 .griff {
@@ -450,7 +462,7 @@ body.justiert .thema, body.justiert .binde, body.justiert .monitor {
     <span class="spur2" id="leiste-spur"><span class="fuell" id="leiste-fuell"></span></span>
     <button id="knopf-ident" title="Ident-Video auswaehlen">Ident…</button>
     <button id="knopf-studio" title="Studio-Video auswaehlen">Studio…</button>
-    <span class="hinweis">Z setzt Zeiten · J richtet aus · T blendet aus</span>
+    <span class="hinweis">M Monitorlupe · Z Zeiten · J ausrichten · T ausblenden</span>
   </div>
 
   <div class="zeiten" id="zeiten">
@@ -1300,6 +1312,14 @@ document.addEventListener("keydown", function (e) {
     e.preventDefault();
     const m = (phaseIdent.classList.contains("aktiv") && !phaseIdent.classList.contains("fort")) ? ident : clip;
     m.paused ? m.play() : m.pause();
+  }
+  if (e.key === "m" || e.key === "M") {
+    e.preventDefault();
+    document.documentElement.style.setProperty("--mon-verhaeltnis",
+      KONFIG.monitorSeiteBreite + " / " + KONFIG.monitorSeiteHöhe);
+    document.body.classList.toggle("lupe");
+    monitor.classList.add("sichtbar");
+    return;
   }
   if (e.key === "z" || e.key === "Z") { e.preventDefault(); zeitenUm(); return; }
   if (e.key === "t" || e.key === "T") {
