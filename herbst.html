@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adventskalender - Herbst und Zeit zu zweit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=EB+Garamond:wght@400;500&family=Playfair+Display:ital,wght@0,500;1,500&family=Lora:wght@400;500&display=swap">
+<style>
+  :root {
+    --papier: #fbf5e9;
+    --amber: #b9784a;
+    --tinte: #2e241c;
+    --nacht: #16202f;
+    --rahmen-kalt: #3c5273;
+  }
+
+  * { box-sizing: border-box; }
+
+  /* Browser geben h1 einen grossen Aussenabstand - der wuerde die Blatthoehe sprengen */
+  h1 { margin: 0; }
+
+  body {
+    margin: 0;
+    padding: 16px;
+    background: #e9e4da;
+    font-family: 'EB Garamond', Georgia, serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+
+  .halter { width: 559px; max-width: 100%; }
+
+  .buehne {
+    position: relative;
+    width: 559px;
+    height: 794px;
+    transform-origin: top center;
+  }
+
+  /* Die beiden Blaetter liegen uebereinander, nur eines ist sichtbar */
+  .blatt {
+    position: absolute;
+    inset: 0;
+    width: 559px;
+    height: 794px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(26px);
+    transition: opacity 0.55s ease, transform 0.55s ease, visibility 0s linear 0.55s;
+    box-shadow: 0 10px 30px rgba(40, 30, 20, 0.18);
+  }
+
+  .blatt.aktiv {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 0.55s ease, transform 0.55s ease, visibility 0s;
+  }
+
+  .blatt.zurueck { transform: translateX(-26px); }
+  .blatt.zurueck.aktiv { transform: none; }
+
+  /* ---------- Blatt 1: Herbst ---------- */
+  .herbst {
+    background: var(--papier);
+    padding: 24px;
+    font-family: 'EB Garamond', Georgia, serif;
+  }
+
+  .herbst-aussen { height: 100%; border: 1px solid var(--amber); padding: 5px; }
+
+  .herbst-innen {
+    position: relative;
+    height: 100%;
+    border: 1px solid var(--amber);
+    padding: 40px 44px 34px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+  }
+
+  .laubfall { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+
+  .fall {
+    position: absolute;
+    top: -48px;
+    display: block;
+    animation-name: blattfall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .sway {
+    display: block;
+    animation-name: blattschwung;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+
+  @keyframes blattfall {
+    from { transform: translateY(0); }
+    to { transform: translateY(860px); }
+  }
+
+  @keyframes blattschwung {
+    from { transform: translateX(-16px) rotate(-30deg); }
+    to { transform: translateX(16px) rotate(42deg); }
+  }
+
+  .ecke { position: absolute; }
+  .ecke-oben { top: 16px; left: 16px; transform: rotate(-24deg); }
+  .ecke-unten { bottom: 16px; right: 16px; transform: rotate(156deg); }
+
+  .kopf { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
+  .herbst .kopf { gap: 16px; }
+
+  .titelblock { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+
+  .augenbraue {
+    font-size: 11px;
+    letter-spacing: 4.5px;
+    text-transform: uppercase;
+    color: #6e5138;
+  }
+
+  .herbst-titel {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 52px;
+    font-weight: 500;
+    line-height: 1.1;
+    color: #5a3a22;
+  }
+
+  .vers { position: relative; z-index: 1; display: flex; flex-direction: column; }
+  .herbst .vers { gap: 13px; font-size: 19px; line-height: 1.6; color: var(--tinte); }
+
+  /* ---------- Blatt 2: Zeit zu zweit ---------- */
+  .winter {
+    background: var(--nacht);
+    padding: 26px;
+    font-family: 'Lora', Georgia, serif;
+  }
+
+  .winter-innen {
+    position: relative;
+    height: 100%;
+    border: 1px solid var(--rahmen-kalt);
+    padding: 44px 46px 34px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+  }
+
+  .schnee { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+
+  .flocke {
+    position: absolute;
+    top: -16px;
+    display: block;
+    animation-name: flockenfall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  .drift {
+    display: block;
+    animation-name: flockendrift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+
+  .punkt { display: block; border-radius: 50%; }
+
+  @keyframes flockenfall {
+    from { transform: translateY(0); }
+    to { transform: translateY(820px); }
+  }
+
+  @keyframes flockendrift {
+    from { transform: translateX(-13px); }
+    to { transform: translateX(13px); }
+  }
+
+  .flamme {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation-name: flackern;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+
+  .schein {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation-name: leuchten;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+
+  @keyframes flackern {
+    0% { transform: scale(1, 1) translateX(0); opacity: 0.94; }
+    35% { transform: scale(0.9, 1.1) translateX(-0.6px); opacity: 1; }
+    70% { transform: scale(1.06, 0.93) translateX(0.5px); opacity: 0.88; }
+    100% { transform: scale(0.96, 1.04) translateX(-0.2px); opacity: 0.97; }
+  }
+
+  @keyframes leuchten {
+    from { transform: scale(0.94); opacity: 0.5; }
+    to { transform: scale(1.09); opacity: 0.78; }
+  }
+
+  .winter .kopf { gap: 10px; }
+
+  .winter-titel {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-size: 46px;
+    font-weight: 500;
+    line-height: 1.15;
+    color: #f6ecd9;
+  }
+
+  .winter .titelblock { gap: 12px; }
+  .winter .vers { gap: 13px; font-size: 19px; line-height: 1.62; color: #e9dfcd; }
+
+  /* ---------- Knoepfe ---------- */
+  .knopf {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    min-height: 46px;
+    padding: 0 30px;
+    border-radius: 23px;
+    background: none;
+    font-size: 17px;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.25s ease;
+  }
+
+  .knopf-warm {
+    border: 1px solid var(--amber);
+    font-family: 'EB Garamond', Georgia, serif;
+    color: #6e4326;
+  }
+
+  .knopf-warm:hover { background: #f3e7d6; }
+
+  .knopf-kalt {
+    border: 1px solid #7b93b5;
+    font-family: 'Lora', Georgia, serif;
+    font-size: 16px;
+    color: #f0e4d0;
+  }
+
+  .knopf-kalt:hover { background: rgba(240, 228, 208, 0.1); }
+
+  .knopf:focus-visible { outline: 2px solid #8a5a34; outline-offset: 3px; }
+  .knopf-kalt:focus-visible { outline-color: #cfe0f2; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fall, .sway, .flocke, .drift, .flamme, .schein { animation: none; }
+    .blatt { transition: opacity 0.2s ease; }
+  }
+</style>
+</head>
+<body>
+
+<div class="halter">
+<div class="buehne" id="buehne">
+
+  <!-- ================= Blatt 1: Herbst ================= -->
+  <section class="blatt herbst aktiv" id="blatt-1" aria-label="Blatt 1: Herbst">
+    <div class="herbst-aussen">
+      <div class="herbst-innen">
+
+        <div class="laubfall" aria-hidden="true">
+          <span class="fall" style="left: 6%; animation-duration: 14s; animation-delay: 0s"><span class="sway" style="animation-duration: 3.4s"><svg width="15" height="22" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#c96f2e" fill-opacity="0.5"/><path d="M12 6V35" stroke="#8a4a20" stroke-opacity="0.4" stroke-width="1.4"/></svg></span></span>
+          <span class="fall" style="left: 19%; animation-duration: 19s; animation-delay: 5s"><span class="sway" style="animation-duration: 4.6s"><svg width="11" height="17" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#a8452a" fill-opacity="0.42"/><path d="M12 6V35" stroke="#7a3318" stroke-opacity="0.35" stroke-width="1.4"/></svg></span></span>
+          <span class="fall" style="left: 31%; animation-duration: 16s; animation-delay: 9s"><span class="sway" style="animation-duration: 3.9s"><svg width="18" height="26" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#d99a3f" fill-opacity="0.45"/><path d="M12 6V35" stroke="#93692a" stroke-opacity="0.4" stroke-width="1.4"/></svg></span></span>
+          <span class="fall" style="left: 43%; animation-duration: 22s; animation-delay: 2s"><span class="sway" style="animation-duration: 5.2s"><svg width="12" height="19" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#8c6a3f" fill-opacity="0.4"/><path d="M12 6V35" stroke="#5f4726" stroke-opacity="0.35" stroke-width="1.4"/></svg></span></span>
+          <span class="fall" style="left: 54%; animation-duration: 15s; animation-delay: 12s"><span class="sway" style="animation-duration: 3.1s"><svg width="16" height="24" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#b9784a" fill-opacity="0.48"/><path d="M12 6V35" stroke="#7f4d27" stroke-opacity="0.4" stroke-width="1.4"/></svg></span></span>
+          <span class="fall" style="left: 65%; animation-duration: 18s; animation-delay: 7s"><span class="sway" style="animation-duration: 4.2s"><svg width="13" height="20" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#c96f2e" fill-opacity="0.42"/><path d="M12 6V35" stroke="#8a4a20" stroke-opacity="0.35" stroke-width="1.4"/></svg></span></span>
+          <span class="fall" style="left: 76%; animation-duration: 21s; animation-delay: 15s"><span class="sway" style="animation-duration: 4.9s"><svg width="17" height="25" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#a8452a" fill-opacity="0.4"/><path d="M12 6V35" stroke="#7a3318" stroke-opacity="0.35" stroke-width="1.4"/></svg></span></span>
+          <span class="fall" style="left: 87%; animation-duration: 17s; animation-delay: 3s"><span class="sway" style="animation-duration: 3.6s"><svg width="12" height="18" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#d99a3f" fill-opacity="0.45"/><path d="M12 6V35" stroke="#93692a" stroke-opacity="0.4" stroke-width="1.4"/></svg></span></span>
+          <span class="fall" style="left: 12%; animation-duration: 24s; animation-delay: 18s"><span class="sway" style="animation-duration: 5.6s"><svg width="14" height="21" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#8c6a3f" fill-opacity="0.38"/><path d="M12 6V35" stroke="#5f4726" stroke-opacity="0.35" stroke-width="1.4"/></svg></span></span>
+          <span class="fall" style="left: 69%; animation-duration: 26s; animation-delay: 21s"><span class="sway" style="animation-duration: 6.1s"><svg width="10" height="16" viewBox="0 0 24 40" fill="none"><path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z" fill="#b9784a" fill-opacity="0.4"/><path d="M12 6V35" stroke="#7f4d27" stroke-opacity="0.35" stroke-width="1.4"/></svg></span></span>
+        </div>
+
+        <svg class="ecke ecke-oben" width="24" height="40" viewBox="0 0 24 40" fill="none" stroke="#b9784a" stroke-width="1" aria-hidden="true">
+          <path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z"/>
+          <path d="M12 6V35"/>
+          <path d="M12 13L6.8 10"/>
+          <path d="M12 13L17.2 10"/>
+          <path d="M12 20L6.5 17"/>
+          <path d="M12 20L17.5 17"/>
+          <path d="M12 27L7.5 24.5"/>
+          <path d="M12 27L16.5 24.5"/>
+        </svg>
+
+        <svg class="ecke ecke-unten" width="24" height="40" viewBox="0 0 24 40" fill="none" stroke="#b9784a" stroke-width="1" aria-hidden="true">
+          <path d="M12 2C4 11 4 27 12 38 20 27 20 11 12 2Z"/>
+          <path d="M12 6V35"/>
+          <path d="M12 13L6.8 10"/>
+          <path d="M12 13L17.2 10"/>
+          <path d="M12 20L6.5 17"/>
+          <path d="M12 20L17.5 17"/>
+          <path d="M12 27L7.5 24.5"/>
+          <path d="M12 27L16.5 24.5"/>
+        </svg>
+
+        <div class="kopf">
+          <svg width="64" height="34" viewBox="0 0 64 34" fill="none" stroke="#b9784a" stroke-width="1" aria-hidden="true">
+            <path d="M32 33V14"/>
+            <path d="M32 22C24 22 19 18 18 12 25 11 30 15 32 22Z"/>
+            <path d="M32 22C40 22 45 18 46 12 39 11 34 15 32 22Z"/>
+            <path d="M32 16C28 10 29 4 32 1 35 4 36 10 32 16Z"/>
+          </svg>
+          <div class="titelblock">
+            <div class="augenbraue">Jahreszeit</div>
+            <h1 class="herbst-titel">Herbst</h1>
+            <svg width="72" height="7" viewBox="0 0 72 7" fill="none" stroke="#b9784a" stroke-width="1" aria-hidden="true">
+              <path d="M0 3.5H28"/>
+              <path d="M44 3.5H72"/>
+              <path d="M36 0.5L39 3.5L36 6.5L33 3.5Z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="vers">
+          <div><div>Es wird kälter,</div><div>Lauf der Zeit.</div></div>
+          <div><div>Blätter fallen,</div><div>ist soweit.</div></div>
+          <div><div>Bald kommt Frost,</div><div>dann fällt Schnee.</div></div>
+          <div><div>Freu mich drauf,</div><div>wenn ich ihn seh’.</div></div>
+          <div><div>Toben, tollen,</div><div>kalt und warm.</div></div>
+          <div><div>Und später schauen –</div><div>Arm in Arm.</div></div>
+        </div>
+
+        <button type="button" class="knopf knopf-warm" data-ziel="2">
+          Weiter
+          <svg width="20" height="10" viewBox="0 0 20 10" fill="none" stroke="#6e4326" stroke-width="1.2" stroke-linecap="round" aria-hidden="true">
+            <path d="M0 5H18"/>
+            <path d="M14 1L18 5L14 9"/>
+          </svg>
+        </button>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Blatt 2: Zeit zu zweit ================= -->
+  <section class="blatt winter zurueck" id="blatt-2" aria-label="Blatt 2: Zeit zu zweit">
+    <div class="winter-innen">
+
+      <div class="schnee" aria-hidden="true">
+        <span class="flocke" style="left: 4%; animation-duration: 15s; animation-delay: 0s"><span class="drift" style="animation-duration: 4.2s"><span class="punkt" style="width: 4px; height: 4px; background: #dce7f5; opacity: 0.72"></span></span></span>
+        <span class="flocke" style="left: 12%; animation-duration: 22s; animation-delay: 7s"><span class="drift" style="animation-duration: 5.6s"><span class="punkt" style="width: 3px; height: 3px; background: #c9d8ec; opacity: 0.58"></span></span></span>
+        <span class="flocke" style="left: 21%; animation-duration: 18s; animation-delay: 13s"><span class="drift" style="animation-duration: 3.8s"><span class="punkt" style="width: 5px; height: 5px; background: #e6eefa; opacity: 0.8"></span></span></span>
+        <span class="flocke" style="left: 29%; animation-duration: 26s; animation-delay: 3s"><span class="drift" style="animation-duration: 6.4s"><span class="punkt" style="width: 3px; height: 3px; background: #c9d8ec; opacity: 0.5"></span></span></span>
+        <span class="flocke" style="left: 37%; animation-duration: 20s; animation-delay: 18s"><span class="drift" style="animation-duration: 4.9s"><span class="punkt" style="width: 4px; height: 4px; background: #dce7f5; opacity: 0.68"></span></span></span>
+        <span class="flocke" style="left: 46%; animation-duration: 29s; animation-delay: 9s"><span class="drift" style="animation-duration: 7.1s"><span class="punkt" style="width: 2px; height: 2px; background: #b8cbe4; opacity: 0.55"></span></span></span>
+        <span class="flocke" style="left: 54%; animation-duration: 17s; animation-delay: 22s"><span class="drift" style="animation-duration: 4.4s"><span class="punkt" style="width: 5px; height: 5px; background: #e6eefa; opacity: 0.75"></span></span></span>
+        <span class="flocke" style="left: 62%; animation-duration: 24s; animation-delay: 5s"><span class="drift" style="animation-duration: 5.9s"><span class="punkt" style="width: 3px; height: 3px; background: #c9d8ec; opacity: 0.6"></span></span></span>
+        <span class="flocke" style="left: 71%; animation-duration: 19s; animation-delay: 15s"><span class="drift" style="animation-duration: 4.1s"><span class="punkt" style="width: 4px; height: 4px; background: #dce7f5; opacity: 0.7"></span></span></span>
+        <span class="flocke" style="left: 79%; animation-duration: 31s; animation-delay: 26s"><span class="drift" style="animation-duration: 7.6s"><span class="punkt" style="width: 2px; height: 2px; background: #b8cbe4; opacity: 0.5"></span></span></span>
+        <span class="flocke" style="left: 87%; animation-duration: 21s; animation-delay: 11s"><span class="drift" style="animation-duration: 5.2s"><span class="punkt" style="width: 5px; height: 5px; background: #e6eefa; opacity: 0.76"></span></span></span>
+        <span class="flocke" style="left: 95%; animation-duration: 27s; animation-delay: 1s"><span class="drift" style="animation-duration: 6.7s"><span class="punkt" style="width: 3px; height: 3px; background: #c9d8ec; opacity: 0.56"></span></span></span>
+        <span class="flocke" style="left: 17%; animation-duration: 34s; animation-delay: 29s"><span class="drift" style="animation-duration: 8.2s"><span class="punkt" style="width: 2px; height: 2px; background: #b8cbe4; opacity: 0.45"></span></span></span>
+        <span class="flocke" style="left: 66%; animation-duration: 33s; animation-delay: 20s"><span class="drift" style="animation-duration: 7.9s"><span class="punkt" style="width: 3px; height: 3px; background: #c9d8ec; opacity: 0.48"></span></span></span>
+      </div>
+
+      <div class="kopf">
+        <svg width="122" height="92" viewBox="0 -20 122 92" fill="none" aria-hidden="true">
+          <circle class="schein" cx="44" cy="14" r="23" fill="#e2a857" fill-opacity="0.15" style="animation-duration: 3.1s"/>
+          <circle class="schein" cx="80" cy="6" r="20" fill="#e2a857" fill-opacity="0.15" style="animation-duration: 3.9s"/>
+          <path d="M36 30h16v40h-16z" fill="#efe3cd" fill-opacity="0.9"/>
+          <path d="M72 22h16v48h-16z" fill="#efe3cd" fill-opacity="0.78"/>
+          <path d="M36 30h16v4h-16z" fill="#cbb896"/>
+          <path d="M72 22h16v4h-16z" fill="#cbb896"/>
+          <path d="M44 30v-4" stroke="#6d5a3d" stroke-width="1.4"/>
+          <path d="M80 22v-4" stroke="#6d5a3d" stroke-width="1.4"/>
+          <path class="flamme" d="M44 8c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z" fill="#f0b45c" style="animation-duration: 2.4s"/>
+          <path class="flamme" d="M80 0c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z" fill="#f0b45c" style="animation-duration: 3.2s; animation-delay: 0.7s"/>
+          <path class="flamme" d="M44 13c2 2 3 3.4 3 5a3 3 0 0 1-6 0c0-1.6 1-3 3-5z" fill="#fce6b4" style="animation-duration: 2.4s"/>
+          <path class="flamme" d="M80 5c2 2 3 3.4 3 5a3 3 0 0 1-6 0c0-1.6 1-3 3-5z" fill="#fce6b4" style="animation-duration: 3.2s; animation-delay: 0.7s"/>
+        </svg>
+        <div class="titelblock">
+          <h1 class="winter-titel">Zeit zu zweit</h1>
+          <svg width="86" height="10" viewBox="0 0 86 10" fill="none" stroke="#7b93b5" stroke-width="1" stroke-linecap="round" aria-hidden="true">
+            <path d="M0 5H32"/>
+            <path d="M54 5H86"/>
+            <path d="M43 0.5V9.5"/>
+            <path d="M39 2.2L47 7.8"/>
+            <path d="M47 2.2L39 7.8"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="vers">
+        <div><div>Wir frieren schon</div><div>und doch ist warm.</div></div>
+        <div><div>Ist Kuschelzeit,</div><div>in deinem Arm.</div></div>
+        <div><div>Bäume kahl,</div><div>Laub verweht.</div></div>
+        <div><div>Wie schnell manchmal,</div><div>die Zeit vergeht.</div></div>
+        <div><div>Wir warten nun,</div><div>auf Schnee und mehr.</div></div>
+        <div><div>Dann wirkt die Welt,</div><div>nicht mehr kalt und leer.</div></div>
+      </div>
+
+      <button type="button" class="knopf knopf-kalt" data-ziel="1">
+        <svg width="20" height="10" viewBox="0 0 20 10" fill="none" stroke="#f0e4d0" stroke-width="1.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M20 5H2"/>
+          <path d="M6 1L2 5L6 9"/>
+        </svg>
+        Zurück
+      </button>
+
+    </div>
+  </section>
+
+</div>
+</div>
+
+<script>
+  // Umblaettern: nur ein Blatt ist sichtbar, die Knoepfe tauschen es aus.
+  var blaetter = document.querySelectorAll('.blatt');
+
+  function zeigeBlatt(nummer) {
+    blaetter.forEach(function (blatt) {
+      blatt.classList.toggle('aktiv', blatt.id === 'blatt-' + nummer);
+    });
+  }
+
+  document.querySelectorAll('.knopf').forEach(function (knopf) {
+    knopf.addEventListener('click', function () {
+      zeigeBlatt(knopf.dataset.ziel);
+    });
+  });
+
+  // Das Blatt hat feste A5-Masse; auf kleinen Schirmen wird es passend verkleinert.
+  var buehne = document.getElementById('buehne');
+  var halter = buehne.parentElement;
+
+  function anpassen() {
+    var faktor = Math.min(
+      1,
+      (window.innerWidth - 32) / 559,
+      (window.innerHeight - 32) / 794
+    );
+    buehne.style.transform = 'scale(' + faktor + ')';
+    halter.style.height = (794 * faktor) + 'px';
+  }
+
+  window.addEventListener('resize', anpassen);
+  anpassen();
+</script>
+
+</body>
+</html>
