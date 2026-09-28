@@ -505,7 +505,7 @@ body.justiert .thema, body.justiert .binde, body.justiert .monitor {
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v16 · Rahmen: Crew, Kalender, Artjom je eigen",
+  fassung: "v17 · Bildausschnitt je Kachel",
 
   ident: "clips/ElevenLabs_Simswelt_News_Intro.mp4",   // Sender-Ident mit Ton
   clip:  "clips/News_TV_Studio.mp4",                  // Studioaufnahme
@@ -568,7 +568,10 @@ const KONFIG = {
     { ein: 34, aus: 46,  titel: "Labor verwüstet",       ort: "StrangerVille",
       bilder: ["bilder/remy-labor-zerstoert.png"] },
     { ein: 46, aus: 56,  titel: "Zwei Deathdealer",       ort: "Bloodmoon Valley",
-      bilder: ["bilder/remy-iona.png", "bilder/remy-shane.png"] },
+      bilder: ["bilder/remy-iona.png", "bilder/remy-shane.png"],
+      // Bildausschnitt je Kachel. Kleiner Wert schiebt das Bild nach rechts,
+      // grosser nach links. Zweiter Wert schiebt nach unten.
+      ausschnitt: ["30% 38%", "70% 38%"] },
     { ein: 56, aus: 64,  titel: "Lebendes Exemplar",      ort: "Auf der Trage",
       bilder: ["bilder/remy-trage.png"] },
     { ein: 64, aus: 76,  titel: "Das Ungeheuer ist Remy", ort: "Sinenima",
@@ -868,6 +871,9 @@ function setzeThema(i) {
     const img = document.createElement("img");
     img.src = pfad; img.alt = "";
     img.addEventListener("error", () => { img.style.background = "#0b1a2e"; });
+    if (t.ausschnitt && t.ausschnitt[t.bilder.indexOf(pfad)]) {
+      img.style.objectPosition = t.ausschnitt[t.bilder.indexOf(pfad)];
+    }
     themaBild.appendChild(img);
     if (t.zoom) {
       const dauer = Math.max(1, t.aus - t.ein);
