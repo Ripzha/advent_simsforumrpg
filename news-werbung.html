@@ -67,6 +67,28 @@ html, body {
 .bild.fahrt { animation: fahrt 3.2s linear forwards; }
 .bild.ruhig { animation: ruhig 4.5s linear forwards; }
 .bild.zip   { transition: background-position .07s linear; }
+.bild.zipbild { background-size: cover; background-position: center; }
+
+/* Raster fuer die anderen Welten */
+.raster {
+  position: absolute; inset: 0; z-index: 24; display: none;
+  grid-template-columns: repeat(4, 1fr); gap: .6cqw;
+  padding: 9cqw 6cqw 12cqw;
+}
+.raster.an { display: grid; }
+.raster .kachel {
+  position: relative; overflow: hidden; border: 1px solid rgba(232,200,119,.45);
+  background: #071322; opacity: 0; transform: scale(.88);
+  animation: kachelRein .28s cubic-bezier(.2,1.4,.4,1) forwards;
+}
+@keyframes kachelRein { to { opacity: 1; transform: scale(1); } }
+.raster .kachel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.raster .kachel span {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(0deg, rgba(4,10,20,.92), rgba(4,10,20,0));
+  font-family: var(--eng); font-weight: 600; font-size: 1.35cqw;
+  color: var(--weiss); padding: .9em .5em .35em; text-align: center;
+}
 
 /* Ortsname und Zaehler beim Durchzippen */
 .zipname {
@@ -234,13 +256,14 @@ html, body {
   <div class="szene" id="szene"></div>
   <div class="blitz" id="blitz"></div>
 
+  <div class="raster" id="raster"></div>
   <div class="kreuz" id="kreuz"></div>
   <div class="zipname" id="zipname"></div>
   <div class="zipzaehler" id="zipzaehler"></div>
   <div class="stoerer" id="stoerer"></div>
   <div class="klein" id="klein"></div>
 
-  <div class="werbemarke" id="werbemarke">Anzeige</div>
+  <div class="werbemarke" id="werbemarke">Werbung</div>
   <div class="kennung">
     <span>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></span>
   </div>
@@ -282,6 +305,52 @@ html, body {
    legt ihn auf ein rotes Schild.
    klein: Rechtshinweis unten, erscheint ab dieser Sekunde.
    =================================================================== */
+/* Uebersichtsbilder der Welten, aus dem ATLAS-Datenblatt */
+const WELTEN = {
+  "Brindleton Bay": "https://files.homepagemodules.de/b855163/f51848t204p3067n4_YilKTQzC.png",
+  "Britechester": "https://files.homepagemodules.de/b855163/f51848t204p3072n4_EiybMShs.png",
+  "Chestnut Ridge": "https://files.homepagemodules.de/b855163/f51848t204p3080n4_OpIFfJSU.png",
+  "Ciudad Enamorada": "https://files.homepagemodules.de/b855163/f51848t204p3786n4_IELDgfGt.png",
+  "Copperdale": "https://files.homepagemodules.de/b855163/f51848t204p3078n4_ObmfsMnP.png",
+  "Del Sol Valley": "https://files.homepagemodules.de/b855163/f51848t204p3068n4_HaOBXkQA.png",
+  "Evergreen Harbor": "https://files.homepagemodules.de/b855163/f51848t204p3073n6_eFxmWgEw.png",
+  "Forgotten Hollow": "https://files.homepagemodules.de/b855163/f51848t204p3066n4_IrqeVvtN.png",
+  "Gibbi Point": "https://files.homepagemodules.de/b855163/f51848t204p6440n4_oyTxWXPs.png",
+  "Glimmerbrook": "https://files.homepagemodules.de/b855163/f51848t204p3071n4_jALqgQCZ.png",
+  "Granite Falls": "https://files.homepagemodules.de/b855163/f51848t204p7355n4_OXkiNuPH.png",
+  "Henford-on-Bagley": "https://files.homepagemodules.de/b855163/f51848t204p3075n4_cVrPNKpq.png",
+  "Innisgreen": "https://files.homepagemodules.de/b855163/f51848t204p6439n4_LwMKFodA.png",
+  "Magnolia Promenade": "https://files.homepagemodules.de/b855163/f51848t204p3063n4_YKdbCpTW.png",
+  "Moonwood Mill": "https://files.homepagemodules.de/b855163/f51848t204p3077n4_wRObBDgF.png",
+  "Mt. Komorebi": "https://files.homepagemodules.de/b855163/f51848t204p3074n4_wQziqPfe.png",
+  "Newcrest": "https://files.homepagemodules.de/b855163/f51848t204p3062n4_xuRTnLBW.png",
+  "Nordhaven": "https://files.homepagemodules.de/b855163/f51848t204p5730n4_GlUPxojv.png",
+  "Oasis Springs": "https://files.homepagemodules.de/b855163/f51848t204p3061n4_lhtpsHxX.png",
+  "Ondarion": "https://files.homepagemodules.de/b855163/f51848t204p6856n6_GvzAtSiY.png",
+  "Ravenwood": "https://files.homepagemodules.de/b855163/f51848t204p4824n4_MvHYaqiS.png",
+  "San Myshuno": "https://files.homepagemodules.de/b855163/f51848t204p3065n12_xjcYLKmp.png",
+  "San Sequoia": "https://files.homepagemodules.de/b855163/f51848t204p3079n4_UKMZDbBE.png",
+  "Selvadorada": "https://files.homepagemodules.de/b855163/f51848t204p7356n4_vPRejyzq.png",
+  "Strangerville": "https://files.homepagemodules.de/b855163/f51848t204p3069n4_lnUriHQG.png",
+  "Sulani": "https://files.homepagemodules.de/b855163/f51848t204p3070n4_SNoRgaOG.png",
+  "Tartosa": "https://files.homepagemodules.de/b855163/f51848t204p3076n4_Nlqpvkcw.png",
+  "Tomarang": "https://files.homepagemodules.de/b855163/f51848t204p3081n4_jYMlkGCo.png",
+  "Willow Creek": "https://files.homepagemodules.de/b855163/f51848t204p3060n4_asEQqPcu.png",
+  "Windenburg": "https://files.homepagemodules.de/b855163/f51848t204p3064n4_QPOIDiEF.png"
+};
+
+const ANDERE_WELTEN = {
+  "Bloodmoon Valley": "https://files.homepagemodules.de/b855163/resize/1920x1200/f53861t380p3446n2_bGsQFBhr.png",
+  "Zauberallee": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t406p3532n2_obFYOumL.png",
+  "Die Unterwelt": "https://files.homepagemodules.de/b855163/resize/700x700/f51855t425p3615n2_SdqTrAyp.png",
+  "Der Zauberwald": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t90p1006n2_cgJWwteb.png",
+  "Europa": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t206p2661n2_LrURBnpa.jpg",
+  "Kanada": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t644p5918n2_KHliXsLA.png",
+  "Vampirwelt - Transsylvanien": "https://files.homepagemodules.de/b855163/resize/700x700/f51855t340p3281n2_CbdxvVWa.png",
+  "Paralleluniversum - Oasis Springs": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t220p2764n2_XtTNcofK.png",
+  "Toronto": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t652p6035n2_zUwxMuKc.jpg"
+};
+
 /* Orte auf der ATLAS-Karte, in Prozent der Bildbreite und -hoehe.
    Beim Durchzippen springt der Ausschnitt von Punkt zu Punkt.        */
 const ORTE = [
@@ -299,7 +368,7 @@ const ORTE = [
 
 const SPOTS = [
 
-  { id: "atlas", titel: "Werbung ATLAS", marke: "Anzeige",
+  { id: "atlas", titel: "Werbung ATLAS", marke: "Werbung",
     ton: "clips/werbung-atlas.mp3",
     // Schnitte sitzen auf den gemessenen Sprechpausen der Tonspur
     schnitte: [
@@ -307,13 +376,18 @@ const SPOTS = [
         stoerer: "Kartografisches Amt" },
 
       // Durchzippen waehrend "Dreissig Welten wurden erfasst"
-      { ab:  5.19, bild: "bilder/w-atlas-karte.png",  art: "zip",   blitz: true,
-        stoerer: "", zip: { takt: 0.16, lupe: 300, zaehler: true } },
+      // Echte Uebersichtskarten der Welten, im Takt durchgeblaettert
+      { ab:  5.19, bild: "", art: "zipbild", blitz: true, stoerer: "",
+        zip: { takt: 0.62, zaehler: true, zaehlerTakt: 0.17, zaehlerBis: 30,
+               welten: ["Willow Creek", "San Myshuno", "Windenburg", "Forgotten Hollow",
+                        "Sulani", "Brindleton Bay", "Del Sol Valley", "Oasis Springs"] } },
 
       { ab: 10.84, bild: "bilder/w-atlas-detail.png", art: "punch", blitz: true,
         stoerer: "Verzeichnet" },
-      { ab: 14.50, bild: "bilder/w-atlas-leer.png",   art: "kipp",  blitz: true,
-        stoerer: "<em>11</em> nicht verzeichnet" },
+      // Die Welten ausserhalb des Kartenblattes als Raster
+      { ab: 14.50, bild: "bilder/w-atlas-leer.png", art: "raster", blitz: true,
+        stoerer: "<em>11</em> nicht verzeichnet",
+        raster: { takt: 0.12 } },
       { ab: 18.73, bild: "bilder/w-atlas-karte.png",  art: "fahrt", blitz: false,
         stoerer: "" },
       { ab: 21.45, bild: "bilder/w-atlas-logo.png",   art: "punch", blitz: true,
@@ -322,7 +396,7 @@ const SPOTS = [
     klein: null
   },
 
-  { id: "laterne", titel: "Werbung Laternenmann und Magazin", marke: "Anzeige",
+  { id: "laterne", titel: "Werbung Laternenmann und Magazin", marke: "Werbung",
     ton: "clips/werbung-laterne.mp3",
     schnitte: [
       { ab: 0.0,  bild: "bilder/w-laterne-1.png",  art: "punch", blitz: true,  stoerer: "Und jetzt zu <em>mir</em>!" },
@@ -336,7 +410,7 @@ const SPOTS = [
     klein: { ab: 16.5, text: "Gut genug wird von der Redaktion bestimmt." }
   },
 
-  { id: "anfisa", titel: "Werbung Anfisa und Polarlicht", marke: "Anzeige",
+  { id: "anfisa", titel: "Werbung Anfisa und Polarlicht", marke: "Werbung",
     ton: "clips/werbung-anfisa.mp3",
     schnitte: [
       { ab: 0.0,  bild: "bilder/w-flocke-1.png",   art: "punch", blitz: true,  stoerer: "Schneeflocken?" },
@@ -348,7 +422,7 @@ const SPOTS = [
     klein: { ab: 17.0, text: "Es ist der vierundzwanzigste. Sie können nichts mehr tun." }
   },
 
-  { id: "fenster", titel: "Werbung zwei Fenster", marke: "Anzeige",
+  { id: "fenster", titel: "Werbung zwei Fenster", marke: "Werbung",
     ton: "clips/werbung-fenster.mp3",
     schnitte: [
       { ab: 0.0,  bild: "bilder/w-heute.png",      art: "punch", blitz: true,  stoerer: "<span class='schild'>HEUTE</span>" },
@@ -390,7 +464,7 @@ function ladeSpot(s) {
   spot = s;
   aktuell = -1;
   ton.src = s.ton;
-  el("werbemarke").textContent = s.marke || "Anzeige";
+  el("werbemarke").textContent = s.marke || "Werbung";
   szene.innerHTML = "";
   ebenen = s.schnitte.map(function (sch) {
     const d = document.createElement("div");
@@ -425,7 +499,10 @@ function zeigeSchnitt(i) {
   e.className = "bild an " + (sch.art || "punch");
 
   stoppeZip();
-  if (sch.art === "zip") starteZip(e, sch);
+  stoppeRaster();
+  if (sch.art === "zip")           starteZip(e, sch);
+  else if (sch.art === "zipbild")  starteZipBild(e, sch);
+  else if (sch.art === "raster")   starteRaster(sch);
   else el("zipzaehler").classList.remove("an");   // Zaehler nur beim Zippen
 
   if (sch.blitz) {
@@ -446,40 +523,110 @@ function zeigeSchnitt(i) {
 
 /* ---------- Durchzippen ---------- */
 let zipUhr = null;
+let zaehlUhr = null;
 let zipIndex = 0;
+
+function starteZipBild(ebene, sch) {
+  stoppeZip();
+  const z = sch.zip || {};
+  const takt = (z.takt || 0.62) * 1000;
+  const zTakt = (z.zaehlerTakt || 0.17) * 1000;
+  const bis = z.zaehlerBis || 30;
+  const namen = (z.welten && z.welten.length) ? z.welten : Object.keys(WELTEN);
+
+  zipIndex = 0;
+  el("zipname").classList.add("an");
+  if (z.zaehler) el("zipzaehler").classList.add("an");
+
+  function schritt() {
+    const n = namen[zipIndex % namen.length];
+    const u = WELTEN[n];
+    if (u) ebene.style.backgroundImage = 'url("' + u + '")';
+    el("zipname").textContent = n;
+    zipIndex++;
+    if (zipIndex >= namen.length) { stoppeZip(true); return; }
+    zipUhr = setTimeout(schritt, takt);
+  }
+  schritt();
+
+  if (z.zaehler) {
+    let n = 0;
+    (function zaehlen() {
+      n++;
+      el("zipzaehler").innerHTML = n + "<small>erfasst</small>";
+      if (n < bis) zaehlUhr = setTimeout(zaehlen, zTakt);
+    })();
+  }
+}
+
+/* ---------- Raster der anderen Welten ---------- */
+function starteRaster(sch) {
+  const r = el("raster");
+  r.innerHTML = "";
+  const takt = ((sch.raster && sch.raster.takt) || 0.12);
+  Object.keys(ANDERE_WELTEN).forEach(function (name, i) {
+    const k = document.createElement("div");
+    k.className = "kachel";
+    k.style.animationDelay = (i * takt) + "s";
+    const b = document.createElement("img");
+    b.src = ANDERE_WELTEN[name]; b.alt = "";
+    b.addEventListener("error", function () { k.style.background = "#0b1a2e"; });
+    const t = document.createElement("span");
+    t.textContent = name;
+    k.appendChild(b); k.appendChild(t);
+    r.appendChild(k);
+  });
+  r.classList.add("an");
+}
+function stoppeRaster() { el("raster").classList.remove("an"); }
 
 function starteZip(ebene, sch) {
   stoppeZip();
   const z = sch.zip || {};
   const lupe = z.lupe || 300;
-  const takt = (z.takt || 0.13) * 1000;
+  const takt = (z.takt || 0.55) * 1000;          // Zeit pro Ort
+  const zTakt = (z.zaehlerTakt || 0.16) * 1000;  // Zeit pro Zaehlerschritt
+  const bis = z.zaehlerBis || 30;
+  const liste = (z.orte && z.orte.length)
+    ? ORTE.filter(function (o) { return z.orte.indexOf(o[0]) >= 0; })
+    : ORTE;
+
   ebene.style.backgroundSize = lupe + "% auto";
   zipIndex = 0;
   el("kreuz").classList.add("an");
   el("zipname").classList.add("an");
   if (z.zaehler) el("zipzaehler").classList.add("an");
 
-  // CSS rechnet Prozentangaben beim Hintergrund anders, als man denkt.
-  // Diese Umrechnung legt den gewuenschten Punkt genau in die Bildmitte.
   const faktor = lupe / 100;
   function mitte(anteil) { return ((anteil / 100) * faktor - 0.5) * 100 / (faktor - 1); }
 
+  // Bildwechsel
   function schritt() {
-    const o = ORTE[zipIndex % ORTE.length];
+    const o = liste[zipIndex % liste.length];
     ebene.style.backgroundPosition = mitte(o[1]).toFixed(2) + "% " + mitte(o[2]).toFixed(2) + "%";
     el("zipname").textContent = o[0];
-    if (z.zaehler) {
-      el("zipzaehler").innerHTML = (zipIndex + 1) + "<small>erfasst</small>";
-    }
     zipIndex++;
-    if (zipIndex >= ORTE.length) { stoppeZip(true); return; }
+    if (zipIndex >= liste.length) { stoppeZip(true); return; }
     zipUhr = setTimeout(schritt, takt);
   }
   schritt();
+
+  // Zaehler laeuft unabhaengig weiter, damit die Zahl stimmt
+  if (z.zaehler) {
+    let n = 0;
+    function zaehlen() {
+      n++;
+      el("zipzaehler").innerHTML = n + "<small>erfasst</small>";
+      if (n < bis) zaehlUhr = setTimeout(zaehlen, zTakt);
+    }
+    zaehlen();
+  }
 }
 
 function stoppeZip(halten) {
   clearTimeout(zipUhr); zipUhr = null;
+  // Der Zaehler laeuft weiter, wenn die Bilder nur zu Ende sind
+  if (!halten) { clearTimeout(zaehlUhr); zaehlUhr = null; }
   if (!halten) {
     el("kreuz").classList.remove("an");
     el("zipname").classList.remove("an");
@@ -618,6 +765,43 @@ document.addEventListener("keydown", function (e) {
     el("leiste").classList.remove("zeig");
   }
 });
+
+/* ===================================================================
+   Bilder aus dem Netz vorladen. Der Startknopf bleibt gesperrt, bis
+   alles da ist — im Spot selbst soll nichts mehr nachladen.
+   =================================================================== */
+(function ladeVor() {
+  const knopf = el("start-knopf");
+  const alteBeschriftung = knopf.textContent;
+  const pfade = Object.keys(WELTEN).map(function (k) { return WELTEN[k]; })
+    .concat(Object.keys(ANDERE_WELTEN).map(function (k) { return ANDERE_WELTEN[k]; }));
+
+  let offen = pfade.length;
+  let fertig = false;
+
+  function nachsehen() {
+    offen--;
+    if (!fertig) knopf.textContent = "Lädt… " + (pfade.length - offen) + " / " + pfade.length;
+    if (offen <= 0) freigeben();
+  }
+  function freigeben() {
+    if (fertig) return;
+    fertig = true;
+    knopf.disabled = false;
+    knopf.textContent = alteBeschriftung;
+  }
+
+  knopf.disabled = true;
+  knopf.textContent = "Lädt… 0 / " + pfade.length;
+  pfade.forEach(function (u) {
+    const b = new Image();
+    b.addEventListener("load", nachsehen);
+    b.addEventListener("error", nachsehen);
+    b.src = u;
+  });
+  // Notbremse: nach 15 Sekunden geht es auch ohne
+  setTimeout(freigeben, 15000);
+})();
 
 ladeSpot(SPOTS[0]);
 </script>
