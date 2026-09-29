@@ -382,7 +382,12 @@ const SPOTS = [
                welten: ["Willow Creek", "San Myshuno", "Windenburg", "Forgotten Hollow",
                         "Sulani", "Brindleton Bay", "Del Sol Valley", "Oasis Springs"] } },
 
-      { ab: 10.84, bild: "bilder/w-atlas-detail.png", art: "punch", blitz: true,
+      // Aufzaehlung: immer mehr Kacheln, immer schnellerer Schnitt
+      { ab: 10.84, bild: "bilder/w-chars-1.png", art: "punch", blitz: true,
+        stoerer: "Bewohner" },
+      { ab: 12.10, bild: "bilder/w-chars-2.png", art: "whip",  blitz: true,
+        stoerer: "" },
+      { ab: 13.20, bild: "bilder/w-chars-3.png", art: "kipp",  blitz: true,
         stoerer: "Verzeichnet" },
       // Die Welten ausserhalb des Kartenblattes als Raster
       { ab: 14.50, bild: "bilder/w-atlas-leer.png", art: "raster", blitz: true,
@@ -535,14 +540,14 @@ function starteZipBild(ebene, sch) {
   const namen = (z.welten && z.welten.length) ? z.welten : Object.keys(WELTEN);
 
   zipIndex = 0;
-  el("zipname").classList.add("an");
+  if (z.namen) el("zipname").classList.add("an");   // Namen nur auf Wunsch
   if (z.zaehler) el("zipzaehler").classList.add("an");
 
   function schritt() {
     const n = namen[zipIndex % namen.length];
     const u = WELTEN[n];
     if (u) ebene.style.backgroundImage = 'url("' + u + '")';
-    el("zipname").textContent = n;
+    el("zipname").textContent = z.namen ? n : "";
     zipIndex++;
     if (zipIndex >= namen.length) { stoppeZip(true); return; }
     zipUhr = setTimeout(schritt, takt);
