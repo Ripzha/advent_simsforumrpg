@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimsWelt News — Werbeblock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   SIMSWELT NEWS — Werbeblock
+   Harte Schnitte im Takt der Off-Stimme. Jeder Schnitt hat ein Bild,
+   eine Schnittart und einen Stoerer. Zeiten mit Z beim Hoeren setzen.
+   =================================================================== */
+
+:root {
+  --nacht:       #040a14;
+  --navy:        #08192e;
+  --silber:      #c9d6e4;
+  --weiss:       #ffffff;
+  --messing:     #c9992f;
+  --messing-hell:#e8c877;
+  --knall:       #e0483c;
+
+  --marke: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --eng:   "Barlow Condensed", "Arial Narrow", sans-serif;
+  --text:  "Barlow", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: #02060c; font-family: var(--text); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.bühne {
+  position: relative; aspect-ratio: 16 / 9;
+  width: min(100vw, calc(100vh * 16 / 9)); height: auto;
+  background: #000; overflow: hidden; container-type: size;
+}
+
+/* ---------- Bildebene ---------- */
+.szene { position: absolute; inset: 0; overflow: hidden; background: #000; }
+.bild {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  opacity: 0; will-change: transform, opacity;
+}
+.bild.an { opacity: 1; }
+
+/* Schnittarten */
+@keyframes punch   { from { transform: scale(1.18); } to { transform: scale(1.02); } }
+@keyframes whip    { from { transform: translateX(22%) scale(1.12); filter: blur(9px); }
+                     to   { transform: translateX(0)   scale(1.02); filter: blur(0); } }
+@keyframes whipL   { from { transform: translateX(-22%) scale(1.12); filter: blur(9px); }
+                     to   { transform: translateX(0)    scale(1.02); filter: blur(0); } }
+@keyframes kipp    { from { transform: rotate(-3deg) scale(1.2); } to { transform: rotate(0) scale(1.03); } }
+@keyframes fahrt   { from { transform: scale(1.02); } to { transform: scale(1.16); } }
+@keyframes ruhig   { from { transform: scale(1.05); } to { transform: scale(1.09); } }
+
+.bild.punch { animation: punch .34s cubic-bezier(.2,.9,.25,1) forwards; }
+.bild.whip  { animation: whip  .26s cubic-bezier(.2,.9,.25,1) forwards; }
+.bild.whipL { animation: whipL .26s cubic-bezier(.2,.9,.25,1) forwards; }
+.bild.kipp  { animation: kipp  .30s cubic-bezier(.2,.9,.25,1) forwards; }
+.bild.fahrt { animation: fahrt 3.2s linear forwards; }
+.bild.ruhig { animation: ruhig 4.5s linear forwards; }
+.bild.zip   { transition: background-position .07s linear; }
+
+/* Ortsname und Zaehler beim Durchzippen */
+.zipname {
+  position: absolute; left: 6%; bottom: 22%; z-index: 27;
+  font-family: var(--eng); font-weight: 700; font-size: 4.6cqw;
+  letter-spacing: .01em; color: var(--weiss);
+  text-shadow: 0 4px 20px rgba(0,0,0,.85); opacity: 0;
+}
+.zipname.an { opacity: 1; }
+.zipzaehler {
+  position: absolute; right: 6%; bottom: 20%; z-index: 27;
+  font-family: var(--marke); font-weight: 800; font-size: 11cqw;
+  line-height: .9; color: var(--messing-hell);
+  text-shadow: 0 6px 26px rgba(0,0,0,.8); opacity: 0;
+  font-variant-numeric: tabular-nums;
+}
+.zipzaehler.an { opacity: 1; }
+.zipzaehler small { display: block; font-family: var(--eng); font-weight: 600;
+  font-size: .2em; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--silber); text-align: right; }
+/* Fadenkreuz in der Bildmitte, wie bei einer Vermessung */
+.kreuz {
+  position: absolute; inset: 0; z-index: 26; opacity: 0; pointer-events: none;
+}
+.kreuz.an { opacity: .75; }
+.kreuz::before, .kreuz::after {
+  content: ""; position: absolute; background: rgba(232,200,119,.55);
+}
+.kreuz::before { left: 50%; top: 42%; bottom: 42%; width: 1px; }
+.kreuz::after  { top: 50%; left: 46%; right: 46%; height: 1px; }
+
+/* ---------- Blitz beim Schnitt ---------- */
+.blitz {
+  position: absolute; inset: 0; background: #fff; opacity: 0;
+  pointer-events: none; z-index: 30;
+}
+.blitz.an { animation: blitzen .18s ease-out; }
+@keyframes blitzen { 0% { opacity: .85; } 100% { opacity: 0; } }
+
+/* ---------- Stoerer ---------- */
+.stoerer {
+  position: absolute; z-index: 25;
+  left: 6%; bottom: 16%;
+  font-family: var(--eng); font-weight: 800;
+  font-size: 7cqw; line-height: .96; letter-spacing: -0.01em;
+  color: var(--weiss);
+  text-shadow: 0 6px 24px rgba(0,0,0,.75);
+  transform: rotate(-3deg) scale(.7); opacity: 0;
+  max-width: 62%;
+}
+.stoerer.an { animation: knallRein .28s cubic-bezier(.2,1.5,.4,1) forwards; }
+@keyframes knallRein { to { transform: rotate(-3deg) scale(1); opacity: 1; } }
+.stoerer.rechts { left: auto; right: 6%; text-align: right; transform: rotate(3deg) scale(.7); }
+.stoerer.rechts.an { animation: knallReinR .28s cubic-bezier(.2,1.5,.4,1) forwards; }
+@keyframes knallReinR { to { transform: rotate(3deg) scale(1); opacity: 1; } }
+.stoerer.oben { bottom: auto; top: 12%; }
+.stoerer em { font-style: normal; color: var(--messing-hell); }
+.stoerer .schild {
+  display: inline-block; background: var(--knall); color: var(--weiss);
+  padding: .06em .3em; transform: rotate(-2deg);
+}
+
+/* ---------- Rechtshinweis ---------- */
+.klein {
+  position: absolute; left: 0; right: 0; bottom: 4%;
+  z-index: 26; text-align: center;
+  font-family: var(--text); font-size: 1.5cqw; letter-spacing: .02em;
+  color: rgba(255,255,255,.82); opacity: 0; transition: opacity .2s ease;
+}
+.klein.an { opacity: 1; }
+
+/* ---------- Senderkennung ---------- */
+.kennung {
+  position: absolute; top: 4.6%; right: 3.4%; z-index: 28;
+  display: flex; align-items: baseline; gap: .7em;
+  font-family: var(--marke); font-weight: 800;
+  font-size: 2.1cqw; letter-spacing: -.012em; color: var(--weiss);
+  text-shadow: 0 2px 12px rgba(0,0,0,.8); opacity: .9;
+}
+.kennung .news { color: var(--messing-hell); }
+.raute { display: inline-block; position: relative; width: .30em; height: .62em; margin: 0 .085em; }
+.raute::before { content: ""; position: absolute; inset: 0;   background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.raute::after  { content: ""; position: absolute; inset: 22%; background: var(--nacht);   clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+
+/* ---------- Werbemarke unten links ---------- */
+.werbemarke {
+  position: absolute; left: 3.4%; top: 4.6%; z-index: 28;
+  font-family: var(--eng); font-weight: 700; font-size: 1.5cqw;
+  letter-spacing: .28em; text-transform: uppercase;
+  color: var(--nacht); background: var(--messing-hell);
+  padding: .35em .9em;
+}
+
+/* ---------- Bedienung ---------- */
+.leiste {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: none; align-items: center; gap: .9em; padding: .5em 1em .6em;
+  background: linear-gradient(0deg, rgba(4,10,20,.95), rgba(4,10,20,.6));
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px;
+  color: var(--messing-hell);
+}
+.leiste.zeig { display: flex; }
+.leiste .zeit { flex: 0 0 auto; min-width: 8em; }
+.leiste .spur { position: relative; flex: 1 1 auto; height: 16px; background: rgba(201,214,228,.14); cursor: pointer; }
+.leiste .fuell { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing); }
+.leiste .marker { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.6); }
+.leiste select, .leiste button {
+  font-family: inherit; font-size: 11px; border: none; cursor: pointer;
+  background: var(--messing-hell); color: var(--nacht); padding: .45em .8em;
+}
+.leiste button:hover, .leiste select:hover { background: var(--weiss); }
+.leiste .hinweis { color: var(--silber); font-size: 11px; }
+
+.zeiten {
+  position: absolute; right: 1.5%; top: 2%; bottom: 12%; width: 30%; min-width: 320px;
+  z-index: 62; display: none; flex-direction: column;
+  background: rgba(4,10,20,.96); border: 1px solid var(--messing);
+  font-family: var(--text); font-size: 12px; color: var(--weiss);
+}
+.zeiten.zeig { display: flex; }
+.zeiten h3 { margin: 0; padding: .7em .9em; font-size: 12px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--nacht); background: var(--messing-hell); }
+.zeiten .liste { flex: 1 1 auto; overflow-y: auto; padding: .4em .6em; }
+.zeiten .zeile { display: grid; grid-template-columns: 1fr auto; gap: .4em; align-items: center;
+  padding: .35em .3em; border-bottom: 1px solid rgba(201,214,228,.14); }
+.zeiten .zeile.jetzt { background: rgba(201,153,47,.22); }
+.zeiten .titel small { display: block; color: var(--silber); font-size: 10px; }
+.zeiten button { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+  border: 1px solid rgba(232,200,119,.5); background: transparent; color: var(--messing-hell);
+  padding: .28em .5em; cursor: pointer; }
+.zeiten button:hover { background: var(--messing); color: var(--nacht); }
+.zeiten .fuss { padding: .55em .7em; border-top: 1px solid rgba(201,214,228,.2); }
+.zeiten textarea { display: none; width: 100%; height: 170px; margin-top: .5em;
+  background: #071322; color: var(--messing-hell); border: 1px solid rgba(232,200,119,.4);
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; padding: .4em; }
+.zeiten.ausgabe textarea { display: block; }
+
+.start {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+  background: radial-gradient(ellipse at 50% 44%, #16314f 0%, #0a1c33 44%, #040a14 100%);
+  cursor: pointer; transition: opacity .4s ease, visibility .4s ease;
+}
+.start.weg { opacity: 0; visibility: hidden; }
+.start h1 { margin: 0; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(24px, 4.4vw, 74px); letter-spacing: -.012em; color: var(--weiss);
+  display: flex; align-items: baseline; }
+.start h1 .news { color: var(--messing-hell); }
+.start p { margin: 0; font-family: var(--eng); font-weight: 600; font-size: clamp(11px,1.3vw,20px);
+  letter-spacing: .4em; text-indent: .4em; text-transform: uppercase; color: rgba(201,214,228,.82); }
+.start button { font-family: var(--eng); font-weight: 700; font-size: clamp(13px,1.4vw,21px);
+  letter-spacing: .16em; text-transform: uppercase; color: var(--nacht);
+  background: var(--messing); border: none; padding: .8em 2.4em; cursor: pointer; }
+.start button:hover { background: var(--messing-hell); }
+.start label { font-family: var(--eng); font-weight: 600; font-size: clamp(11px,1.1vw,17px);
+  letter-spacing: .1em; text-transform: uppercase; color: var(--messing-hell);
+  border-bottom: 1px solid rgba(232,200,119,.5); cursor: pointer; }
+.start label input { display: none; }
+.start small { font-family: var(--text); font-size: clamp(10px,.95vw,14px); color: rgba(201,214,228,.5); }
+</style>
+</head>
+<body>
+
+<div class="bühne" id="bühne">
+  <div class="szene" id="szene"></div>
+  <div class="blitz" id="blitz"></div>
+
+  <div class="kreuz" id="kreuz"></div>
+  <div class="zipname" id="zipname"></div>
+  <div class="zipzaehler" id="zipzaehler"></div>
+  <div class="stoerer" id="stoerer"></div>
+  <div class="klein" id="klein"></div>
+
+  <div class="werbemarke" id="werbemarke">Anzeige</div>
+  <div class="kennung">
+    <span>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></span>
+  </div>
+
+  <div class="leiste" id="leiste">
+    <span class="zeit" id="zeit">0.0 / 0.0</span>
+    <span class="spur" id="spur"><span class="fuell" id="fuell"></span></span>
+    <select id="wahl"></select>
+    <button id="knopf-ton">Ton…</button>
+    <span class="hinweis">Z Schnitte · T ausblenden · Leertaste pausiert</span>
+  </div>
+
+  <div class="zeiten" id="zeiten">
+    <h3>Schnittpunkte · Z schliesst</h3>
+    <div class="liste" id="zeiten-liste"></div>
+    <div class="fuss">
+      <button id="zeiten-ausgabe">Werte zum Kopieren</button>
+      <textarea id="zeiten-text" readonly></textarea>
+    </div>
+  </div>
+
+  <div class="start" id="start">
+    <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
+    <p>Werbeblock</p>
+    <button id="start-knopf">Abspielen</button>
+    <label>Tonspur von Hand wählen<input type="file" id="datei-ton" accept="audio/*,video/*"></label>
+    <small>Z setzt Schnitte · T blendet aus · R startet neu</small>
+  </div>
+</div>
+
+<audio id="ton" preload="auto" style="display:none"></audio>
+
+<script>
+/* ===================================================================
+   KONFIG — ein Eintrag je Spot.
+   art: punch, whip, whipL, kipp, fahrt, ruhig
+   blitz: true setzt einen weissen Schnittblitz
+   stoerer: Text auf dem Bild. <em> faerbt messing, <span class="schild">
+   legt ihn auf ein rotes Schild.
+   klein: Rechtshinweis unten, erscheint ab dieser Sekunde.
+   =================================================================== */
+/* Orte auf der ATLAS-Karte, in Prozent der Bildbreite und -hoehe.
+   Beim Durchzippen springt der Ausschnitt von Punkt zu Punkt.        */
+const ORTE = [
+  ["Willow Creek", 49, 21], ["Oasis Springs", 36.5, 58], ["Newcrest", 39, 25.5],
+  ["Magnolia Promenade", 49, 35], ["Windenburg", 62, 44], ["San Myshuno", 56, 24],
+  ["Forgotten Hollow", 28.5, 18.5], ["Brindleton Bay", 69, 35], ["Del Sol Valley", 14, 73],
+  ["Strangerville", 31.5, 70.5], ["Sulani", 66, 90], ["Glimmerbrook", 46, 14],
+  ["Britechester", 37, 36], ["Selvadorada", 84, 62], ["Granite Falls", 39, 10],
+  ["Mt. Komorebi", 21.5, 15], ["Sto. Ondarion", 40, 48.5], ["Evergreen Harbor", 77, 12],
+  ["Henford-on-Bagley", 30, 28], ["Tartosa", 34, 86], ["Moonwood Mill", 54, 15],
+  ["Copperdale", 23.5, 27], ["San Sequoia", 21, 48], ["Chestnut Ridge", 41, 68.5],
+  ["Tomarang", 81, 80], ["Ciudad Enamorada", 54, 78], ["Nordhaven", 11, 23],
+  ["Ravenwood", 61, 12.5], ["Innisgreen", 57, 66], ["Gibbi Point", 15.5, 37]
+];
+
+const SPOTS = [
+
+  { id: "atlas", titel: "Werbung ATLAS", marke: "Anzeige",
+    ton: "clips/werbung-atlas.mp3",
+    schnitte: [
+      { ab:  0.0, bild: "bilder/w-atlas-karte.png", art: "ruhig", blitz: false,
+        stoerer: "Kartografisches Amt" },
+
+      // Durchzippen: springt im Takt von Ort zu Ort und zaehlt mit
+      { ab:  5.0, bild: "bilder/w-atlas-karte.png", art: "zip", blitz: true,
+        stoerer: "", zip: { takt: 0.13, lupe: 300, zaehler: true } },
+
+      { ab: 11.5, bild: "bilder/w-atlas-detail.png", art: "punch", blitz: true,
+        stoerer: "Verzeichnet" },
+      { ab: 14.5, bild: "bilder/w-atlas-leer.png",   art: "kipp",  blitz: true,
+        stoerer: "<em>11</em> nicht verzeichnet" },
+      { ab: 18.0, bild: "bilder/w-atlas-karte.png",  art: "fahrt", blitz: false,
+        stoerer: "" },
+      { ab: 21.0, bild: "bilder/w-atlas-logo.png",   art: "punch", blitz: true,
+        stoerer: "ATLAS" }
+    ],
+    klein: { ab: 23.0, text: "Wer in einer der elf Welten wohnt, wende sich bitte an niemanden." }
+  },
+
+  { id: "laterne", titel: "Werbung Laternenmann und Magazin", marke: "Anzeige",
+    ton: "clips/werbung-laterne.mp3",
+    schnitte: [
+      { ab: 0.0,  bild: "bilder/w-laterne-1.png",  art: "punch", blitz: true,  stoerer: "Und jetzt zu <em>mir</em>!" },
+      { ab: 2.0,  bild: "bilder/w-laterne-2.png",  art: "whip",  blitz: true,  stoerer: "Er redet!" },
+      { ab: 4.2,  bild: "bilder/w-notizbuch.png",  art: "kipp",  blitz: true,  stoerer: "<span class='schild'>GRATIS</span>" },
+      { ab: 7.0,  bild: "bilder/w-cover-1.png",    art: "punch", blitz: true,  stoerer: "36 Ausgaben" },
+      { ab: 9.0,  bild: "bilder/w-cover-2.png",    art: "whipL", blitz: true,  stoerer: "" },
+      { ab: 10.6, bild: "bilder/w-cover-3.png",    art: "whip",  blitz: true,  stoerer: "Ihr Sim auf der <em>Titelseite</em>" },
+      { ab: 13.5, bild: "bilder/w-cover-4.png",    art: "fahrt", blitz: false, stoerer: "" }
+    ],
+    klein: { ab: 16.5, text: "Gut genug wird von der Redaktion bestimmt." }
+  },
+
+  { id: "anfisa", titel: "Werbung Anfisa und Polarlicht", marke: "Anzeige",
+    ton: "clips/werbung-anfisa.mp3",
+    schnitte: [
+      { ab: 0.0,  bild: "bilder/w-flocke-1.png",   art: "punch", blitz: true,  stoerer: "Schneeflocken?" },
+      { ab: 2.0,  bild: "bilder/w-fenster.png",    art: "whip",  blitz: true,  stoerer: "Anfisas <em>Küchenfenster</em>" },
+      { ab: 5.0,  bild: "bilder/w-flocken-alle.png", art: "fahrt", blitz: false, stoerer: "Auch Ihre!" },
+      { ab: 9.0,  bild: "bilder/w-tuerchen.png",   art: "ruhig", blitz: true,  stoerer: "" },
+      { ab: 13.0, bild: "bilder/w-polarlicht.png", art: "ruhig", blitz: false, stoerer: "24 von 24" }
+    ],
+    klein: { ab: 17.0, text: "Es ist der vierundzwanzigste. Sie können nichts mehr tun." }
+  },
+
+  { id: "fenster", titel: "Werbung zwei Fenster", marke: "Anzeige",
+    ton: "clips/werbung-fenster.mp3",
+    schnitte: [
+      { ab: 0.0,  bild: "bilder/w-heute.png",      art: "punch", blitz: true,  stoerer: "<span class='schild'>HEUTE</span>" },
+      { ab: 2.2,  bild: "bilder/w-fenster-gruen.png", art: "whip", blitz: true, stoerer: "Ein Name" },
+      { ab: 5.5,  bild: "bilder/w-laterne-1.png",  art: "kipp",  blitz: true,  stoerer: "<em>Meiner</em>" },
+      { ab: 8.5,  bild: "bilder/w-fenster-orange.png", art: "whipL", blitz: true, stoerer: "Ein Lied" },
+      { ab: 12.0, bild: "bilder/w-kalender.png",   art: "fahrt", blitz: true,  stoerer: "Morgen zu!" }
+    ],
+    klein: null
+  }
+];
+
+/* =================================================================== */
+
+const el = (id) => document.getElementById(id);
+const ton = el("ton");
+const szene = el("szene");
+const stoerer = el("stoerer");
+const klein = el("klein");
+const blitz = el("blitz");
+
+let spot = SPOTS[0];
+let ebenen = [];
+let aktuell = -1;
+let leisteAn = true;
+let zeitenAn = false;
+
+/* ---------- Auswahl ---------- */
+SPOTS.forEach(function (s, i) {
+  const o = document.createElement("option");
+  o.value = String(i); o.textContent = s.titel;
+  el("wahl").appendChild(o);
+});
+el("wahl").addEventListener("change", function () {
+  ladeSpot(SPOTS[+this.value]);
+});
+
+function ladeSpot(s) {
+  spot = s;
+  aktuell = -1;
+  ton.src = s.ton;
+  el("werbemarke").textContent = s.marke || "Anzeige";
+  szene.innerHTML = "";
+  ebenen = s.schnitte.map(function (sch) {
+    const d = document.createElement("div");
+    d.className = "bild";
+    d.style.backgroundImage = 'url("' + sch.bild + '")';
+    szene.appendChild(d);
+    return d;
+  });
+  stoerer.className = "stoerer";
+  stoerer.innerHTML = "";
+  klein.className = "klein";
+  klein.textContent = s.klein ? s.klein.text : "";
+  baueMarker();
+  if (zeitenAn) baueZeiten();
+}
+
+/* ---------- Schnitt setzen ---------- */
+function zeigeSchnitt(i) {
+  if (i === aktuell || i < 0) return;
+  aktuell = i;
+  const sch = spot.schnitte[i];
+
+  ebenen.forEach(function (e, n) {
+    if (n !== i) { e.className = "bild"; }
+  });
+
+  const e = ebenen[i];
+  e.className = "bild";
+  e.style.backgroundSize = "cover";
+  e.style.backgroundPosition = "center";
+  void e.offsetWidth;
+  e.className = "bild an " + (sch.art || "punch");
+
+  stoppeZip();
+  if (sch.art === "zip") starteZip(e, sch);
+
+  if (sch.blitz) {
+    blitz.className = "blitz";
+    void blitz.offsetWidth;
+    blitz.className = "blitz an";
+  }
+
+  stoerer.className = "stoerer";
+  stoerer.innerHTML = sch.stoerer || "";
+  if (sch.stoerer) {
+    if (i % 2 === 1) stoerer.classList.add("rechts");
+    if (sch.oben) stoerer.classList.add("oben");
+    void stoerer.offsetWidth;
+    stoerer.classList.add("an");
+  }
+}
+
+/* ---------- Durchzippen ---------- */
+let zipUhr = null;
+let zipIndex = 0;
+
+function starteZip(ebene, sch) {
+  stoppeZip();
+  const z = sch.zip || {};
+  const lupe = z.lupe || 300;
+  const takt = (z.takt || 0.13) * 1000;
+  ebene.style.backgroundSize = lupe + "% auto";
+  zipIndex = 0;
+  el("kreuz").classList.add("an");
+  el("zipname").classList.add("an");
+  if (z.zaehler) el("zipzaehler").classList.add("an");
+
+  // CSS rechnet Prozentangaben beim Hintergrund anders, als man denkt.
+  // Diese Umrechnung legt den gewuenschten Punkt genau in die Bildmitte.
+  const faktor = lupe / 100;
+  function mitte(anteil) { return ((anteil / 100) * faktor - 0.5) * 100 / (faktor - 1); }
+
+  function schritt() {
+    const o = ORTE[zipIndex % ORTE.length];
+    ebene.style.backgroundPosition = mitte(o[1]).toFixed(2) + "% " + mitte(o[2]).toFixed(2) + "%";
+    el("zipname").textContent = o[0];
+    if (z.zaehler) {
+      el("zipzaehler").innerHTML = (zipIndex + 1) + "<small>erfasst</small>";
+    }
+    zipIndex++;
+    if (zipIndex >= ORTE.length) { stoppeZip(true); return; }
+    zipUhr = setTimeout(schritt, takt);
+  }
+  schritt();
+}
+
+function stoppeZip(halten) {
+  clearTimeout(zipUhr); zipUhr = null;
+  if (!halten) {
+    el("kreuz").classList.remove("an");
+    el("zipname").classList.remove("an");
+    el("zipzaehler").classList.remove("an");
+  } else {
+    el("kreuz").classList.remove("an");
+    el("zipname").classList.remove("an");
+  }
+}
+
+function takt() {
+  const t = ton.currentTime;
+  let treffer = -1;
+  for (let i = 0; i < spot.schnitte.length; i++) {
+    if (t >= spot.schnitte[i].ab) treffer = i;
+  }
+  zeigeSchnitt(treffer);
+  klein.classList.toggle("an", !!(spot.klein && t >= spot.klein.ab));
+
+  const d = ton.duration && isFinite(ton.duration) ? ton.duration : 0;
+  el("zeit").textContent = t.toFixed(1) + " / " + d.toFixed(1);
+  el("fuell").style.width = d ? (t / d * 100) + "%" : "0";
+
+  requestAnimationFrame(takt);
+}
+
+/* ---------- Bedienung ---------- */
+function start() {
+  el("start").classList.add("weg");
+  if (leisteAn) el("leiste").classList.add("zeig");
+  ton.currentTime = 0;
+  ton.play().catch(function () {});
+  requestAnimationFrame(takt);
+}
+el("start-knopf").addEventListener("click", start);
+el("start").addEventListener("click", function (e) {
+  if (e.target.closest("label")) return;
+  start();
+});
+el("datei-ton").addEventListener("change", function (e) {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  ton.src = URL.createObjectURL(f);
+  ton.load();
+});
+el("knopf-ton").addEventListener("click", function () { el("datei-ton").click(); });
+
+el("spur").addEventListener("click", function (e) {
+  if (!ton.duration || !isFinite(ton.duration)) return;
+  const r = el("spur").getBoundingClientRect();
+  ton.currentTime = ((e.clientX - r.left) / r.width) * ton.duration;
+  aktuell = -1;
+  if (ton.paused) ton.play().catch(function () {});
+});
+
+function baueMarker() {
+  const spur = el("spur");
+  spur.querySelectorAll(".marker").forEach(function (m) { m.remove(); });
+  if (!ton.duration || !isFinite(ton.duration)) return;
+  spot.schnitte.forEach(function (sch) {
+    const m = document.createElement("span");
+    m.className = "marker";
+    m.style.left = (sch.ab / ton.duration * 100) + "%";
+    spur.appendChild(m);
+  });
+}
+ton.addEventListener("loadedmetadata", baueMarker);
+
+/* ---------- Schnittpunkt-Editor ---------- */
+function sek(v) { return Math.round(v * 10) / 10; }
+
+function baueZeiten() {
+  const liste = el("zeiten-liste");
+  liste.innerHTML = "";
+  spot.schnitte.forEach(function (sch, i) {
+    const z = document.createElement("div");
+    z.className = "zeile"; z.dataset.i = String(i);
+    const name = sch.bild.split("/").pop().replace(".png", "");
+    z.innerHTML = '<span class="titel">' + name +
+      '<small>' + sch.art + ' · ab ' + sch.ab.toFixed(1) + ' s</small></span>';
+    const a = document.createElement("button"); a.textContent = "jetzt";
+    a.addEventListener("click", function () {
+      sch.ab = sek(ton.currentTime);
+      aktuell = -1; baueZeiten(); baueMarker(); schreibeAusgabe();
+    });
+    z.appendChild(a);
+    liste.appendChild(z);
+  });
+  schreibeAusgabe();
+}
+
+function schreibeAusgabe() {
+  const zeilen = spot.schnitte.map(function (s) {
+    return '      { ab: ' + s.ab + ', bild: "' + s.bild + '", art: "' + s.art +
+      '", blitz: ' + (s.blitz ? "true" : "false") +
+      ', stoerer: "' + (s.stoerer || "").replace(/"/g, "'") + '" },';
+  }).join("\n");
+  el("zeiten-text").value = "schnitte: [\n" + zeilen + "\n    ],";
+}
+
+el("zeiten-ausgabe").addEventListener("click", function () {
+  el("zeiten").classList.toggle("ausgabe");
+  schreibeAusgabe();
+  const f = el("zeiten-text");
+  if (el("zeiten").classList.contains("ausgabe")) { f.focus(); f.select(); }
+});
+
+setInterval(function () {
+  if (!zeitenAn) return;
+  el("zeiten").querySelectorAll(".zeile").forEach(function (z) {
+    z.classList.toggle("jetzt", +z.dataset.i === aktuell);
+  });
+}, 200);
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "z" || e.key === "Z") {
+    e.preventDefault();
+    zeitenAn = !zeitenAn;
+    el("zeiten").classList.toggle("zeig", zeitenAn);
+    if (zeitenAn) baueZeiten();
+    return;
+  }
+  if (e.key === "t" || e.key === "T") {
+    e.preventDefault();
+    leisteAn = !leisteAn;
+    el("leiste").classList.toggle("zeig", leisteAn);
+    return;
+  }
+  if (e.code === "Space") { e.preventDefault(); ton.paused ? ton.play() : ton.pause(); }
+  const weite = e.shiftKey ? 0.5 : 2;
+  if (e.key === "ArrowRight") { e.preventDefault(); ton.currentTime += weite; aktuell = -1; }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); ton.currentTime = Math.max(0, ton.currentTime - weite); aktuell = -1; }
+  if (e.key === "r" || e.key === "R") {
+    ton.pause(); aktuell = -1; stoppeZip();
+    el("start").classList.remove("weg");
+    el("leiste").classList.remove("zeig");
+  }
+});
+
+ladeSpot(SPOTS[0]);
+</script>
+</body>
+</html>
