@@ -372,33 +372,27 @@ const SPOTS = [
     ton: "clips/werbung-atlas.mp3",
     // Schnitte sitzen auf den gemessenen Sprechpausen der Tonspur
     schnitte: [
-      { ab:  0.00, bild: "bilder/w-atlas-karte.png",  art: "ruhig", blitz: false,
+      { ab:  0.00, bild: "bilder/w-atlas-karte.png", art: "ruhig", blitz: false,
         stoerer: "Kartografisches Amt" },
 
-      // Durchzippen waehrend "Dreissig Welten wurden erfasst"
-      // Echte Uebersichtskarten der Welten, im Takt durchgeblaettert
+      // Echte Uebersichtskarten der Welten, ohne Namen, Zaehler laeuft bis 30
       { ab:  5.19, bild: "", art: "zipbild", blitz: true, stoerer: "",
         zip: { takt: 0.62, zaehler: true, zaehlerTakt: 0.17, zaehlerBis: 30,
                welten: ["Willow Creek", "San Myshuno", "Windenburg", "Forgotten Hollow",
                         "Sulani", "Brindleton Bay", "Del Sol Valley", "Oasis Springs"] } },
 
       // Aufzaehlung: Grundstuecke, dann immer mehr Bewohner
-      { ab: 10.84, bild: "bilder/w-lots.png",    art: "punch", blitz: true,
-        stoerer: "Grundstücke" },
-      { ab: 11.80, bild: "bilder/w-chars-1.png", art: "whip",  blitz: true,
-        stoerer: "Bewohner" },
-      { ab: 12.75, bild: "bilder/w-chars-2.png", art: "whipL", blitz: true,
-        stoerer: "" },
-      { ab: 13.55, bild: "bilder/w-chars-3.png", art: "kipp",  blitz: true,
-        stoerer: "Verzeichnet" },
+      { ab: 10.84, bild: "bilder/w-lots.png",    art: "punch", blitz: true, stoerer: "Grundstücke" },
+      { ab: 11.70, bild: "bilder/w-chars-1.png", art: "whip",  blitz: true, stoerer: "Bewohner" },
+      { ab: 12.40, bild: "bilder/w-chars-2.png", art: "whipL", blitz: true, stoerer: "" },
+      { ab: 13.30, bild: "bilder/w-chars-3.png", art: "kipp",  blitz: true, stoerer: "Verzeichnet" },
+
       // Die Welten ausserhalb des Kartenblattes als Raster
       { ab: 14.50, bild: "bilder/w-atlas-leer.png", art: "raster", blitz: true,
-        stoerer: "<em>11</em> nicht verzeichnet",
-        raster: { takt: 0.12 } },
-      { ab: 18.73, bild: "bilder/w-atlas-karte.png",  art: "fahrt", blitz: false,
-        stoerer: "" },
-      { ab: 21.45, bild: "bilder/w-atlas-logo.png",   art: "punch", blitz: true,
-        stoerer: "" }
+        stoerer: "<em>11</em> nicht verzeichnet", raster: { takt: 0.12 } },
+
+      { ab: 18.73, bild: "bilder/w-atlas-karte.png", art: "fahrt", blitz: false, stoerer: "" },
+      { ab: 21.45, bild: "bilder/w-atlas-logo.png",  art: "punch", blitz: true,  stoerer: "" }
     ],
     klein: null
   },
@@ -507,10 +501,12 @@ function zeigeSchnitt(i) {
 
   stoppeZip();
   stoppeRaster();
+  // Zaehler gehoert nur zum Durchzippen
+  if (sch.art !== "zip" && sch.art !== "zipbild") el("zipzaehler").classList.remove("an");
+
   if (sch.art === "zip")           starteZip(e, sch);
   else if (sch.art === "zipbild")  starteZipBild(e, sch);
   else if (sch.art === "raster")   starteRaster(sch);
-  else el("zipzaehler").classList.remove("an");   // Zaehler nur beim Zippen
 
   if (sch.blitz) {
     blitz.className = "blitz";
