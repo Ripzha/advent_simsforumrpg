@@ -301,24 +301,25 @@ const SPOTS = [
 
   { id: "atlas", titel: "Werbung ATLAS", marke: "Anzeige",
     ton: "clips/werbung-atlas.mp3",
+    // Schnitte sitzen auf den gemessenen Sprechpausen der Tonspur
     schnitte: [
-      { ab:  0.0, bild: "bilder/w-atlas-karte.png", art: "ruhig", blitz: false,
+      { ab:  0.00, bild: "bilder/w-atlas-karte.png",  art: "ruhig", blitz: false,
         stoerer: "Kartografisches Amt" },
 
-      // Durchzippen: springt im Takt von Ort zu Ort und zaehlt mit
-      { ab:  5.0, bild: "bilder/w-atlas-karte.png", art: "zip", blitz: true,
-        stoerer: "", zip: { takt: 0.13, lupe: 300, zaehler: true } },
+      // Durchzippen waehrend "Dreissig Welten wurden erfasst"
+      { ab:  5.19, bild: "bilder/w-atlas-karte.png",  art: "zip",   blitz: true,
+        stoerer: "", zip: { takt: 0.16, lupe: 300, zaehler: true } },
 
-      { ab: 11.5, bild: "bilder/w-atlas-detail.png", art: "punch", blitz: true,
+      { ab: 10.84, bild: "bilder/w-atlas-detail.png", art: "punch", blitz: true,
         stoerer: "Verzeichnet" },
-      { ab: 14.5, bild: "bilder/w-atlas-leer.png",   art: "kipp",  blitz: true,
+      { ab: 14.50, bild: "bilder/w-atlas-leer.png",   art: "kipp",  blitz: true,
         stoerer: "<em>11</em> nicht verzeichnet" },
-      { ab: 18.0, bild: "bilder/w-atlas-karte.png",  art: "fahrt", blitz: false,
+      { ab: 18.73, bild: "bilder/w-atlas-karte.png",  art: "fahrt", blitz: false,
         stoerer: "" },
-      { ab: 21.0, bild: "bilder/w-atlas-logo.png",   art: "punch", blitz: true,
+      { ab: 21.45, bild: "bilder/w-atlas-logo.png",   art: "punch", blitz: true,
         stoerer: "ATLAS" }
     ],
-    klein: { ab: 23.0, text: "Wer in einer der elf Welten wohnt, wende sich bitte an niemanden." }
+    klein: null
   },
 
   { id: "laterne", titel: "Werbung Laternenmann und Magazin", marke: "Anzeige",
@@ -425,6 +426,7 @@ function zeigeSchnitt(i) {
 
   stoppeZip();
   if (sch.art === "zip") starteZip(e, sch);
+  else el("zipzaehler").classList.remove("an");   // Zaehler nur beim Zippen
 
   if (sch.blitz) {
     blitz.className = "blitz";
