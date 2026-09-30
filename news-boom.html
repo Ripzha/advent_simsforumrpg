@@ -345,7 +345,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v8 · deine Zeiten",
+  fassung: "v9 · Schwenks, Fahrten über die ganze Standzeit",
 
   ident:      "clips/simswelt-news-rueckkehr.mp4",   // Rueckkehrkennung nach der Werbung
   identDauer: 6.6,                       // hier wird ins Studio geschnitten
@@ -388,20 +388,32 @@ const KONFIG = {
   /* Off-Teil: Vollbild ab Sekunde 46,4 des Videos.
      Fehlende Bilder werden uebersprungen, bis sie da sind.             */
   strecke: [
-    { bild: "bilder/off-camp-nacht.png", ein: 47.5, dauer: 13.5,
-      zoom: [1.02, 1.20], ursprung: "45% 45%", ort: "Granite Falls — Camp Firefly" },
-    { bild: "bilder/off-boom-ast.png",   ein: 53.4, dauer: 8.0,
-      zoom: [1.22, 1.05], ursprung: "45% 40%", ort: "" },
-    { bild: "bilder/off-fenster.png",    ein: 53.4, dauer: 5.5,
-      zoom: [1.16, 1.02], ursprung: "38% 40%", ort: "" },
-    { bild: "bilder/off-blaze.png",      ein: 64.6, dauer: 8.0,
-      zoom: [1.04, 1.22], ursprung: "48% 42%", ort: "" },
-    { bild: "bilder/off-angebot.png",    ein: 74.1, dauer: 9.0,
-      zoom: [1.22, 1.03], ursprung: "55% 45%", ort: "" },
-    { bild: "bilder/off-stummel.png",    ein: 85.6, dauer: 6.0,
-      zoom: [1.06, 1.26], ursprung: "62% 60%", ort: "" },
-    { bild: "bilder/off-abreise.png",    ein: 87.3, dauer: 7.0,
-      zoom: [1.26, 1.02], ursprung: "50% 45%", ort: "" }
+    // Weites Camp: langsam hinein und dabei von rechts nach links
+    { bild: "bilder/off-camp-nacht.png", ein: 47.5,
+      zoom: [1.06, 1.24], schwenk: [5, -5], ursprung: "50% 50%",
+      ort: "Granite Falls — Camp Firefly" },
+
+    { bild: "bilder/off-boom-ast.png",   ein: 53.4,
+      zoom: [1.24, 1.08], schwenk: [-4, 3], ursprung: "50% 45%", ort: "" },
+
+    // Fenster: ruhig heran, leicht nach links, damit man von den
+    // Hütten rechts zu ihren Augen links kommt
+    { bild: "bilder/off-fenster.png",    ein: 58.0,
+      zoom: [1.10, 1.26], schwenk: [6, -4], ursprung: "50% 45%", ort: "" },
+
+    // Blaze: von ihm herüber zu ihr
+    { bild: "bilder/off-blaze.png",      ein: 64.6,
+      zoom: [1.14, 1.14], schwenk: [5, -5], ursprung: "50% 45%", ort: "" },
+
+    // Angebot: hinaus, dabei nach rechts
+    { bild: "bilder/off-angebot.png",    ein: 74.1,
+      zoom: [1.26, 1.06], schwenk: [-5, 4], ursprung: "50% 45%", ort: "" },
+
+    { bild: "bilder/off-stummel.png",    ein: 82.0,
+      zoom: [1.04, 1.28], schwenk: [-3, 4], heben: [-2, 3], ursprung: "55% 55%", ort: "" },
+
+    { bild: "bilder/off-abreise.png",    ein: 88.0,
+      zoom: [1.22, 1.04], schwenk: [3, -3], ursprung: "50% 45%", ort: "" }
   ]
 };
 
@@ -445,7 +457,7 @@ const streckenElemente = KONFIG.strecke.map((s) => {
   img.addEventListener("error", () => { s.fehlt = true; });
   wrap.appendChild(img);
   wrap.style.transformOrigin = s.ursprung;
-  wrap.style.transform = "scale(" + s.zoom[0] + ")";
+  wrap.style.transform = fahrt(s, 0);
   strecke.appendChild(wrap);
   return wrap;
 });
@@ -490,6 +502,32 @@ function setzeThema(i) {
 }
 
 /* ---------- Bildstrecke ---------- */
+
+/* Baut den Transform fuer Anfang (0) oder Ende (1) einer Fahrt.
+   zoom:    [von, nach]        Vergroesserung
+   schwenk: [vonX, nachX]      seitlich, in Prozent der Bildbreite
+   heben:   [vonY, nachY]      senkrecht, in Prozent der Bildhoehe
+   Der Schwenk wird begrenzt, damit nie ein Rand ins Bild kommt.        */
+function fahrt(s, ende) {
+  const z = s.zoom[ende];
+  const grenze = (z - 1) / 2 * 100 / z;      // so weit darf man hoechstens
+  const bg = (w) => Math.max(-grenze, Math.min(grenze, w));
+  const x = s.schwenk ? bg(s.schwenk[ende]) : 0;
+  const y = s.heben   ? bg(s.heben[ende])   : 0;
+  return "scale(" + z + ") translate(" + x.toFixed(2) + "%, " + y.toFixed(2) + "%)";
+}
+
+/* Wie lange steht dieses Bild wirklich? Bis zum naechsten Schnitt,
+   beim letzten bis zum Ende des Videos.                                */
+function standzeit(i) {
+  const s = KONFIG.strecke[i];
+  for (let n = i + 1; n < KONFIG.strecke.length; n++) {
+    if (!KONFIG.strecke[n].fehlt) return Math.max(2, KONFIG.strecke[n].ein - s.ein);
+  }
+  const d = clip.duration && isFinite(clip.duration) ? clip.duration : s.ein + (s.dauer || 8);
+  return Math.max(2, d - s.ein);
+}
+
 function zeigeBild(i) {
   if (i === aktivesBild || i < 0) return;
   aktivesBild = i;
@@ -497,10 +535,10 @@ function zeigeBild(i) {
   const wrap = streckenElemente[i];
   streckenElemente.forEach((w, n) => { if (n !== i) w.classList.remove("sichtbar"); });
   wrap.style.transition = "none";
-  wrap.style.transform  = "scale(" + s.zoom[0] + ")";
+  wrap.style.transform  = fahrt(s, 0);
   void wrap.offsetWidth;
-  wrap.style.transition = "transform " + (s.dauer + 1.2) + "s linear, opacity 1.0s ease";
-  wrap.style.transform  = "scale(" + s.zoom[1] + ")";
+  wrap.style.transition = "transform " + (standzeit(i) + 1.2) + "s linear, opacity 1.0s ease";
+  wrap.style.transform  = fahrt(s, 1);
   wrap.classList.add("sichtbar");
   if (s.ort) { ortmarke.textContent = s.ort; ortmarke.classList.add("sichtbar"); }
   else { ortmarke.classList.remove("sichtbar"); }
