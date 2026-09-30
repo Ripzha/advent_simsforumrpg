@@ -49,7 +49,9 @@ html, body {
 
 .phase { position: absolute; inset: 0; opacity: 0; transition: opacity 0.55s ease; pointer-events: none; background: #000; }
 .phase.aktiv { opacity: 1; }
-#clip { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--nacht); }
+#clip, #ident { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--nacht); }
+#phase-ident { z-index: 30; }
+.phase.fort { opacity: 0; transition: opacity 1.0s ease; }
 
 /* ---------- Vollbild-Bildstrecke ---------- */
 .strecke { position: absolute; inset: 0; background: #000; overflow: hidden; }
@@ -264,6 +266,10 @@ body.justiert .griff { display: block; }
 
 <div class="bühne" id="bühne">
 
+  <div class="phase" id="phase-ident">
+    <video id="ident" playsinline preload="auto"></video>
+  </div>
+
   <div class="phase" id="phase-clip">
     <video id="clip" playsinline preload="auto"></video>
     <div class="fehlt" id="clip-fehlt">Studio-Video nicht gefunden — Pfad in KONFIG.clip prüfen</div>
@@ -339,7 +345,10 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v3 · ein Video, Off ab 46.4",
+  fassung: "v4 · mit Rückkehrkennung",
+
+  ident:      "clips/simswelt-news-rueckkehr.mp4",   // Rueckkehrkennung nach der Werbung
+  identDauer: 6.6,                       // hier wird ins Studio geschnitten
 
   clip:  "clips/News_TV_Studio_2.mp4",   // Studio-Video, enthaelt beide Teile
   offAb: 46.4,                           // ab hier laeuft der Off-Teil im Vollbild
@@ -400,6 +409,8 @@ const KONFIG = {
 
 const el = (id) => document.getElementById(id);
 const clip      = el("clip");
+const ident     = el("ident");
+const phaseIdent = el("phase-ident");
 const phaseClip = el("phase-clip");
 const phaseVoll = el("phase-voll");
 const strecke   = el("strecke");
@@ -437,7 +448,8 @@ const streckenElemente = KONFIG.strecke.map((s) => {
   return wrap;
 });
 
-clip.src = KONFIG.clip;
+ident.src = KONFIG.ident;
+clip.src  = KONFIG.clip;
 clip.addEventListener("error", () => el("clip-fehlt").classList.add("zeig"));
 
 // Bilder vorladen
@@ -538,8 +550,24 @@ function zeigeZeit(name, t, d) {
 }
 
 /* ---------- Ablauf ---------- */
-function start() {
-  el("start").classList.add("weg");
+let identFertig = false;
+let identUhr = null;
+
+// Die Sendung schneidet an der tatsaechlichen Abspielzeit des Idents,
+// nicht am Klick. Sonst schneidet eine langsame Leitung mitten hinein.
+function identTakt() {
+  if (identFertig) return;
+  if (ident.currentTime >= KONFIG.identDauer) { starteStudio(); return; }
+  requestAnimationFrame(identTakt);
+}
+
+function starteStudio() {
+  if (identFertig) return;
+  identFertig = true;
+  clearTimeout(identUhr);
+  ident.pause();
+  phaseIdent.classList.remove("aktiv");
+  phaseIdent.classList.add("fort");
   teil = 1;
   phaseVoll.classList.remove("aktiv");
   phaseClip.classList.add("aktiv");
@@ -552,6 +580,27 @@ function start() {
   baueMarker();
   requestAnimationFrame(takt);
 }
+
+ident.addEventListener("ended", starteStudio);
+ident.addEventListener("error", starteStudio);
+
+function start() {
+  el("start").classList.add("weg");
+  identFertig = false;
+  phaseIdent.classList.remove("fort");
+  phaseIdent.classList.add("aktiv");
+  ident.currentTime = 0;
+  const lauf = ident.play();
+  if (lauf && lauf.catch) lauf.catch(function () {});
+  requestAnimationFrame(identTakt);
+
+  // Notbremse: laeuft die Kennung gar nicht an, geht es trotzdem weiter
+  clearTimeout(identUhr);
+  identUhr = setTimeout(function () {
+    if (!identFertig && ident.currentTime < 0.3) starteStudio();
+  }, (KONFIG.identDauer + 8) * 1000);
+}
+
 el("start-knopf").addEventListener("click", start);
 el("start").addEventListener("click", function (e) { if (e.target.closest("label")) return; start(); });
 
@@ -586,6 +635,7 @@ spur.addEventListener("click", function (e) {
 });
 
 function springe(sek) {
+  if (!identFertig) starteStudio();
   clip.currentTime = Math.max(0, Math.min(sek, clip.duration || sek));
   aktiverThema = -1; aktivesBild = -1;
   if (clip.paused) clip.play().catch(function () {});
@@ -773,13 +823,18 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault(); leisteAn = !leisteAn;
     el("leiste").classList.toggle("zeig", leisteAn); return;
   }
-  if (e.code === "Space") { e.preventDefault(); clip.paused ? clip.play() : clip.pause(); }
+  if (e.code === "Space") {
+    e.preventDefault();
+    const m = identFertig ? clip : ident;
+    m.paused ? m.play() : m.pause();
+  }
   const weite = e.shiftKey ? 1 : 5;
   if (e.key === "ArrowRight") { e.preventDefault(); springe(clip.currentTime + weite); }
   if (e.key === "ArrowLeft")  { e.preventDefault(); springe(clip.currentTime - weite); }
   if (e.key === "o" || e.key === "O") { e.preventDefault(); springe(KONFIG.offAb + 0.5); }
   if (e.key === "r" || e.key === "R") {
-    clip.pause();
+    clip.pause(); ident.pause(); identFertig = false;
+    phaseIdent.classList.remove("aktiv"); phaseIdent.classList.remove("fort");
     teil = 1; aktiverThema = -1; aktivesBild = -1;
     setzeThema(-1);
     binde.classList.remove("sichtbar");
