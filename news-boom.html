@@ -345,7 +345,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v5 · fehlende Bilder werden übersprungen",
+  fassung: "v7 · Camp und Fenster dazu",
 
   ident:      "clips/simswelt-news-rueckkehr.mp4",   // Rueckkehrkennung nach der Werbung
   identDauer: 6.6,                       // hier wird ins Studio geschnitten
@@ -386,20 +386,23 @@ const KONFIG = {
   ],
 
   /* Off-Teil: Vollbild ab Sekunde 46,4 des Videos.
-     zoom: von -> nach. Das letzte Bild haelt.                          */
+     Die Zeiten sitzen auf den gemessenen Sprechpausen.
+     Noch offen: Boom mit dem Ast in den Rippen (ca. 53) und die
+     Abreise am naechsten Tag (ca. 87). Fehlende Bilder werden
+     uebersprungen, bis sie da sind.                                    */
   strecke: [
-    { bild: "bilder/off-camp-nacht.png", ein: 47.5, dauer: 6.0,
-      zoom: [1.06, 1.18], ursprung: "50% 45%", ort: "Granite Falls — Camp Firefly" },
-    { bild: "bilder/off-boom-ast.png",   ein: 53.1, dauer: 8.5,
+    { bild: "bilder/off-camp-nacht.png", ein: 47.5, dauer: 13.5,
+      zoom: [1.02, 1.20], ursprung: "45% 45%", ort: "Granite Falls — Camp Firefly" },
+    { bild: "bilder/off-boom-ast.png",   ein: 53.1, dauer: 8.0,
       zoom: [1.22, 1.05], ursprung: "45% 40%", ort: "" },
-    { bild: "bilder/off-dennah.png",     ein: 61.9, dauer: 5.0,
-      zoom: [1.04, 1.20], ursprung: "55% 50%", ort: "" },
-    { bild: "bilder/off-blaze.png",      ein: 66.8, dauer: 7.5,
-      zoom: [1.18, 1.03], ursprung: "48% 42%", ort: "" },
-    { bild: "bilder/off-angebot.png",    ein: 74.1, dauer: 8.5,
-      zoom: [1.05, 1.22], ursprung: "55% 45%", ort: "" },
-    { bild: "bilder/off-stummel.png",  ein: 82.3, dauer: 5.0,
-      zoom: [1.20, 1.04], ursprung: "62% 60%", ort: "" },
+    { bild: "bilder/off-fenster.png",    ein: 61.9, dauer: 5.5,
+      zoom: [1.16, 1.02], ursprung: "38% 40%", ort: "" },
+    { bild: "bilder/off-blaze.png",      ein: 66.8, dauer: 8.0,
+      zoom: [1.04, 1.22], ursprung: "48% 42%", ort: "" },
+    { bild: "bilder/off-angebot.png",    ein: 74.1, dauer: 9.0,
+      zoom: [1.22, 1.03], ursprung: "55% 45%", ort: "" },
+    { bild: "bilder/off-stummel.png",    ein: 82.3, dauer: 6.0,
+      zoom: [1.06, 1.26], ursprung: "62% 60%", ort: "" },
     { bild: "bilder/off-abreise.png",    ein: 87.3, dauer: 7.0,
       zoom: [1.26, 1.02], ursprung: "50% 45%", ort: "" }
   ]
