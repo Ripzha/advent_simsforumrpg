@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimsWelt News — Boom Boom und Bite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   SIMSWELT NEWS — Block 9 und Off-Teil
+   Phase 1  Studiobild, Konstanze rechts, Themenkasten LINKS
+   Phase 2  Off-Teil, Vollbild-Bildstrecke
+   Zwei Tonspuren, die nacheinander laufen.
+   =================================================================== */
+
+:root {
+  --nacht:       #040a14;
+  --navy:        #08192e;
+  --silber:      #c9d6e4;
+  --weiss:       #ffffff;
+  --messing:     #c9992f;
+  --messing-hell:#e8c877;
+
+  /* Overlay-Positionen — im Browser mit J nachjustieren */
+  --thema-links:   5.4%;
+  --thema-oben:   15.0%;
+  --thema-breite: 36.0%;
+  --binde-links:   4.5%;
+  --binde-unten:  15.0%;
+
+  --marke: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --eng:   "Barlow Condensed", "Arial Narrow", sans-serif;
+  --text:  "Barlow", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: #02060c; font-family: var(--text); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.bühne {
+  position: relative; aspect-ratio: 16 / 9;
+  width: min(100vw, calc(100vh * 16 / 9)); height: auto;
+  background: #000; overflow: hidden; container-type: size;
+}
+
+.phase { position: absolute; inset: 0; opacity: 0; transition: opacity 0.55s ease; pointer-events: none; background: #000; }
+.phase.aktiv { opacity: 1; }
+#clip { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--nacht); }
+
+/* ---------- Vollbild-Bildstrecke ---------- */
+.strecke { position: absolute; inset: 0; background: #000; overflow: hidden; }
+.kb { position: absolute; inset: 0; opacity: 0; transition: opacity 1.0s ease; will-change: transform, opacity; }
+.kb.sichtbar { opacity: 1; }
+.kb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.strecke::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(4,10,20,0.55) 0%, rgba(4,10,20,0) 22%),
+    linear-gradient(0deg,  rgba(4,10,20,0.80) 0%, rgba(4,10,20,0) 30%);
+}
+
+/* ---------- Raute ---------- */
+.raute { display: inline-block; position: relative; width: .30em; height: .62em; margin: 0 .085em; }
+.raute::before { content: ""; position: absolute; inset: 0;   background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.raute::after  { content: ""; position: absolute; inset: 22%; background: var(--nacht);   clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+
+/* ---------- Senderkennung ---------- */
+.kennung {
+  position: absolute; top: 4.2%; right: 3.2%; z-index: 20;
+  display: flex; align-items: baseline; gap: 0.7em;
+  font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.5vw, 25px); letter-spacing: -0.012em;
+  color: var(--weiss); text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.kennung.sichtbar { opacity: 1; }
+.kennung .news { color: var(--messing-hell); }
+.kennung .uhr {
+  font-family: var(--eng); font-weight: 600; font-size: 0.66em;
+  letter-spacing: 0.22em; color: var(--silber);
+  padding-left: 0.75em; border-left: 1px solid rgba(201,214,228,0.35);
+}
+
+/* ---------- Themenkasten, LINKS neben Konstanze ---------- */
+.thema {
+  position: absolute; left: var(--thema-links); top: var(--thema-oben);
+  width: var(--thema-breite); z-index: 15;
+  opacity: 0; transform: translateX(-16px);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2,0.8,0.3,1);
+}
+.thema.sichtbar { opacity: 1; transform: translateX(0); }
+.thema-bild {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  border: 2px solid var(--messing); overflow: hidden; background: var(--nacht);
+  box-shadow: 0 12px 38px rgba(0,0,0,0.65); display: flex;
+}
+.thema-bild img {
+  flex: 1 1 0; min-width: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; will-change: transform;
+}
+.thema-bild img + img { border-left: 2px solid var(--messing); }
+.thema-zeile {
+  margin-top: 6px; background: rgba(6,16,30,0.94);
+  border-left: 4px solid var(--messing);
+  padding: 0.55em 0.95em 0.6em; text-align: left;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.55);
+}
+.thema-zeile b {
+  display: block; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(12px, 1.7vw, 29px); line-height: 1.06;
+  letter-spacing: -0.005em; color: var(--weiss);
+}
+.thema-zeile span {
+  display: block; margin-top: 0.22em;
+  font-family: var(--eng); font-weight: 600;
+  font-size: clamp(9px, 1.02vw, 17px);
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--messing-hell);
+}
+
+/* ---------- Bauchbinde ---------- */
+.binde {
+  position: absolute; left: var(--binde-links); bottom: var(--binde-unten);
+  z-index: 18; display: flex; align-items: stretch;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.binde.sichtbar { opacity: 1; transform: translateY(0); }
+.binde .flagge {
+  background: var(--messing); color: #0a1220;
+  font-family: var(--eng); font-weight: 700;
+  font-size: clamp(9px, 1.05vw, 18px); letter-spacing: 0.18em;
+  display: flex; align-items: center; padding: 0 0.9em;
+}
+.binde .inhalt { background: rgba(6,16,30,0.94); border-left: 1px solid rgba(201,214,228,0.22); padding: 0.55em 2em 0.6em 1.05em; }
+.binde .name { font-family: var(--marke); font-weight: 800; font-size: clamp(12px, 1.65vw, 28px); line-height: 1.06; color: var(--weiss); }
+.binde .rolle { font-family: var(--eng); font-weight: 600; font-size: clamp(9px, 1vw, 17px); letter-spacing: 0.22em; text-transform: uppercase; color: var(--messing-hell); }
+
+/* ---------- Ortsmarke ---------- */
+.ort {
+  position: absolute; left: var(--binde-links); bottom: calc(var(--binde-unten) + 1.5%);
+  z-index: 18; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.45vw, 25px); color: var(--weiss);
+  background: rgba(6,16,30,0.92); border-left: 5px solid var(--messing);
+  padding: 0.42em 1.1em 0.46em 0.85em;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.ort.sichtbar { opacity: 1; transform: translateY(0); }
+
+/* ---------- Laufband ---------- */
+.laufband {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 25; height: 8.6%;
+  display: flex; align-items: stretch;
+  background: linear-gradient(180deg, var(--navy) 0%, var(--nacht) 100%);
+  border-top: 2px solid var(--messing); overflow: hidden;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.laufband.sichtbar { opacity: 1; }
+.laufband .marke {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 0.6em; padding: 0 1.4em;
+  background: var(--messing); color: var(--nacht);
+  font-family: var(--eng); font-weight: 700;
+  font-size: clamp(10px, 1.3vw, 22px); letter-spacing: 0.16em;
+}
+.laufband .marke i { font-style: normal; display: inline-block; width: 0.34em; height: 0.68em; background: var(--nacht); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.laufband .spur { position: relative; flex: 1 1 auto; overflow: hidden; display: flex; align-items: center; }
+.laufband .zug {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  font-family: var(--eng); font-weight: 500;
+  font-size: clamp(11px, 1.4vw, 23px); letter-spacing: 0.04em;
+  color: var(--silber); animation: ticker 150s linear infinite; padding-left: 100%;
+}
+.laufband .zug i { font-style: normal; display: inline-block; width: 0.32em; height: 0.64em; background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); margin: 0 1.6em; }
+@keyframes ticker { to { transform: translateX(-100%); } }
+
+/* ---------- Zeitleiste ---------- */
+.leiste {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 88;
+  display: none; align-items: center; gap: 0.9em; padding: 0.5em 1em 0.6em;
+  background: linear-gradient(0deg, rgba(4,10,20,0.95), rgba(4,10,20,0.6));
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; color: var(--messing-hell);
+}
+.leiste.zeig { display: flex; }
+.leiste .zeit { flex: 0 0 auto; min-width: 11em; }
+.leiste .spur2 { position: relative; flex: 1 1 auto; height: 16px; background: rgba(201,214,228,0.14); cursor: pointer; }
+.leiste .fuell { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing); }
+.leiste .marker { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.55); }
+.leiste button {
+  flex: 0 0 auto; font-family: inherit; font-size: 11px; letter-spacing: 0.06em;
+  color: var(--nacht); background: var(--messing-hell); border: none; padding: 0.45em 0.9em; cursor: pointer;
+}
+.leiste button:hover { background: var(--weiss); }
+.leiste .hinweis { flex: 0 0 auto; color: var(--silber); font-size: 11px; }
+
+/* ---------- Zeiten-Editor ---------- */
+.zeiten {
+  position: absolute; right: 1.5%; top: 2%; bottom: 12%; width: 30%; min-width: 320px;
+  z-index: 92; display: none; flex-direction: column;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  font-family: var(--text); font-size: 12px; color: var(--weiss);
+}
+.zeiten.zeig { display: flex; }
+.zeiten h3 { margin: 0; padding: 0.7em 0.9em; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--nacht); background: var(--messing-hell); }
+.zeiten .liste { flex: 1 1 auto; overflow-y: auto; padding: 0.4em 0.6em; }
+.zeiten .zeile { display: grid; grid-template-columns: 1fr auto auto; gap: 0.4em; align-items: center; padding: 0.35em 0.3em; border-bottom: 1px solid rgba(201,214,228,0.14); }
+.zeiten .zeile.jetzt { background: rgba(201,153,47,0.22); }
+.zeiten .titel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zeiten .titel small { display: block; color: var(--silber); font-size: 10px; }
+.zeiten button { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; border: 1px solid rgba(232,200,119,0.5); background: transparent; color: var(--messing-hell); padding: 0.28em 0.5em; cursor: pointer; }
+.zeiten button:hover { background: var(--messing); color: var(--nacht); }
+.zeiten .fuss { flex: 0 0 auto; padding: 0.55em 0.7em; border-top: 1px solid rgba(201,214,228,0.2); }
+.zeiten textarea { display: none; width: 100%; height: 170px; margin-top: 0.5em; background: #071322; color: var(--messing-hell); border: 1px solid rgba(232,200,119,0.4); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; padding: 0.4em; }
+.zeiten.ausgabe textarea { display: block; }
+
+/* ---------- Ziehen und Groesse ---------- */
+body.justiert .thema, body.justiert .binde { cursor: move; opacity: 1 !important; transform: none !important; outline: 1px dashed rgba(232,200,119,0.65); }
+.griff { position: absolute; right: -7px; bottom: -7px; width: 16px; height: 16px; z-index: 40; background: #35d6a0; border: 2px solid var(--nacht); cursor: nwse-resize; display: none; }
+body.justiert .griff { display: block; }
+
+.justier {
+  position: absolute; left: 1.5%; top: 2%; z-index: 95; display: none;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  padding: 0.75em 1.15em; font-family: var(--text); font-size: 13px; line-height: 1.6;
+  color: var(--weiss); white-space: pre; pointer-events: none;
+}
+.justier.zeig { display: block; }
+.justier b { color: var(--messing-hell); font-weight: 600; }
+.justier code { display: none; margin-top: 0.55em; padding: 0.45em 0.65em; background: #071322; color: var(--messing-hell); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; user-select: all; }
+.justier.werte-zeigen code { display: block; pointer-events: auto; }
+
+/* ---------- Startbildschirm ---------- */
+.start {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.1rem;
+  background: radial-gradient(ellipse at 50% 44%, #16314f 0%, #0a1c33 44%, #040a14 100%);
+  cursor: pointer; transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.start.weg { opacity: 0; visibility: hidden; }
+.start h1 { margin: 0; font-family: var(--marke); font-weight: 800; font-size: clamp(26px, 5vw, 84px); letter-spacing: -0.012em; color: var(--weiss); display: flex; align-items: baseline; }
+.start h1 .news { color: var(--messing-hell); }
+.start .linie { width: 42%; height: 2px; background: var(--messing); }
+.start p { margin: 0; font-family: var(--eng); font-weight: 600; font-size: clamp(11px, 1.3vw, 21px); letter-spacing: 0.42em; text-indent: 0.42em; text-transform: uppercase; color: rgba(201,214,228,0.82); }
+.start button { margin-top: 0.3rem; font-family: var(--eng); font-weight: 700; font-size: clamp(13px, 1.4vw, 22px); letter-spacing: 0.16em; text-transform: uppercase; color: var(--nacht); background: var(--messing); border: none; padding: 0.8em 2.6em; cursor: pointer; }
+.start button:hover { background: var(--messing-hell); }
+.start label { font-family: var(--eng); font-weight: 600; font-size: clamp(11px, 1.15vw, 18px); letter-spacing: 0.1em; text-transform: uppercase; color: var(--messing-hell); border-bottom: 1px solid rgba(232,200,119,0.5); cursor: pointer; }
+.start label input { display: none; }
+.start small { font-family: var(--text); font-size: clamp(10px, 0.95vw, 14px); color: rgba(201,214,228,0.5); }
+
+.fehlt {
+  position: absolute; inset: 0; z-index: 12; display: none;
+  align-items: center; justify-content: center;
+  background: repeating-linear-gradient(45deg, #0b1a2e 0 22px, #071322 22px 44px);
+  color: var(--messing-hell); font-family: var(--eng); font-weight: 600;
+  font-size: clamp(12px, 1.5vw, 22px); letter-spacing: 0.08em; text-align: center; padding: 2em;
+}
+.fehlt.zeig { display: flex; }
+</style>
+</head>
+<body>
+
+<div class="bühne" id="bühne">
+
+  <div class="phase" id="phase-clip">
+    <video id="clip" playsinline preload="auto"></video>
+    <div class="fehlt" id="clip-fehlt">Studio-Video nicht gefunden — Pfad in KONFIG.clip prüfen</div>
+  </div>
+
+  <div class="phase" id="phase-voll">
+    <div class="strecke" id="strecke"></div>
+  </div>
+
+  <div class="kennung" id="kennung">
+    <span>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></span>
+    <span class="uhr" id="uhr">20:00</span>
+  </div>
+
+  <div class="thema" id="thema">
+    <div class="thema-bild" id="thema-bild"></div>
+    <div class="thema-zeile">
+      <b id="thema-titel"></b>
+      <span id="thema-ort"></span>
+    </div>
+  </div>
+
+  <div class="binde" id="binde">
+    <div class="flagge">LIVE</div>
+    <div class="inhalt">
+      <div class="name" id="binde-name"></div>
+      <div class="rolle" id="binde-rolle"></div>
+    </div>
+  </div>
+
+  <div class="ort" id="ortmarke"></div>
+
+  <div class="laufband" id="laufband">
+    <div class="marke"><i></i>EILMELDUNGEN</div>
+    <div class="spur"><div class="zug" id="zug"></div></div>
+  </div>
+
+  <div class="leiste" id="leiste">
+    <span class="zeit" id="leiste-zeit">Block 9 · 0.0 / 0.0</span>
+    <span class="spur2" id="leiste-spur"><span class="fuell" id="leiste-fuell"></span></span>
+    <button id="knopf-video">Studio-Video…</button>
+    <span class="hinweis">Z Zeiten · J ausrichten · T ausblenden</span>
+  </div>
+
+  <div class="zeiten" id="zeiten">
+    <h3>Einblendezeiten · Z schliesst</h3>
+    <div class="liste" id="zeiten-liste"></div>
+    <div class="fuss">
+      <button id="zeiten-ausgabe">Werte zum Kopieren</button>
+      <textarea id="zeiten-text" readonly></textarea>
+    </div>
+  </div>
+
+  <div class="justier" id="justier"></div>
+
+  <div class="start" id="start">
+    <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
+    <div class="linie"></div>
+    <p>Boom Boom und Bite</p>
+    <button id="start-knopf">Abspielen</button>
+    <label>Studio-Video von Hand wählen<input type="file" id="datei-video" accept="video/*"></label>
+    <small>Leertaste pausiert · Pfeile springen · Z setzt Zeiten · J richtet aus · T blendet aus · R startet neu</small>
+  </div>
+
+</div>
+
+
+<script>
+/* ===================================================================
+   KONFIG
+   Zeiten in Sekunden, jeweils ab Beginn der eigenen Tonspur.
+   Die Werte stammen aus der Messung der Sprechpausen.
+   =================================================================== */
+const KONFIG = {
+
+  fassung: "v3 · ein Video, Off ab 46.4",
+
+  clip:  "clips/News_TV_Studio_2.mp4",   // Studio-Video, enthaelt beide Teile
+  offAb: 46.4,                           // ab hier laeuft der Off-Teil im Vollbild
+
+  uhrzeit: "20:00",
+
+  ticker: [
+    "Brindelton Bay — Pflegeheim sucht weiterhin Verstärkung im Nachtdienst",
+    "San Sequoia — Boutique erwägt Sicherheitspersonal nach Vorfall mit Stiefel",
+    "Innisgreen — Wanderwege bis Februar nur eingeschränkt begehbar",
+    "Modewoche — Kollektion Riot in Rosé weiterhin ohne Käufer",
+    "Verkehr — Magnolia Promenade, Parkhaus wegen Möbeltransporten überlastet",
+    "Del Sol Valley — Anwohner melden nächtliche Lichter in einem Keller",
+    "SimsWelt News sucht Verstärkung: Kolumne, Interview, Stadtgeflüster, Leserpost",
+    "Granite Falls — Campleitung bittet um sorgsamen Umgang mit Rauchwaren",
+    "Mystic Tours — Winterreisen ab sofort buchbar, Rückkehr nicht garantiert",
+    "Würstchen und Ketchup — zwei Zutaten, eine Überzeugung",
+    "Wetter — morgen bewölkt, vereinzelt Schnee, in Forgotten Hollow durchgehend Nacht",
+    "Hinweis der Redaktion — vereinzelte Beiträge können Spuren von Nüssen enthalten"
+  ],
+
+  binde: { name: "Konstanze Immalaut", rolle: "Moderatorin", ein: 2.0, aus: 9.0 },
+
+  /* Themenkasten LINKS neben Konstanze.
+     Zeiten sind Videozeiten, gemessen an den Sprechpausen.              */
+  thema: [
+    { ein: 14.6, aus: 24.2, titel: "Im hinteren Bereich", ort: "San Sequoia",
+      bilder: ["bilder/boom-club.png"] },
+    { ein: 24.2, aus: 28.8, titel: "Langweilige Zettel",  ort: "Kein Interesse an Geld",
+      bilder: ["bilder/boom-boomboom.png"] },
+    { ein: 28.8, aus: 37.0, titel: "Eine Arena",          ort: "Ihre Forderung",
+      bilder: ["bilder/boom-arena.png"] },
+    { ein: 37.0, aus: 45.6, titel: "Bite",                ort: "Das Geschäftsmodell",
+      bilder: ["bilder/boom-bite.png"] }
+  ],
+
+  /* Off-Teil: Vollbild ab Sekunde 46,4 des Videos.
+     zoom: von -> nach. Das letzte Bild haelt.                          */
+  strecke: [
+    { bild: "bilder/off-camp-nacht.png", ein: 47.5, dauer: 6.0,
+      zoom: [1.06, 1.18], ursprung: "50% 45%", ort: "Granite Falls — Camp Firefly" },
+    { bild: "bilder/off-boom-ast.png",   ein: 53.1, dauer: 8.5,
+      zoom: [1.22, 1.05], ursprung: "45% 40%", ort: "" },
+    { bild: "bilder/off-dennah.png",     ein: 61.9, dauer: 5.0,
+      zoom: [1.04, 1.20], ursprung: "55% 50%", ort: "" },
+    { bild: "bilder/off-blaze.png",      ein: 66.8, dauer: 7.5,
+      zoom: [1.18, 1.03], ursprung: "48% 42%", ort: "" },
+    { bild: "bilder/off-angebot.png",    ein: 74.1, dauer: 8.5,
+      zoom: [1.05, 1.22], ursprung: "55% 45%", ort: "" },
+    { bild: "bilder/off-stummel.png",  ein: 82.3, dauer: 5.0,
+      zoom: [1.20, 1.04], ursprung: "62% 60%", ort: "" },
+    { bild: "bilder/off-abreise.png",    ein: 87.3, dauer: 7.0,
+      zoom: [1.26, 1.02], ursprung: "50% 45%", ort: "" }
+  ]
+};
+
+/* =================================================================== */
+
+const el = (id) => document.getElementById(id);
+const clip      = el("clip");
+const phaseClip = el("phase-clip");
+const phaseVoll = el("phase-voll");
+const strecke   = el("strecke");
+const thema     = el("thema");
+const themaBild = el("thema-bild");
+const binde     = el("binde");
+const ortmarke  = el("ortmarke");
+
+let teil = 1;            // 1 = Block 9, 2 = Off-Teil
+let aktiverThema = -1;
+let aktivesBild  = -1;
+let leisteAn = true;
+let zeitenAn = false;
+let justierAn = false;
+
+el("uhr").textContent         = KONFIG.uhrzeit;
+el("binde-name").textContent  = KONFIG.binde.name;
+el("binde-rolle").textContent = KONFIG.binde.rolle;
+
+(function baueTicker() {
+  const einmal = KONFIG.ticker.map(t => "<span>" + t + "</span><i></i>").join("");
+  el("zug").innerHTML = einmal + einmal;
+})();
+
+const streckenElemente = KONFIG.strecke.map((s) => {
+  const wrap = document.createElement("div");
+  wrap.className = "kb";
+  const img = document.createElement("img");
+  img.src = s.bild; img.alt = "";
+  img.addEventListener("error", () => { wrap.style.background = "#0b1a2e"; });
+  wrap.appendChild(img);
+  wrap.style.transformOrigin = s.ursprung;
+  wrap.style.transform = "scale(" + s.zoom[0] + ")";
+  strecke.appendChild(wrap);
+  return wrap;
+});
+
+clip.src = KONFIG.clip;
+clip.addEventListener("error", () => el("clip-fehlt").classList.add("zeig"));
+
+// Bilder vorladen
+KONFIG.strecke.map(x => x.bild)
+  .concat(KONFIG.thema.reduce((a, t) => a.concat(t.bilder), []))
+  .forEach(p => { const v = new Image(); v.src = p; });
+
+/* ---------- Themenkasten ---------- */
+function setzeThema(i) {
+  if (i === aktiverThema) return;
+  aktiverThema = i;
+  if (i < 0) { thema.classList.remove("sichtbar"); return; }
+  const t = KONFIG.thema[i];
+  themaBild.innerHTML = "";
+  t.bilder.forEach((pfad) => {
+    const img = document.createElement("img");
+    img.src = pfad; img.alt = "";
+    img.addEventListener("error", () => { img.style.background = "#0b1a2e"; });
+    if (t.ausschnitt && t.ausschnitt[t.bilder.indexOf(pfad)]) {
+      img.style.objectPosition = t.ausschnitt[t.bilder.indexOf(pfad)];
+    }
+    themaBild.appendChild(img);
+    if (t.zoom) {
+      const dauer = Math.max(1, t.aus - t.ein);
+      img.style.transformOrigin = t.ursprung || "50% 50%";
+      img.style.transition = "none";
+      img.style.transform = "scale(" + t.zoom[0] + ")";
+      void img.offsetWidth;
+      img.style.transition = "transform " + dauer + "s linear";
+      img.style.transform = "scale(" + t.zoom[1] + ")";
+    }
+  });
+  el("thema-titel").textContent = t.titel;
+  el("thema-ort").textContent   = t.ort;
+  thema.classList.add("sichtbar");
+}
+
+/* ---------- Bildstrecke ---------- */
+function zeigeBild(i) {
+  if (i === aktivesBild || i < 0) return;
+  aktivesBild = i;
+  const s = KONFIG.strecke[i];
+  const wrap = streckenElemente[i];
+  streckenElemente.forEach((w, n) => { if (n !== i) w.classList.remove("sichtbar"); });
+  wrap.style.transition = "none";
+  wrap.style.transform  = "scale(" + s.zoom[0] + ")";
+  void wrap.offsetWidth;
+  wrap.style.transition = "transform " + (s.dauer + 1.2) + "s linear, opacity 1.0s ease";
+  wrap.style.transform  = "scale(" + s.zoom[1] + ")";
+  wrap.classList.add("sichtbar");
+  if (s.ort) { ortmarke.textContent = s.ort; ortmarke.classList.add("sichtbar"); }
+  else { ortmarke.classList.remove("sichtbar"); }
+}
+
+/* ---------- Takt ---------- */
+function takt() {
+  const t = clip.currentTime;
+
+  if (t >= KONFIG.offAb) {
+    if (teil !== 2) {
+      teil = 2;
+      setzeThema(-1);
+      binde.classList.remove("sichtbar");
+      phaseClip.classList.remove("aktiv");
+      setTimeout(function () { phaseVoll.classList.add("aktiv"); }, 280);
+      aktivesBild = -1;
+    }
+    let treffer = 0;
+    for (let i = 0; i < KONFIG.strecke.length; i++) {
+      if (t >= KONFIG.strecke[i].ein) treffer = i;
+    }
+    zeigeBild(treffer);
+  } else {
+    if (teil !== 1) {
+      teil = 1;
+      phaseVoll.classList.remove("aktiv");
+      phaseClip.classList.add("aktiv");
+      aktivesBild = -1;
+      ortmarke.classList.remove("sichtbar");
+      streckenElemente.forEach(function (w) { w.classList.remove("sichtbar"); });
+    }
+    let treffer = -1;
+    for (let i = 0; i < KONFIG.thema.length; i++) {
+      if (t >= KONFIG.thema[i].ein && t < KONFIG.thema[i].aus) { treffer = i; break; }
+    }
+    setzeThema(treffer);
+    binde.classList.toggle("sichtbar", t >= KONFIG.binde.ein && t < KONFIG.binde.aus);
+  }
+
+  zeigeZeit(teil === 1 ? "Block 9" : "Off-Teil", t, clip.duration);
+  requestAnimationFrame(takt);
+}
+
+function zeigeZeit(name, t, d) {
+  const g = d && isFinite(d) ? d : 0;
+  el("leiste-zeit").textContent = name + " · " + t.toFixed(1) + " / " + g.toFixed(1);
+  el("leiste-fuell").style.width = g ? (t / g * 100) + "%" : "0";
+}
+
+/* ---------- Ablauf ---------- */
+function start() {
+  el("start").classList.add("weg");
+  teil = 1;
+  phaseVoll.classList.remove("aktiv");
+  phaseClip.classList.add("aktiv");
+  el("kennung").classList.add("sichtbar");
+  el("laufband").classList.add("sichtbar");
+  if (leisteAn) el("leiste").classList.add("zeig");
+  aktiverThema = -1; aktivesBild = -1;
+  clip.currentTime = 0;
+  clip.play().catch(function () {});
+  baueMarker();
+  requestAnimationFrame(takt);
+}
+el("start-knopf").addEventListener("click", start);
+el("start").addEventListener("click", function (e) { if (e.target.closest("label")) return; start(); });
+
+el("datei-video").addEventListener("change", function (e) {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  el("clip-fehlt").classList.remove("zeig");
+  clip.src = URL.createObjectURL(f); clip.load();
+});
+el("knopf-video").addEventListener("click", function () { el("datei-video").click(); });
+
+/* ---------- Zeitleiste ---------- */
+const spur = el("leiste-spur");
+function baueMarker() {
+  spur.querySelectorAll(".marker").forEach(function (m) { m.remove(); });
+  if (!clip.duration || !isFinite(clip.duration)) return;
+  KONFIG.thema.map(function (t) { return t.ein; })
+    .concat(KONFIG.strecke.map(function (x) { return x.ein; }))
+    .forEach(function (sek) {
+      const k = document.createElement("span");
+      k.className = "marker";
+      k.style.left = (sek / clip.duration * 100) + "%";
+      spur.appendChild(k);
+    });
+}
+clip.addEventListener("loadedmetadata", baueMarker);
+
+spur.addEventListener("click", function (e) {
+  if (!clip.duration || !isFinite(clip.duration)) return;
+  const r = spur.getBoundingClientRect();
+  springe(((e.clientX - r.left) / r.width) * clip.duration);
+});
+
+function springe(sek) {
+  clip.currentTime = Math.max(0, Math.min(sek, clip.duration || sek));
+  aktiverThema = -1; aktivesBild = -1;
+  if (clip.paused) clip.play().catch(function () {});
+}
+
+/* ---------- Zeiten-Editor ---------- */
+const zeiten = el("zeiten");
+function sek(v) { return Math.round(v * 10) / 10; }
+
+function baueZeiten() {
+  const liste = el("zeiten-liste");
+  liste.innerHTML = "";
+
+  KONFIG.thema.forEach((t, i) => {
+    const z = document.createElement("div");
+    z.className = "zeile"; z.dataset.art = "thema"; z.dataset.i = String(i);
+    z.innerHTML = '<span class="titel">' + t.titel +
+      '<small>Kasten ' + (i + 1) + ' · ' + t.ein.toFixed(1) + ' bis ' + t.aus.toFixed(1) + ' s</small></span>';
+    const a = document.createElement("button"); a.textContent = "ein";
+    const e = document.createElement("button"); e.textContent = "aus";
+    a.addEventListener("click", () => {
+      t.ein = sek(clip.currentTime);
+      if (i > 0) KONFIG.thema[i - 1].aus = t.ein;
+      aktualisiere();
+    });
+    e.addEventListener("click", () => { t.aus = sek(clip.currentTime); aktualisiere(); });
+    z.appendChild(a); z.appendChild(e);
+    liste.appendChild(z);
+  });
+
+  KONFIG.strecke.forEach((b, i) => {
+    const name = b.bild.split("/").pop().replace(".png", "");
+    const z = document.createElement("div");
+    z.className = "zeile"; z.dataset.art = "strecke"; z.dataset.i = String(i);
+    z.innerHTML = '<span class="titel">' + name +
+      '<small>Off ' + (i + 1) + ' · ab ' + b.ein.toFixed(1) + ' s</small></span>';
+    const a = document.createElement("button"); a.textContent = "ab";
+    a.addEventListener("click", () => { b.ein = sek(clip.currentTime); aktualisiere(); });
+    z.appendChild(a); z.appendChild(document.createElement("span"));
+    liste.appendChild(z);
+  });
+}
+
+function aktualisiere() {
+  baueZeiten(); baueMarker();
+  aktiverThema = -1; aktivesBild = -1;
+  schreibeAusgabe();
+}
+
+function schreibeAusgabe() {
+  const t = KONFIG.thema.map(x =>
+    '    { ein: ' + x.ein + ', aus: ' + x.aus + ', titel: "' + x.titel +
+    '", ort: "' + x.ort + '",\n      bilder: ' + JSON.stringify(x.bilder) + ' },').join("\n");
+  const b = KONFIG.strecke.map(x =>
+    '    { bild: "' + x.bild + '", ein: ' + x.ein + ', dauer: ' + x.dauer +
+    ',\n      zoom: ' + JSON.stringify(x.zoom) + ', ursprung: "' + x.ursprung +
+    '", ort: "' + x.ort + '" },').join("\n");
+  el("zeiten-text").value = "thema: [\n" + t + "\n  ],\n\n  strecke: [\n" + b + "\n  ]";
+}
+
+el("zeiten-ausgabe").addEventListener("click", () => {
+  zeiten.classList.toggle("ausgabe");
+  schreibeAusgabe();
+  const f = el("zeiten-text");
+  if (zeiten.classList.contains("ausgabe")) { f.focus(); f.select(); }
+});
+
+setInterval(() => {
+  if (!zeitenAn) return;
+  zeiten.querySelectorAll(".zeile").forEach(z => {
+    const i = +z.dataset.i;
+    const treffer = z.dataset.art === "thema"
+      ? (clip.currentTime >= KONFIG.thema[i].ein && clip.currentTime < KONFIG.thema[i].aus)
+      : (clip.currentTime >= KONFIG.strecke[i].ein &&
+         (i === KONFIG.strecke.length - 1 || clip.currentTime < KONFIG.strecke[i + 1].ein));
+    z.classList.toggle("jetzt", treffer);
+  });
+}, 200);
+
+/* ---------- Ziehen und Ausrichten ---------- */
+const bühne = document.querySelector(".bühne");
+const ziele = [
+  { knoten: null, name: "thema", xVar: "--thema-links", xDreh: 1, yVar: "--thema-oben",  yDreh: 1, bVar: "--thema-breite" },
+  { knoten: null, name: "binde", xVar: "--binde-links", xDreh: 1, yVar: "--binde-unten", yDreh: -1, bVar: null }
+];
+function zielKnoten() {
+  ziele[0].knoten = thema; ziele[1].knoten = binde;
+  ziele.forEach(z => {
+    if (!z.bVar || z.knoten.querySelector(":scope > .griff")) return;
+    const g = document.createElement("span");
+    g.className = "griff"; g.dataset.ziel = z.name;
+    z.knoten.appendChild(g);
+  });
+}
+let zieht = null;
+function starteZiehen(e, z, modus) {
+  const r = bühne.getBoundingClientRect();
+  zieht = { z, modus, mx: e.clientX, my: e.clientY, bw: r.width, bh: r.height,
+            x: werte[z.xVar], y: werte[z.yVar], b: z.bVar ? werte[z.bVar] : 0 };
+  e.preventDefault(); e.stopPropagation();
+}
+document.addEventListener("pointerdown", (e) => {
+  if (!justierAn) return;
+  const griff = e.target.closest(".griff");
+  if (griff) {
+    const z = ziele.filter(n => n.name === griff.dataset.ziel)[0];
+    if (z) { zielIndex = schlüssel.indexOf(z.bVar); starteZiehen(e, z, "groesse"); zeichneJustier(); }
+    return;
+  }
+  const treffer = ziele.filter(z => z.knoten && z.knoten.contains(e.target))[0];
+  if (treffer) { zielIndex = schlüssel.indexOf(treffer.xVar); starteZiehen(e, treffer, "schieben"); zeichneJustier(); }
+});
+document.addEventListener("pointermove", (e) => {
+  if (!zieht) return;
+  const dx = (e.clientX - zieht.mx) / zieht.bw * 100;
+  const dy = (e.clientY - zieht.my) / zieht.bh * 100;
+  const z = zieht.z;
+  if (zieht.modus === "schieben") {
+    setzeWert(z.xVar, zieht.x + dx * z.xDreh);
+    setzeWert(z.yVar, zieht.y + dy * z.yDreh);
+  } else if (z.bVar) {
+    setzeWert(z.bVar, Math.max(5, zieht.b + dx));
+  }
+  zeichneJustier();
+});
+document.addEventListener("pointerup", () => { zieht = null; });
+
+const werte = {
+  "--thema-links":  5.4,
+  "--thema-oben":  15.0,
+  "--thema-breite":36.0,
+  "--binde-links":  4.5,
+  "--binde-unten": 15.0
+};
+const schlüssel = Object.keys(werte);
+let zielIndex = 0;
+
+function zeichneJustier() {
+  const zeilen = schlüssel.map((k, i) =>
+    (i === zielIndex ? "\u25B8 " : "  ") + k.padEnd(16) + werte[k].toFixed(1) + "%").join("\n");
+  const css = schlüssel.map(k => "  " + k + ": " + werte[k].toFixed(1) + "%;").join("\n");
+  el("justier").innerHTML =
+    "<b>Ausrichtemodus</b>  ziehen  ·  gruener Griff = Breite  ·  C zeigt die Werte  ·  J schliesst\n"
+    + zeilen + "<code>:root {\n" + css + "\n}</code>";
+}
+function setzeWert(k, v) {
+  werte[k] = v;
+  document.documentElement.style.setProperty(k, v.toFixed(1) + "%");
+}
+function justierUm() {
+  justierAn = !justierAn;
+  el("justier").classList.toggle("zeig", justierAn);
+  document.body.classList.toggle("justiert", justierAn);
+  if (justierAn) {
+    if (aktiverThema < 0) setzeThema(0);
+    binde.classList.add("sichtbar");
+    zielKnoten(); zeichneJustier();
+  }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "j" || e.key === "J") { e.preventDefault(); justierUm(); return; }
+  if ((e.key === "c" || e.key === "C") && justierAn) {
+    e.preventDefault(); el("justier").classList.toggle("werte-zeigen"); return;
+  }
+  if (justierAn) {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      zielIndex = (zielIndex + (e.shiftKey ? -1 : 1) + schlüssel.length) % schlüssel.length;
+      zeichneJustier(); return;
+    }
+    const schritt = e.shiftKey ? 1.0 : 0.1;
+    const k = schlüssel[zielIndex];
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); setzeWert(k, werte[k] - schritt); zeichneJustier(); }
+    if (e.key === "ArrowRight" || e.key === "ArrowUp")  { e.preventDefault(); setzeWert(k, werte[k] + schritt); zeichneJustier(); }
+    return;
+  }
+  if (e.key === "z" || e.key === "Z") {
+    e.preventDefault(); zeitenAn = !zeitenAn;
+    zeiten.classList.toggle("zeig", zeitenAn);
+    if (zeitenAn) baueZeiten();
+    return;
+  }
+  if (e.key === "t" || e.key === "T") {
+    e.preventDefault(); leisteAn = !leisteAn;
+    el("leiste").classList.toggle("zeig", leisteAn); return;
+  }
+  if (e.code === "Space") { e.preventDefault(); clip.paused ? clip.play() : clip.pause(); }
+  const weite = e.shiftKey ? 1 : 5;
+  if (e.key === "ArrowRight") { e.preventDefault(); springe(clip.currentTime + weite); }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); springe(clip.currentTime - weite); }
+  if (e.key === "o" || e.key === "O") { e.preventDefault(); springe(KONFIG.offAb + 0.5); }
+  if (e.key === "r" || e.key === "R") {
+    clip.pause();
+    teil = 1; aktiverThema = -1; aktivesBild = -1;
+    setzeThema(-1);
+    binde.classList.remove("sichtbar");
+    ortmarke.classList.remove("sichtbar");
+    streckenElemente.forEach(w => w.classList.remove("sichtbar"));
+    phaseVoll.classList.remove("aktiv");
+    phaseClip.classList.remove("aktiv");
+    el("kennung").classList.remove("sichtbar");
+    el("laufband").classList.remove("sichtbar");
+    el("start").classList.remove("weg");
+  }
+});
+</script>
+</body>
+</html>
