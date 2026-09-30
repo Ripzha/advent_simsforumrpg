@@ -345,7 +345,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v4 · mit Rückkehrkennung",
+  fassung: "v5 · fehlende Bilder werden übersprungen",
 
   ident:      "clips/simswelt-news-rueckkehr.mp4",   // Rueckkehrkennung nach der Werbung
   identDauer: 6.6,                       // hier wird ins Studio geschnitten
@@ -375,10 +375,10 @@ const KONFIG = {
   /* Themenkasten LINKS neben Konstanze.
      Zeiten sind Videozeiten, gemessen an den Sprechpausen.              */
   thema: [
-    { ein: 14.6, aus: 24.2, titel: "Im hinteren Bereich", ort: "San Sequoia",
-      bilder: ["bilder/boom-club.png"] },
-    { ein: 24.2, aus: 28.8, titel: "Langweilige Zettel",  ort: "Kein Interesse an Geld",
+    { ein: 14.6, aus: 24.2, titel: "Boom Boom",           ort: "San Sequoia",
       bilder: ["bilder/boom-boomboom.png"] },
+    { ein: 24.2, aus: 28.8, titel: "Im hinteren Bereich", ort: "Der Club",
+      bilder: ["bilder/boom-club.png"] },
     { ein: 28.8, aus: 37.0, titel: "Eine Arena",          ort: "Ihre Forderung",
       bilder: ["bilder/boom-arena.png"] },
     { ein: 37.0, aus: 45.6, titel: "Bite",                ort: "Das Geschäftsmodell",
@@ -440,7 +440,9 @@ const streckenElemente = KONFIG.strecke.map((s) => {
   wrap.className = "kb";
   const img = document.createElement("img");
   img.src = s.bild; img.alt = "";
-  img.addEventListener("error", () => { wrap.style.background = "#0b1a2e"; });
+  // Fehlt ein Bild, wird dieser Schnitt uebersprungen statt schwarz zu bleiben
+  s.fehlt = false;
+  img.addEventListener("error", () => { s.fehlt = true; });
   wrap.appendChild(img);
   wrap.style.transformOrigin = s.ursprung;
   wrap.style.transform = "scale(" + s.zoom[0] + ")";
@@ -517,9 +519,15 @@ function takt() {
       setTimeout(function () { phaseVoll.classList.add("aktiv"); }, 280);
       aktivesBild = -1;
     }
-    let treffer = 0;
+    let treffer = -1;
     for (let i = 0; i < KONFIG.strecke.length; i++) {
-      if (t >= KONFIG.strecke[i].ein) treffer = i;
+      if (t >= KONFIG.strecke[i].ein && !KONFIG.strecke[i].fehlt) treffer = i;
+    }
+    // Vor dem ersten vorhandenen Bild das naechste vorhandene schon zeigen
+    if (treffer < 0) {
+      for (let i = 0; i < KONFIG.strecke.length; i++) {
+        if (!KONFIG.strecke[i].fehlt) { treffer = i; break; }
+      }
     }
     zeigeBild(treffer);
   } else {
