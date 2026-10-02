@@ -26,7 +26,7 @@
 
   --art-rechts:   0.0%;
   --art-unten:    0.0%;
-  --art-hoehe:   96.0%;
+  --art-hoehe:   84.0%;
 
   --binde-links:  4.5%;
   --binde-unten: 14.0%;
@@ -286,7 +286,7 @@ body.justiert .welt { transform: scale(1.04) !important; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v5 · Artjom bündig am rechten Rand",
+  fassung: "v6 · Fahrt begrenzt, Nebel bewegt, Artjom schärfer",
 
   video: "clips/artjom-wetter-maske.mp4",
   karte: "bilder/atlas-kontinent.png",
@@ -301,11 +301,11 @@ const KONFIG = {
   fahrten: [
     { ein:  0.0, x: 50.0, y: 46.0, zoom: 1.04 },
     { ein:  6.5, x: 48.0, y: 40.0, zoom: 1.22 },
-    { ein: 23.7, x: 39.0, y: 13.0, zoom: 2.10 },
+    { ein: 23.7, x: 39.0, y: 13.0, zoom: 2.60 },
     { ein: 32.9, x: 62.0, y: 45.0, zoom: 2.10 },
     { ein: 60.9, x: 66.0, y: 88.0, zoom: 2.00 },
     { ein: 62.5, x: 36.5, y: 58.0, zoom: 2.00 },
-    { ein: 65.4, x: 28.5, y: 20.0, zoom: 2.20 },
+    { ein: 65.4, x: 28.5, y: 20.0, zoom: 2.60 },
     { ein: 69.8, x: 50.0, y: 46.0, zoom: 1.08 }
   ],
 
@@ -378,9 +378,16 @@ const ortsElemente = KONFIG.orte.map((o, i) => {
 let letzteFahrt = -1;
 function fahreZu(f) {
   const z = f.zoom;
+  // So weit darf geschoben werden, ohne dass der Kartenrand ins Bild kommt
+  const grenze = (z - 1) * 50 / z;
+  const kappe = (v) => Math.max(-grenze, Math.min(grenze, v));
+
   const zx = f.x + (KONFIG.versatz || 0) * (z - 1) / z;
+  const tx = kappe(50 - zx);
+  const ty = kappe(50 - f.y);
+
   welt.style.transform =
-    "scale(" + z + ") translate(" + (50 - zx).toFixed(2) + "%, " + (50 - f.y).toFixed(2) + "%)";
+    "scale(" + z + ") translate(" + tx.toFixed(2) + "%, " + ty.toFixed(2) + "%)";
   document.documentElement.style.setProperty("--gegen", (1 / z).toFixed(3));
 }
 
@@ -485,20 +492,44 @@ function zeichneWetter(jetzt) {
   const mitte = (w) => ({ x: w.x / 100 * B, y: w.y / 100 * H, r: (w.weite || 50) / 100 * B });
   const abfall = (px, py, m) => Math.max(0, 1 - Math.hypot(px - m.x, py - m.y) / m.r);
 
-  /* --- Hochnebel: mehrere Baenke, unterschiedlich schnell --- */
+  /* --- Hochnebel: ziehende Baenke mit Schlieren darin --- */
   if (staerke.nebel > 0.01) {
     const w = lage("nebel") || standard("nebel");
     if (w) {
       const m = mitte(w);
-      for (let i = 0; i < 7; i++) {
-        const y = m.y + Math.sin(t * 0.18 + i) * H * 0.04 + (i - 3) * H * 0.075;
-        const x = ((t * (9 + i * 4) + i * 400) % (B + 900)) - 450;
-        const g = wCtx.createRadialGradient(x, y, 0, x, y, B * (0.20 + i * 0.03));
-        const a = 0.16 * staerke.nebel * (0.6 + 0.4 * Math.sin(t * 0.3 + i));
-        g.addColorStop(0, "rgba(206,222,240," + a.toFixed(3) + ")");
-        g.addColorStop(1, "rgba(206,222,240,0)");
-        wCtx.fillStyle = g; wCtx.fillRect(0, 0, B, H);
+      // Breite Baenke, deutlich schneller als vorher
+      for (let i = 0; i < 6; i++) {
+        const tempo = 26 + i * 14;
+        const x = ((t * tempo + i * 520) % (B + 1100)) - 550;
+        const y = m.y + (i - 2.5) * H * 0.115 + Math.sin(t * 0.5 + i * 1.7) * H * 0.055;
+        const rx = B * (0.26 + i * 0.035), ry = H * 0.17;
+        const a = 0.26 * staerke.nebel * (0.55 + 0.45 * Math.sin(t * 0.55 + i * 2.1));
+        wCtx.save();
+        wCtx.translate(x, y); wCtx.scale(1, ry / rx);
+        const g = wCtx.createRadialGradient(0, 0, 0, 0, 0, rx);
+        g.addColorStop(0,    "rgba(214,228,244," + a.toFixed(3) + ")");
+        g.addColorStop(0.55, "rgba(214,228,244," + (a * 0.5).toFixed(3) + ")");
+        g.addColorStop(1,    "rgba(214,228,244,0)");
+        wCtx.fillStyle = g;
+        wCtx.beginPath(); wCtx.arc(0, 0, rx, 0, 7); wCtx.fill();
+        wCtx.restore();
       }
+      // Duenne Schlieren, die schneller durchziehen
+      wCtx.lineCap = "round";
+      for (let i = 0; i < 22; i++) {
+        const tempo = 60 + (i % 5) * 34;
+        const x = ((t * tempo + i * 310) % (B + 700)) - 350;
+        const y = m.y + Math.sin(i * 2.3) * H * 0.26 + Math.sin(t * 0.8 + i) * H * 0.012;
+        const l = B * (0.05 + (i % 4) * 0.035);
+        wCtx.globalAlpha = 0.20 * staerke.nebel * (0.4 + 0.6 * Math.sin(t * 0.7 + i));
+        wCtx.strokeStyle = "#e4eef9";
+        wCtx.lineWidth = 2 + (i % 3);
+        wCtx.beginPath();
+        wCtx.moveTo(x, y);
+        wCtx.quadraticCurveTo(x + l * 0.5, y - H * 0.016, x + l, y);
+        wCtx.stroke();
+      }
+      wCtx.globalAlpha = 1;
     }
   }
 
@@ -794,7 +825,7 @@ setInterval(() => {
 
 /* ---------- Ausrichten ---------- */
 const bühne = document.querySelector(".bühne");
-const werte = { "--art-rechts": 0.0, "--art-unten": 0.0, "--art-hoehe": 96.0 };
+const werte = { "--art-rechts": 0.0, "--art-unten": 0.0, "--art-hoehe": 84.0 };
 const schlüssel = Object.keys(werte);
 let zielIndex = 0, zieht = null;
 
