@@ -25,7 +25,7 @@
 
   --art-rechts:   0.0%;
   --art-unten:    0.0%;
-  --art-hoehe:   84.0%;
+  --art-höhe:   84.0%;
 
   --binde-links:  4.5%;
   --binde-unten: 14.0%;
@@ -106,7 +106,7 @@ html, body {
 /* ---------- Artjom ---------- */
 #artjom {
   position: absolute; right: var(--art-rechts); bottom: var(--art-unten);
-  height: var(--art-hoehe); width: auto; z-index: 20;
+  height: var(--art-höhe); width: auto; z-index: 20;
   filter: drop-shadow(-16px 0 30px rgba(0,0,0,0.6));
 }
 #quelle { display: none; }
@@ -148,7 +148,7 @@ html, body {
 .leiste.zeig { display: flex; }
 .leiste .zeit { flex: 0 0 auto; min-width: 8.5em; }
 .leiste .spur { position: relative; flex: 1 1 auto; height: 16px; background: rgba(201,214,228,0.14); cursor: pointer; }
-.leiste .fuell { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing); }
+.leiste .füll { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing); }
 .leiste .marker { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.55); }
 .leiste button { flex: 0 0 auto; font-family: inherit; font-size: 11px; letter-spacing: 0.06em; color: var(--nacht); background: var(--messing-hell); border: none; padding: 0.45em 0.9em; cursor: pointer; }
 .leiste button:hover { background: var(--weiss); }
@@ -238,7 +238,7 @@ body.justiert .welt { transform: scale(1.04) !important; }
 
   <div class="leiste" id="leiste">
     <span class="zeit" id="leiste-zeit">0.0 / 0.0</span>
-    <span class="spur" id="leiste-spur"><span class="fuell" id="leiste-fuell"></span></span>
+    <span class="spur" id="leiste-spur"><span class="füll" id="leiste-füll"></span></span>
     <button id="knopf-video">Video wählen…</button>
     <span class="hinweis">Z Zeiten · J ausrichten · T ausblenden</span>
   </div>
@@ -269,23 +269,23 @@ body.justiert .welt { transform: scale(1.04) !important; }
 /* ===================================================================
    KONFIG
 
-   Eine Station bringt alles mit, was zu einem Ort gehoert:
-     ab      ab dieser Sekunde laeuft die Station
+   Eine Station bringt alles mit, was zu einem Ort gehört:
+     ab      ab dieser Sekunde läuft die Station
      name    Beschriftung. Leer lassen = kein Schild
      x, y    Ort auf der Karte, in Prozent
-     zoom    1.04 = Uebersicht, 2.6 = nah dran
+     zoom    1.04 = Übersicht, 2.6 = nah dran
      wert    grosse Zahl im Schild
      zusatz  kleine Zeile darunter
-     art     kalt | warm | neutral  (faerbt die Zahl)
-     wetter  nebel | schnee | sturm | sonne | duerre | nacht | klar | ""
+     art     kalt | warm | neutral  (färbt die Zahl)
+     wetter  nebel | schnee | sturm | sonne | dürre | nacht | klar | ""
      weite   Wirkungsradius des Wetters in Prozent der Bildbreite
 
-   Die Station gilt bis zur naechsten. Mit Z setzt du ihre Zeit beim
-   Hoeren — Fahrt, Schild und Wetter wandern dabei gemeinsam.
+   Die Station gilt bis zur nächsten. Mit Z setzt du ihre Zeit beim
+   Hören — Fahrt, Schild und Wetter wandern dabei gemeinsam.
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v7 · eine Zeile je Ort",
+  fassung: "v8 · Tafeln wie Stationen, Umlaute",
 
   video: "clips/artjom-wetter-maske.mp4",
   karte: "bilder/atlas-kontinent.png",
@@ -297,37 +297,33 @@ const KONFIG = {
   stationen: [
     { ab:  0.0, name: "",                  x: 50.0, y: 46.0, zoom: 1.04,
       wert: "",        zusatz: "",                  art: "neutral", wetter: "",       weite: 60 },
-
     { ab:  6.5, name: "",                  x: 48.0, y: 42.0, zoom: 1.20,
       wert: "",        zusatz: "",                  art: "neutral", wetter: "nebel",  weite: 70 },
-
     { ab: 23.7, name: "Granite Falls",     x: 39.0, y: 13.0, zoom: 2.60,
       wert: "−4°",     zusatz: "15 cm Neuschnee",   art: "kalt",    wetter: "schnee", weite: 55 },
-
-    { ab: 32.9, name: "Windenburg",        x: 62.0, y: 45.0, zoom: 2.10,
+    { ab: 30.0, name: "Windenburg",        x: 62.0, y: 45.0, zoom: 2.10,
       wert: "80 km/h", zusatz: "Böen an der Küste", art: "neutral", wetter: "sturm",  weite: 55 },
-
-    // Zwischenstueck: er redet ueber die Jacke und den Aussendienst
-    { ab: 39.4, name: "",                  x: 58.0, y: 44.0, zoom: 1.45,
+    { ab: 37.7, name: "",                  x: 58.0, y: 44.0, zoom: 1.45,
       wert: "",        zusatz: "",                  art: "neutral", wetter: "sturm",  weite: 70 },
-
-    { ab: 60.9, name: "Sulani",            x: 66.0, y: 88.0, zoom: 2.30,
+    { ab: 49.6, name: "Sulani",            x: 66.0, y: 88.0, zoom: 2.30,
       wert: "26°",     zusatz: "",                  art: "warm",    wetter: "sonne",  weite: 45 },
-
-    { ab: 62.8, name: "Oasis Springs",     x: 36.5, y: 58.0, zoom: 2.30,
-      wert: "11°",     zusatz: "trocken",           art: "warm",    wetter: "duerre", weite: 50 },
-
-    { ab: 65.4, name: "Forgotten Hollow",  x: 28.5, y: 20.0, zoom: 2.60,
+    { ab: 52.6, name: "Oasis Springs",     x: 36.5, y: 58.0, zoom: 2.30,
+      wert: "11°",     zusatz: "trocken",           art: "warm",    wetter: "dürre", weite: 50 },
+    { ab: 55.4, name: "Forgotten Hollow",  x: 28.5, y: 20.0, zoom: 2.60,
       wert: "Nacht",   zusatz: "keine Vorhersage",  art: "neutral", wetter: "nacht",  weite: 55 },
-
-    { ab: 69.8, name: "",                  x: 50.0, y: 46.0, zoom: 1.08,
+    { ab: 61.6, name: "",                  x: 50.0, y: 46.0, zoom: 1.08,
       wert: "",        zusatz: "",                  art: "neutral", wetter: "klar",   weite: 90 }
   ],
 
+  /* Tafeln oben links. Jede gilt ab ihrer Sekunde bis zur nächsten.
+     Leerer Titel blendet die Tafel aus.                                */
   lage: [
-    { ein:  1.9, aus: 20.5, titel: "997 hPa",    zusatz: "über Brightchester · fallend" },
-    { ein:  6.5, aus: 23.0, titel: "Hochnebel",  zusatz: "über dem halben Kontinent" },
-    { ein: 69.8, aus: 79.0, titel: "Aufklarend", zusatz: "ab 22 Uhr klare Sicht" }
+    { ab:  0.0, titel: "",           zusatz: "" },
+    { ab:  1.9, titel: "997 hPa",    zusatz: "über Brightchester · fallend" },
+    { ab:  6.5, titel: "Hochnebel",  zusatz: "über dem halben Kontinent" },
+    { ab: 20.5, titel: "",           zusatz: "" },
+    { ab: 61.6, titel: "Aufklarend", zusatz: "ab 22 Uhr klare Sicht" },
+    { ab: 72.0, titel: "",           zusatz: "" }
   ]
 };
 
@@ -379,15 +375,15 @@ function fahreZu(s) {
 /* ===================================================================
    Artjom freistellen
    =================================================================== */
-let breite = 0, hoehe = 0, mitFilter = true;
+let breite = 0, höhe = 0, mitFilter = true;
 const hilf = document.createElement("canvas");
 const hCtx = hilf.getContext("2d");
 
 quelle.addEventListener("loadedmetadata", () => {
   breite = quelle.videoWidth;
-  hoehe  = quelle.videoHeight / 2;
-  artjom.width = breite; artjom.height = hoehe;
-  hilf.width = breite;   hilf.height = hoehe;
+  höhe  = quelle.videoHeight / 2;
+  artjom.width = breite; artjom.height = höhe;
+  hilf.width = breite;   hilf.height = höhe;
   hCtx.filter = "url(#hellzualpha)";
   mitFilter = (hCtx.filter !== "none");
   hCtx.filter = "none";
@@ -396,17 +392,17 @@ quelle.addEventListener("loadedmetadata", () => {
 
 function zeichneArtjom() {
   if (!breite || quelle.readyState < 2) return;
-  aCtx.clearRect(0, 0, breite, hoehe);
+  aCtx.clearRect(0, 0, breite, höhe);
   aCtx.globalCompositeOperation = "source-over";
-  aCtx.drawImage(quelle, 0, 0, breite, hoehe, 0, 0, breite, hoehe);
-  hCtx.clearRect(0, 0, breite, hoehe);
+  aCtx.drawImage(quelle, 0, 0, breite, höhe, 0, 0, breite, höhe);
+  hCtx.clearRect(0, 0, breite, höhe);
   if (mitFilter) {
     hCtx.filter = "url(#hellzualpha)";
-    hCtx.drawImage(quelle, 0, hoehe, breite, hoehe, 0, 0, breite, hoehe);
+    hCtx.drawImage(quelle, 0, höhe, breite, höhe, 0, 0, breite, höhe);
     hCtx.filter = "none";
   } else {
-    hCtx.drawImage(quelle, 0, hoehe, breite, hoehe, 0, 0, breite, hoehe);
-    const d = hCtx.getImageData(0, 0, breite, hoehe), p = d.data;
+    hCtx.drawImage(quelle, 0, höhe, breite, höhe, 0, 0, breite, höhe);
+    const d = hCtx.getImageData(0, 0, breite, höhe), p = d.data;
     for (let i = 0; i < p.length; i += 4) {
       p[i + 3] = (p[i] * 0.2126 + p[i + 1] * 0.7152 + p[i + 2] * 0.0722) | 0;
       p[i] = p[i + 1] = p[i + 2] = 0;
@@ -436,7 +432,7 @@ const flocken = Array.from({ length: 320 }, () => {
            r: 0.7 + tiefe * 2.6, v: 0.025 + tiefe * 0.075,
            s: Math.random() * 6, w: 0.006 + Math.random() * 0.016 };
 });
-const boeen = Array.from({ length: 110 }, () => ({
+const böen = Array.from({ length: 110 }, () => ({
   x: Math.random(), y: Math.random(), l: 0.02 + Math.random() * 0.10,
   v: 0.18 + Math.random() * 0.42, d: 0.25 + Math.random() * 0.6, b: Math.random() * 6
 }));
@@ -448,8 +444,8 @@ const schlieren = Array.from({ length: 30 }, () => ({
   p: Math.random() * 6, v: 0.5 + Math.random()
 }));
 
-const ARTEN = ["nebel", "schnee", "sturm", "sonne", "duerre", "nacht", "klar"];
-let staerke = {}; ARTEN.forEach(a => staerke[a] = 0);
+const ARTEN = ["nebel", "schnee", "sturm", "sonne", "dürre", "nacht", "klar"];
+let stärke = {}; ARTEN.forEach(a => stärke[a] = 0);
 let zuletzt = performance.now();
 let station = null;        // gerade laufende Station
 
@@ -463,7 +459,7 @@ function zeichneWetter(jetzt) {
 
   ARTEN.forEach(a => {
     const ziel = (station && station.wetter === a) ? 1 : 0;
-    staerke[a] += (ziel - staerke[a]) * Math.min(1, dt * 1.5);
+    stärke[a] += (ziel - stärke[a]) * Math.min(1, dt * 1.5);
   });
 
   // Mittelpunkt des laufenden Wetters
@@ -472,13 +468,13 @@ function zeichneWetter(jetzt) {
   const abfall = (px, py) => Math.max(0, 1 - Math.hypot(px - m.x, py - m.y) / m.r);
 
   /* --- Hochnebel --- */
-  if (staerke.nebel > 0.01) {
+  if (stärke.nebel > 0.01) {
     for (let i = 0; i < 6; i++) {
       const tempo = 26 + i * 14;
       const x = ((t * tempo + i * 520) % (B + 1100)) - 550;
       const y = m.y + (i - 2.5) * H * 0.115 + Math.sin(t * 0.5 + i * 1.7) * H * 0.055;
       const rx = B * (0.26 + i * 0.035), ry = H * 0.17;
-      const a = 0.26 * staerke.nebel * (0.55 + 0.45 * Math.sin(t * 0.55 + i * 2.1));
+      const a = 0.26 * stärke.nebel * (0.55 + 0.45 * Math.sin(t * 0.55 + i * 2.1));
       wCtx.save();
       wCtx.translate(x, y); wCtx.scale(1, ry / rx);
       const g = wCtx.createRadialGradient(0, 0, 0, 0, 0, rx);
@@ -494,7 +490,7 @@ function zeichneWetter(jetzt) {
       const x = ((t * tempo + i * 310) % (B + 700)) - 350;
       const y = m.y + Math.sin(i * 2.3) * H * 0.26 + Math.sin(t * 0.8 + i) * H * 0.012;
       const l = B * (0.05 + (i % 4) * 0.035);
-      wCtx.globalAlpha = 0.20 * staerke.nebel * (0.4 + 0.6 * Math.sin(t * 0.7 + i));
+      wCtx.globalAlpha = 0.20 * stärke.nebel * (0.4 + 0.6 * Math.sin(t * 0.7 + i));
       wCtx.strokeStyle = "#e4eef9"; wCtx.lineWidth = 2 + (i % 3);
       wCtx.beginPath(); wCtx.moveTo(x, y);
       wCtx.quadraticCurveTo(x + l * 0.5, y - H * 0.016, x + l, y); wCtx.stroke();
@@ -503,7 +499,7 @@ function zeichneWetter(jetzt) {
   }
 
   /* --- Schnee --- */
-  if (staerke.schnee > 0.01) {
+  if (stärke.schnee > 0.01) {
     const wind = Math.sin(t * 0.33) * 0.5 + 0.5;
     flocken.forEach(f => {
       f.y += f.v * dt;
@@ -512,27 +508,27 @@ function zeichneWetter(jetzt) {
       if (f.x > 1.05) f.x = -0.03;
       const px = f.x * B, py = f.y * H, k = abfall(px, py);
       if (k <= 0) return;
-      wCtx.globalAlpha = k * staerke.schnee * (0.35 + f.t * 0.6);
+      wCtx.globalAlpha = k * stärke.schnee * (0.35 + f.t * 0.6);
       wCtx.fillStyle = "#ffffff";
       wCtx.beginPath(); wCtx.arc(px, py, f.r, 0, 7); wCtx.fill();
     });
     const g = wCtx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
-    g.addColorStop(0, "rgba(226,240,255," + (0.14 * staerke.schnee).toFixed(3) + ")");
+    g.addColorStop(0, "rgba(226,240,255," + (0.14 * stärke.schnee).toFixed(3) + ")");
     g.addColorStop(1, "rgba(226,240,255,0)");
     wCtx.globalAlpha = 1; wCtx.fillStyle = g; wCtx.fillRect(0, 0, B, H);
   }
 
   /* --- Sturm --- */
-  if (staerke.sturm > 0.01) {
+  if (stärke.sturm > 0.01) {
     const welle = 0.55 + 0.45 * Math.sin(t * 0.9);
     wCtx.lineCap = "round";
-    boeen.forEach(b => {
+    böen.forEach(b => {
       b.x += b.v * dt * (0.5 + welle);
       if (b.x > 1.12) { b.x = -0.2; b.y = Math.random(); }
       const px = b.x * B, py = b.y * H + Math.sin(t * 2 + b.b) * H * 0.012;
       const k = abfall(px, py);
       if (k <= 0) return;
-      wCtx.globalAlpha = k * staerke.sturm * 0.55 * b.d * welle;
+      wCtx.globalAlpha = k * stärke.sturm * 0.55 * b.d * welle;
       wCtx.strokeStyle = "#e4effb"; wCtx.lineWidth = 1.2 + b.d * 1.4;
       wCtx.beginPath(); wCtx.moveTo(px, py);
       wCtx.quadraticCurveTo(px + b.l * B * 0.5, py - H * 0.012, px + b.l * B, py);
@@ -542,16 +538,16 @@ function zeichneWetter(jetzt) {
   }
 
   /* --- Sonne --- */
-  if (staerke.sonne > 0.01) {
+  if (stärke.sonne > 0.01) {
     const g = wCtx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
-    g.addColorStop(0,   "rgba(255,206,120," + (0.34 * staerke.sonne).toFixed(3) + ")");
-    g.addColorStop(0.5, "rgba(255,186,90,"  + (0.12 * staerke.sonne).toFixed(3) + ")");
+    g.addColorStop(0,   "rgba(255,206,120," + (0.34 * stärke.sonne).toFixed(3) + ")");
+    g.addColorStop(0.5, "rgba(255,186,90,"  + (0.12 * stärke.sonne).toFixed(3) + ")");
     g.addColorStop(1,   "rgba(255,186,90,0)");
     wCtx.fillStyle = g; wCtx.fillRect(0, 0, B, H);
     wCtx.save(); wCtx.translate(m.x, m.y); wCtx.rotate(t * 0.09);
     for (let i = 0; i < 12; i++) {
       wCtx.rotate(Math.PI / 6);
-      wCtx.globalAlpha = staerke.sonne * 0.08 * (0.6 + 0.4 * Math.sin(t * 1.2 + i));
+      wCtx.globalAlpha = stärke.sonne * 0.08 * (0.6 + 0.4 * Math.sin(t * 1.2 + i));
       wCtx.fillStyle = "#ffe0a0";
       wCtx.beginPath(); wCtx.moveTo(0, 0);
       wCtx.lineTo(m.r * 0.95, -m.r * 0.05); wCtx.lineTo(m.r * 0.95, m.r * 0.05);
@@ -560,52 +556,52 @@ function zeichneWetter(jetzt) {
     wCtx.restore(); wCtx.globalAlpha = 1;
   }
 
-  /* --- Duerre --- */
-  if (staerke.duerre > 0.01) {
+  /* --- Dürre --- */
+  if (stärke.dürre > 0.01) {
     schlieren.forEach(s2 => {
       const px = (s2.x + Math.sin(t * s2.v + s2.p) * 0.012) * B;
       const py = (s2.y + Math.sin(t * 0.6 + s2.p) * 0.008) * H;
       const k = abfall(px, py);
       if (k <= 0) return;
-      wCtx.globalAlpha = k * staerke.duerre * 0.26;
+      wCtx.globalAlpha = k * stärke.dürre * 0.26;
       wCtx.strokeStyle = "#ffe9c4"; wCtx.lineWidth = 1.2;
       wCtx.beginPath(); wCtx.moveTo(px, py);
       wCtx.quadraticCurveTo(px + s2.l * B * 0.5, py - H * 0.009, px + s2.l * B, py);
       wCtx.stroke();
     });
     const g = wCtx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
-    g.addColorStop(0, "rgba(255,196,110," + (0.18 * staerke.duerre).toFixed(3) + ")");
+    g.addColorStop(0, "rgba(255,196,110," + (0.18 * stärke.dürre).toFixed(3) + ")");
     g.addColorStop(1, "rgba(255,196,110,0)");
     wCtx.globalAlpha = 1; wCtx.fillStyle = g; wCtx.fillRect(0, 0, B, H);
   }
 
   /* --- Nacht --- */
-  if (staerke.nacht > 0.01) {
+  if (stärke.nacht > 0.01) {
     const g = wCtx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
-    g.addColorStop(0, "rgba(2,6,16," + (0.74 * staerke.nacht).toFixed(3) + ")");
+    g.addColorStop(0, "rgba(2,6,16," + (0.74 * stärke.nacht).toFixed(3) + ")");
     g.addColorStop(1, "rgba(2,6,16,0)");
     wCtx.fillStyle = g; wCtx.fillRect(0, 0, B, H);
     const mx = m.x + m.r * 0.42, my = m.y - m.r * 0.40, mr = B * 0.018;
     const gm = wCtx.createRadialGradient(mx, my, 0, mx, my, mr * 6);
-    gm.addColorStop(0, "rgba(226,236,255," + (0.5 * staerke.nacht).toFixed(3) + ")");
+    gm.addColorStop(0, "rgba(226,236,255," + (0.5 * stärke.nacht).toFixed(3) + ")");
     gm.addColorStop(1, "rgba(226,236,255,0)");
     wCtx.fillStyle = gm; wCtx.fillRect(0, 0, B, H);
-    wCtx.globalAlpha = staerke.nacht;
+    wCtx.globalAlpha = stärke.nacht;
     wCtx.fillStyle = "#eef3ff";
     wCtx.beginPath(); wCtx.arc(mx, my, mr, 0, 7); wCtx.fill();
     // ein paar funkelnde Punkte im dunklen Gebiet
     sterne.slice(0, 40).forEach(st => {
       const px = m.x + (st.x - 0.5) * m.r * 1.6, py = m.y + (st.y - 0.35) * m.r * 1.2;
-      wCtx.globalAlpha = staerke.nacht * (0.2 + 0.5 * Math.abs(Math.sin(t * 1.4 + st.p)));
+      wCtx.globalAlpha = stärke.nacht * (0.2 + 0.5 * Math.abs(Math.sin(t * 1.4 + st.p)));
       wCtx.beginPath(); wCtx.arc(px, py, st.r * 0.8, 0, 7); wCtx.fill();
     });
     wCtx.globalAlpha = 1;
   }
 
   /* --- Aufklaren --- */
-  if (staerke.klar > 0.01) {
+  if (stärke.klar > 0.01) {
     sterne.forEach(st => {
-      wCtx.globalAlpha = staerke.klar * (0.25 + 0.55 * Math.abs(Math.sin(t * 1.1 + st.p)));
+      wCtx.globalAlpha = stärke.klar * (0.25 + 0.55 * Math.abs(Math.sin(t * 1.1 + st.p)));
       wCtx.fillStyle = "#eef4ff";
       wCtx.beginPath(); wCtx.arc(st.x * B, st.y * H, st.r, 0, 7); wCtx.fill();
     });
@@ -613,14 +609,14 @@ function zeichneWetter(jetzt) {
     for (let i = 0; i < 3; i++) {
       const y = H * (0.10 + i * 0.05) + Math.sin(t * 0.25 + i) * H * 0.02;
       const g = wCtx.createLinearGradient(0, y - H * 0.08, 0, y + H * 0.08);
-      const a = 0.10 * staerke.klar * (0.5 + 0.5 * Math.sin(t * 0.4 + i * 2));
+      const a = 0.10 * stärke.klar * (0.5 + 0.5 * Math.sin(t * 0.4 + i * 2));
       g.addColorStop(0,   "rgba(120,230,190,0)");
       g.addColorStop(0.5, "rgba(120,230,190," + a.toFixed(3) + ")");
       g.addColorStop(1,   "rgba(120,230,190,0)");
       wCtx.fillStyle = g; wCtx.fillRect(0, y - H * 0.08, B, H * 0.16);
     }
   }
-  karte.classList.toggle("klar", staerke.klar > 0.4);
+  karte.classList.toggle("klar", stärke.klar > 0.4);
 
   zeichneArtjom();
   requestAnimationFrame(zeichneWetter);
@@ -642,17 +638,15 @@ function takt() {
     schilder.forEach((d, n) => { if (d) d.classList.toggle("an", n === i); });
   }
 
-  let treffer = -1;
-  for (let n = 0; n < KONFIG.lage.length; n++) {
-    if (t >= KONFIG.lage[n].ein && t < KONFIG.lage[n].aus) treffer = n;
-  }
+  let treffer = 0;
+  for (let n = 0; n < KONFIG.lage.length; n++) if (t >= KONFIG.lage[n].ab) treffer = n;
   if (treffer !== lageAktiv) {
     lageAktiv = treffer;
-    const k = el("lage");
-    if (treffer < 0) k.classList.remove("an");
+    const k = el("lage"), g = KONFIG.lage[treffer];
+    if (!g.titel) k.classList.remove("an");
     else {
-      k.querySelector("b").textContent    = KONFIG.lage[treffer].titel;
-      k.querySelector("span").textContent = KONFIG.lage[treffer].zusatz;
+      k.querySelector("b").textContent    = g.titel;
+      k.querySelector("span").textContent = g.zusatz;
       k.classList.add("an");
     }
   }
@@ -661,7 +655,7 @@ function takt() {
 
   const d = quelle.duration && isFinite(quelle.duration) ? quelle.duration : 0;
   el("leiste-zeit").textContent = t.toFixed(1) + " / " + d.toFixed(1);
-  el("leiste-fuell").style.width = d ? (t / d * 100) + "%" : "0";
+  el("leiste-füll").style.width = d ? (t / d * 100) + "%" : "0";
 
   requestAnimationFrame(takt);
 }
@@ -734,19 +728,20 @@ function baueZeiten() {
   KONFIG.lage.forEach((l, i) => {
     const z = document.createElement("div");
     z.className = "zeile"; z.dataset.art = "lage"; z.dataset.i = String(i);
-    z.innerHTML = '<span class="titel">Tafel: ' + l.titel +
-      '<small>' + l.ein.toFixed(1) + ' bis ' + l.aus.toFixed(1) + ' s</small></span>';
-    const a = document.createElement("button"); a.textContent = "ein";
-    a.addEventListener("click", () => { l.ein = sek(quelle.currentTime); aktualisiere(); });
-    const b = document.createElement("button"); b.textContent = "aus";
-    b.addEventListener("click", () => { l.aus = sek(quelle.currentTime); aktualisiere(); });
-    z.appendChild(a); z.appendChild(b);
+    z.innerHTML = '<span class="titel">Tafel: ' + (l.titel || "— keine —") +
+      '<small>ab ' + l.ab.toFixed(1) + ' s</small></span>';
+    const a = document.createElement("button"); a.textContent = "jetzt";
+    a.addEventListener("click", () => { l.ab = sek(quelle.currentTime); aktualisiere(); });
+    const v = document.createElement("button"); v.textContent = "→";
+    v.addEventListener("click", () => springe(l.ab + 0.2));
+    z.appendChild(a); z.appendChild(v);
     liste.appendChild(z);
   });
 }
 
 function aktualisiere() {
   KONFIG.stationen.sort((a, b) => a.ab - b.ab);
+  KONFIG.lage.sort((a, b) => a.ab - b.ab);
   baueZeiten(); baueMarker();
   letzteStation = -1; lageAktiv = -1;
   schreibeAusgabe();
@@ -758,7 +753,7 @@ function schreibeAusgabe() {
     ',\n      wert: "' + x.wert + '", zusatz: "' + x.zusatz + '", art: "' + x.art +
     '", wetter: "' + x.wetter + '", weite: ' + x.weite + ' },').join("\n");
   const l = KONFIG.lage.map(x =>
-    '    { ein: ' + x.ein + ', aus: ' + x.aus + ', titel: "' + x.titel + '", zusatz: "' + x.zusatz + '" },').join("\n");
+    '    { ab: ' + x.ab + ', titel: "' + x.titel + '", zusatz: "' + x.zusatz + '" },').join("\n");
   el("zeiten-text").value = "stationen: [\n" + s + "\n  ],\n\n  lage: [\n" + l + "\n  ]";
 }
 
@@ -776,14 +771,14 @@ setInterval(() => {
     const i = +z.dataset.i;
     const an = z.dataset.art === "station"
       ? (i === letzteStation)
-      : (t >= KONFIG.lage[i].ein && t < KONFIG.lage[i].aus);
+      : (i === lageAktiv);
     z.classList.toggle("jetzt", an);
   });
 }, 200);
 
 /* ---------- Ausrichten ---------- */
 const bühne = document.querySelector(".bühne");
-const werte = { "--art-rechts": 0.0, "--art-unten": 0.0, "--art-hoehe": 84.0 };
+const werte = { "--art-rechts": 0.0, "--art-unten": 0.0, "--art-höhe": 84.0 };
 const schlüssel = Object.keys(werte);
 let zielIndex = 0, zieht = null;
 
