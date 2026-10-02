@@ -24,7 +24,7 @@
   --kalt:        #8fc6f2;
   --warm:        #f0a93f;
 
-  --art-rechts:   2.0%;
+  --art-rechts:   0.0%;
   --art-unten:    0.0%;
   --art-hoehe:   96.0%;
 
@@ -286,7 +286,7 @@ body.justiert .welt { transform: scale(1.04) !important; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v4 · Kamerafahrten und neue Wettereffekte",
+  fassung: "v5 · Artjom bündig am rechten Rand",
 
   video: "clips/artjom-wetter-maske.mp4",
   karte: "bilder/atlas-kontinent.png",
@@ -794,7 +794,7 @@ setInterval(() => {
 
 /* ---------- Ausrichten ---------- */
 const bühne = document.querySelector(".bühne");
-const werte = { "--art-rechts": 2.0, "--art-unten": 0.0, "--art-hoehe": 96.0 };
+const werte = { "--art-rechts": 0.0, "--art-unten": 0.0, "--art-hoehe": 96.0 };
 const schlüssel = Object.keys(werte);
 let zielIndex = 0, zieht = null;
 
