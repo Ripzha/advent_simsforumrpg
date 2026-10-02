@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimsWelt News — Das Wetter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   SIMSWELT NEWS — Wetterkarte
+   Vollbild-Karte, Artjom steht freigestellt davor.
+   Das Video ist eine Farbe-ueber-Maske-Datei: oben das Bild,
+   unten die Maske. Der Browser setzt beides zusammen.
+   Wetterlagen und Beschriftungen laufen zeitgesteuert zum Ton.
+   =================================================================== */
+
+:root {
+  --nacht:       #040a14;
+  --navy:        #08192e;
+  --silber:      #c9d6e4;
+  --weiss:       #ffffff;
+  --messing:     #c9992f;
+  --messing-hell:#e8c877;
+  --kalt:        #7fb8e8;
+  --warm:        #e8a13c;
+
+  /* Position von Artjom — im Browser mit J nachjustieren */
+  --art-rechts:   4.0%;
+  --art-unten:    0.0%;
+  --art-hoehe:   94.0%;
+
+  --binde-links:  4.5%;
+  --binde-unten: 14.0%;
+
+  --marke: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --eng:   "Barlow Condensed", "Arial Narrow", sans-serif;
+  --text:  "Barlow", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: #02060c; font-family: var(--text); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.bühne {
+  position: relative; aspect-ratio: 16 / 9;
+  width: min(100vw, calc(100vh * 16 / 9)); height: auto;
+  background: #04121f; overflow: hidden; container-type: size;
+}
+
+/* ---------- Karte ---------- */
+.karte {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  transform: scale(1.04);
+  transition: filter 2.5s ease;
+  filter: saturate(0.85) brightness(0.72);
+}
+.karte.klar { filter: saturate(1.0) brightness(0.92); }
+
+/* Dunkler Verlauf, damit Schrift und Artjom stehen */
+.karte::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(4,10,20,0.55) 0%, rgba(4,10,20,0) 26%),
+    linear-gradient(0deg,  rgba(4,10,20,0.75) 0%, rgba(4,10,20,0) 34%),
+    linear-gradient(270deg, rgba(4,10,20,0.55) 0%, rgba(4,10,20,0) 38%);
+}
+
+/* ---------- Wetterebene ---------- */
+#wetter { position: absolute; inset: 0; z-index: 4; }
+
+/* ---------- Artjom ---------- */
+#artjom {
+  position: absolute; right: var(--art-rechts); bottom: var(--art-unten);
+  height: var(--art-hoehe); width: auto; z-index: 20;
+  filter: drop-shadow(-14px 0 26px rgba(0,0,0,0.55));
+}
+#quelle { display: none; }
+
+/* ---------- Ortsschilder ---------- */
+.ort {
+  position: absolute; z-index: 12;
+  transform: translate(-50%, -50%) scale(0.86);
+  opacity: 0; transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2,0.9,0.3,1);
+  text-align: center; pointer-events: none;
+}
+.ort.an { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.ort .punkt {
+  width: 0.9cqw; height: 0.9cqw; margin: 0 auto 0.5cqw;
+  background: var(--messing-hell); border-radius: 50%;
+  box-shadow: 0 0 0 0.35cqw rgba(232,200,119,0.22);
+}
+.ort .name {
+  font-family: var(--eng); font-weight: 600; font-size: 1.5cqw;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--weiss); text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+}
+.ort .wert {
+  font-family: var(--marke); font-weight: 800; font-size: 3.1cqw;
+  line-height: 1.0; color: var(--weiss); text-shadow: 0 3px 14px rgba(0,0,0,0.9);
+}
+.ort .zusatz {
+  font-family: var(--eng); font-weight: 500; font-size: 1.25cqw;
+  letter-spacing: 0.1em; color: var(--silber); text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+}
+.ort.kalt .wert { color: var(--kalt); }
+.ort.warm .wert { color: var(--warm); }
+
+/* ---------- Lagetafel oben links ---------- */
+.lage {
+  position: absolute; left: 3.4%; top: 6.5%; z-index: 14;
+  background: rgba(6,16,30,0.9); border-left: 4px solid var(--messing);
+  padding: 0.9cqw 1.5cqw 1.0cqw;
+  opacity: 0; transform: translateX(-14px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.lage.an { opacity: 1; transform: translateX(0); }
+.lage b {
+  display: block; font-family: var(--marke); font-weight: 800;
+  font-size: 2.2cqw; line-height: 1.05; color: var(--weiss);
+}
+.lage span {
+  display: block; margin-top: 0.3em; font-family: var(--eng); font-weight: 600;
+  font-size: 1.25cqw; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--messing-hell);
+}
+
+/* ---------- Senderkennung ---------- */
+.raute { display: inline-block; position: relative; width: .30em; height: .62em; margin: 0 .085em; }
+.raute::before { content: ""; position: absolute; inset: 0;   background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.raute::after  { content: ""; position: absolute; inset: 22%; background: var(--nacht);   clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.kennung {
+  position: absolute; top: 4.2%; right: 3.2%; z-index: 22;
+  display: flex; align-items: baseline; gap: 0.7em;
+  font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.5vw, 25px); letter-spacing: -0.012em;
+  color: var(--weiss); text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.kennung.sichtbar { opacity: 1; }
+.kennung .news { color: var(--messing-hell); }
+
+/* ---------- Bauchbinde ---------- */
+.binde {
+  position: absolute; left: var(--binde-links); bottom: var(--binde-unten);
+  z-index: 24; display: flex; align-items: stretch;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.binde.sichtbar { opacity: 1; transform: translateY(0); }
+.binde .flagge {
+  background: var(--messing); color: #0a1220;
+  font-family: var(--eng); font-weight: 700;
+  font-size: clamp(9px, 1.05vw, 18px); letter-spacing: 0.18em;
+  display: flex; align-items: center; padding: 0 0.9em;
+}
+.binde .inhalt { background: rgba(6,16,30,0.94); border-left: 1px solid rgba(201,214,228,0.22); padding: 0.55em 2em 0.6em 1.05em; }
+.binde .name { font-family: var(--marke); font-weight: 800; font-size: clamp(12px, 1.65vw, 28px); line-height: 1.06; color: var(--weiss); }
+.binde .rolle { font-family: var(--eng); font-weight: 600; font-size: clamp(9px, 1vw, 17px); letter-spacing: 0.22em; text-transform: uppercase; color: var(--messing-hell); }
+
+/* ---------- Zeitleiste ---------- */
+.leiste {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 88;
+  display: none; align-items: center; gap: 0.9em; padding: 0.5em 1em 0.6em;
+  background: linear-gradient(0deg, rgba(4,10,20,0.95), rgba(4,10,20,0.6));
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; color: var(--messing-hell);
+}
+.leiste.zeig { display: flex; }
+.leiste .zeit { flex: 0 0 auto; min-width: 8.5em; }
+.leiste .spur { position: relative; flex: 1 1 auto; height: 16px; background: rgba(201,214,228,0.14); cursor: pointer; }
+.leiste .fuell { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing); }
+.leiste .marker { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.55); }
+.leiste button { flex: 0 0 auto; font-family: inherit; font-size: 11px; letter-spacing: 0.06em;
+  color: var(--nacht); background: var(--messing-hell); border: none; padding: 0.45em 0.9em; cursor: pointer; }
+.leiste button:hover { background: var(--weiss); }
+.leiste .hinweis { flex: 0 0 auto; color: var(--silber); font-size: 11px; }
+
+/* ---------- Zeiten-Editor ---------- */
+.zeiten {
+  position: absolute; right: 1.5%; top: 2%; bottom: 12%; width: 30%; min-width: 320px;
+  z-index: 92; display: none; flex-direction: column;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  font-family: var(--text); font-size: 12px; color: var(--weiss);
+}
+.zeiten.zeig { display: flex; }
+.zeiten h3 { margin: 0; padding: 0.7em 0.9em; font-size: 12px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--nacht); background: var(--messing-hell); }
+.zeiten .liste { flex: 1 1 auto; overflow-y: auto; padding: 0.4em 0.6em; }
+.zeiten .zeile { display: grid; grid-template-columns: 1fr auto; gap: 0.4em; align-items: center;
+  padding: 0.35em 0.3em; border-bottom: 1px solid rgba(201,214,228,0.14); }
+.zeiten .zeile.jetzt { background: rgba(201,153,47,0.22); }
+.zeiten .titel small { display: block; color: var(--silber); font-size: 10px; }
+.zeiten button { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+  border: 1px solid rgba(232,200,119,0.5); background: transparent; color: var(--messing-hell);
+  padding: 0.28em 0.5em; cursor: pointer; }
+.zeiten button:hover { background: var(--messing); color: var(--nacht); }
+.zeiten .fuss { padding: 0.55em 0.7em; border-top: 1px solid rgba(201,214,228,0.2); }
+.zeiten textarea { display: none; width: 100%; height: 170px; margin-top: 0.5em;
+  background: #071322; color: var(--messing-hell); border: 1px solid rgba(232,200,119,0.4);
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; padding: 0.4em; }
+.zeiten.ausgabe textarea { display: block; }
+
+/* ---------- Ausrichtemodus ---------- */
+body.justiert .ort { opacity: 1 !important; transform: translate(-50%,-50%) !important;
+  outline: 1px dashed rgba(232,200,119,0.6); cursor: move; pointer-events: auto; }
+body.justiert #artjom { outline: 2px solid #35d6a0; cursor: move; }
+.justier {
+  position: absolute; left: 1.5%; top: 2%; z-index: 95; display: none;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  padding: 0.75em 1.15em; font-family: var(--text); font-size: 13px; line-height: 1.6;
+  color: var(--weiss); white-space: pre; pointer-events: none;
+}
+.justier.zeig { display: block; }
+.justier b { color: var(--messing-hell); font-weight: 600; }
+.justier code { display: none; margin-top: 0.55em; padding: 0.45em 0.65em; background: #071322;
+  color: var(--messing-hell); font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px; user-select: all; }
+.justier.werte-zeigen code { display: block; pointer-events: auto; }
+
+/* ---------- Startbildschirm ---------- */
+.start {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.1rem;
+  background: radial-gradient(ellipse at 50% 44%, #16314f 0%, #0a1c33 44%, #040a14 100%);
+  cursor: pointer; transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.start.weg { opacity: 0; visibility: hidden; }
+.start h1 { margin: 0; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(26px, 5vw, 84px); letter-spacing: -0.012em; color: var(--weiss);
+  display: flex; align-items: baseline; }
+.start h1 .news { color: var(--messing-hell); }
+.start .linie { width: 42%; height: 2px; background: var(--messing); }
+.start p { margin: 0; font-family: var(--eng); font-weight: 600; font-size: clamp(11px,1.3vw,21px);
+  letter-spacing: 0.42em; text-indent: 0.42em; text-transform: uppercase; color: rgba(201,214,228,0.82); }
+.start button { margin-top: 0.3rem; font-family: var(--eng); font-weight: 700;
+  font-size: clamp(13px,1.4vw,22px); letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--nacht); background: var(--messing); border: none; padding: 0.8em 2.6em; cursor: pointer; }
+.start button:hover { background: var(--messing-hell); }
+.start label { font-family: var(--eng); font-weight: 600; font-size: clamp(11px,1.15vw,18px);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--messing-hell);
+  border-bottom: 1px solid rgba(232,200,119,0.5); cursor: pointer; }
+.start label input { display: none; }
+.start small { font-family: var(--text); font-size: clamp(10px,0.95vw,14px); color: rgba(201,214,228,0.5); }
+</style>
+</head>
+<body>
+
+<!-- Wandelt Helligkeit in Deckkraft um. Damit wird aus der Maske
+     unter dem Bild die Transparenz von Artjom. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="hellzualpha"><feColorMatrix type="luminanceToAlpha"/></filter>
+</svg>
+
+<div class="bühne" id="bühne">
+
+  <div class="karte" id="karte"></div>
+  <canvas id="wetter"></canvas>
+
+  <div class="lage" id="lage"><b></b><span></span></div>
+  <div id="orte"></div>
+
+  <canvas id="artjom"></canvas>
+  <video id="quelle" playsinline preload="auto"></video>
+
+  <div class="kennung" id="kennung">
+    <span>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></span>
+  </div>
+
+  <div class="binde" id="binde">
+    <div class="flagge">WETTER</div>
+    <div class="inhalt">
+      <div class="name" id="binde-name"></div>
+      <div class="rolle" id="binde-rolle"></div>
+    </div>
+  </div>
+
+  <div class="leiste" id="leiste">
+    <span class="zeit" id="leiste-zeit">0.0 / 0.0</span>
+    <span class="spur" id="leiste-spur"><span class="fuell" id="leiste-fuell"></span></span>
+    <button id="knopf-video">Video wählen…</button>
+    <span class="hinweis">Z Zeiten · J ausrichten · T ausblenden</span>
+  </div>
+
+  <div class="zeiten" id="zeiten">
+    <h3>Einblendezeiten · Z schliesst</h3>
+    <div class="liste" id="zeiten-liste"></div>
+    <div class="fuss">
+      <button id="zeiten-ausgabe">Werte zum Kopieren</button>
+      <textarea id="zeiten-text" readonly></textarea>
+    </div>
+  </div>
+
+  <div class="justier" id="justier"></div>
+
+  <div class="start" id="start">
+    <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
+    <div class="linie"></div>
+    <p>Das Wetter</p>
+    <button id="start-knopf">Abspielen</button>
+    <label>Video von Hand wählen<input type="file" id="datei" accept="video/*"></label>
+    <small>Leertaste pausiert · Pfeile springen · Z setzt Zeiten · J richtet aus · T blendet aus · R startet neu</small>
+  </div>
+
+</div>
+
+<script>
+/* ===================================================================
+   KONFIG
+   Alle Zeiten in Sekunden, gemessen an den Sprechpausen der Tonspur.
+   =================================================================== */
+const KONFIG = {
+
+  fassung: "v1 · Wetterkarte zum neuen Artjom-Text",
+
+  video: "clips/artjom-wetter-maske.mp4",   // Farbe oben, Maske unten
+  karte: "bilder/w-atlas-karte.png",        // Kontinentkarte
+
+  binde: { name: "Artjom Komarow", rolle: "Praktikant", ein: 1.5, aus: 9.0 },
+
+  /* Lagetafel oben links */
+  lage: [
+    { ein:  1.9, aus: 20.5, titel: "997 hPa",   zusatz: "über Brightchester · fallend" },
+    { ein:  6.5, aus: 20.5, titel: "Hochnebel", zusatz: "über dem halben Kontinent" },
+    { ein: 69.8, aus: 79.0, titel: "Aufklarend", zusatz: "ab 22 Uhr klare Sicht" }
+  ],
+
+  /* Ortsschilder auf der Karte.
+     x und y in Prozent der Bildbreite und -hoehe.
+     art: kalt | warm | neutral                                        */
+  orte: [
+    { ein: 23.7, aus: 39.0, name: "Granite Falls",   x: 39.0, y: 12.0,
+      wert: "−4°", zusatz: "15 cm Neuschnee", art: "kalt" },
+    { ein: 32.9, aus: 48.0, name: "Windenburg",      x: 62.0, y: 45.0,
+      wert: "80 km/h", zusatz: "Böen an der Küste", art: "neutral" },
+    { ein: 60.9, aus: 72.0, name: "Sulani",          x: 66.0, y: 88.0,
+      wert: "26°", zusatz: "", art: "warm" },
+    { ein: 62.5, aus: 72.0, name: "Oasis Springs",   x: 36.5, y: 58.0,
+      wert: "11°", zusatz: "trocken", art: "warm" },
+    { ein: 65.4, aus: 79.0, name: "Forgotten Hollow", x: 28.5, y: 20.0,
+      wert: "Nacht", zusatz: "keine Vorhersage", art: "neutral" }
+  ],
+
+  /* Wetterlagen auf der Karte.
+     art: nebel | schnee | sturm | klar                                 */
+  wetter: [
+    { ein:  6.5, aus: 69.8, art: "nebel",  x: 50,   y: 45 },
+    { ein: 23.7, aus: 60.0, art: "schnee", x: 39,   y: 12 },
+    { ein: 32.9, aus: 60.0, art: "sturm",  x: 62,   y: 45 },
+    { ein: 69.8, aus: 84.0, art: "klar",   x: 50,   y: 45 }
+  ]
+};
+
+/* =================================================================== */
+
+const el = (id) => document.getElementById(id);
+const quelle  = el("quelle");
+const artjom  = el("artjom");
+const aCtx    = artjom.getContext("2d");
+const wetter  = el("wetter");
+const wCtx    = wetter.getContext("2d");
+const karte   = el("karte");
+
+let leisteAn = true, zeitenAn = false, justierAn = false;
+
+karte.style.backgroundImage = 'url("' + KONFIG.karte + '")';
+quelle.src = KONFIG.video;
+el("binde-name").textContent  = KONFIG.binde.name;
+el("binde-rolle").textContent = KONFIG.binde.rolle;
+
+/* ---------- Ortsschilder aufbauen ---------- */
+const ortsElemente = KONFIG.orte.map((o, i) => {
+  const d = document.createElement("div");
+  d.className = "ort " + (o.art || "neutral");
+  d.dataset.i = String(i);
+  d.style.left = o.x + "%";
+  d.style.top  = o.y + "%";
+  d.innerHTML = '<div class="punkt"></div>' +
+                '<div class="name"></div>' +
+                '<div class="wert"></div>' +
+                '<div class="zusatz"></div>';
+  d.querySelector(".name").textContent   = o.name;
+  d.querySelector(".wert").textContent   = o.wert;
+  d.querySelector(".zusatz").textContent = o.zusatz || "";
+  el("orte").appendChild(d);
+  return d;
+});
+
+/* ===================================================================
+   Artjom freistellen
+   Das Video ist doppelt so hoch wie das Bild: oben die Farbe,
+   unten die Maske. Wir zeichnen die Farbe und stanzen mit der
+   Maske die Form heraus.
+   =================================================================== */
+let breite = 0, hoehe = 0;
+let mitFilter = true;          // schneller Weg ueber den SVG-Filter
+const hilf = document.createElement("canvas");
+const hCtx = hilf.getContext("2d");
+
+quelle.addEventListener("loadedmetadata", () => {
+  breite = quelle.videoWidth;
+  hoehe  = quelle.videoHeight / 2;
+  artjom.width = breite; artjom.height = hoehe;
+  hilf.width = breite;   hilf.height = hoehe;
+  // Kann dieser Browser Filter auf dem Canvas? Sonst Pixelweg.
+  hCtx.filter = "url(#hellzualpha)";
+  mitFilter = (hCtx.filter !== "none");
+  hCtx.filter = "none";
+  baueMarker();
+});
+
+function zeichneArtjom() {
+  if (!breite || quelle.readyState < 2) return;
+  aCtx.clearRect(0, 0, breite, hoehe);
+  aCtx.globalCompositeOperation = "source-over";
+  aCtx.drawImage(quelle, 0, 0, breite, hoehe, 0, 0, breite, hoehe);
+
+  if (mitFilter) {
+    hCtx.clearRect(0, 0, breite, hoehe);
+    hCtx.filter = "url(#hellzualpha)";
+    hCtx.drawImage(quelle, 0, hoehe, breite, hoehe, 0, 0, breite, hoehe);
+    hCtx.filter = "none";
+  } else {
+    // Rueckfallweg: Helligkeit der Maske von Hand in Deckkraft umrechnen
+    hCtx.clearRect(0, 0, breite, hoehe);
+    hCtx.drawImage(quelle, 0, hoehe, breite, hoehe, 0, 0, breite, hoehe);
+    const d = hCtx.getImageData(0, 0, breite, hoehe);
+    const p = d.data;
+    for (let i = 0; i < p.length; i += 4) {
+      p[i + 3] = (p[i] * 0.2126 + p[i + 1] * 0.7152 + p[i + 2] * 0.0722) | 0;
+      p[i] = p[i + 1] = p[i + 2] = 0;
+    }
+    hCtx.putImageData(d, 0, 0);
+  }
+
+  aCtx.globalCompositeOperation = "destination-in";
+  aCtx.drawImage(hilf, 0, 0);
+  aCtx.globalCompositeOperation = "source-over";
+}
+
+/* ===================================================================
+   Wetter auf der Karte
+   =================================================================== */
+function passeWetterAn() {
+  const r = wetter.getBoundingClientRect();
+  const b = Math.round(r.width), h = Math.round(r.height);
+  if (b && h && (wetter.width !== b || wetter.height !== h)) {
+    wetter.width = b; wetter.height = h;
+  }
+}
+setInterval(passeWetterAn, 400);
+
+const flocken = Array.from({ length: 220 }, () => ({
+  x: Math.random(), y: Math.random(), r: 0.6 + Math.random() * 2.2,
+  v: 0.02 + Math.random() * 0.05, s: Math.random() * 6, w: 0.004 + Math.random() * 0.01
+}));
+const boeen = Array.from({ length: 70 }, () => ({
+  x: Math.random(), y: Math.random(), l: 0.03 + Math.random() * 0.09,
+  v: 0.16 + Math.random() * 0.28, d: 0.3 + Math.random() * 0.5
+}));
+const sterne = Array.from({ length: 90 }, () => ({
+  x: Math.random(), y: Math.random() * 0.55, r: 0.4 + Math.random() * 1.2, p: Math.random() * 6
+}));
+
+let nebelStaerke = 0, klarStaerke = 0;
+let zuletzt = performance.now();
+
+function zeichneWetter(jetzt) {
+  const dt = Math.min(0.05, (jetzt - zuletzt) / 1000);
+  zuletzt = jetzt;
+  const t = jetzt / 1000;
+  const B = wetter.width, H = wetter.height;
+  if (!B) { requestAnimationFrame(zeichneWetter); return; }
+  wCtx.clearRect(0, 0, B, H);
+
+  const zeit = quelle.currentTime;
+  const laeuft = (art) => KONFIG.wetter.some(w => w.art === art && zeit >= w.ein && zeit < w.aus);
+
+  // Hochnebel: breite, langsam ziehende Schleier
+  nebelStaerke += ((laeuft("nebel") ? 1 : 0) - nebelStaerke) * dt * 0.6;
+  if (nebelStaerke > 0.01) {
+    for (let i = 0; i < 5; i++) {
+      const y = H * (0.25 + i * 0.13);
+      const x = ((t * (7 + i * 3)) % (B + 600)) - 300;
+      const g = wCtx.createRadialGradient(x, y, 0, x, y, B * 0.34);
+      g.addColorStop(0, "rgba(198,216,236," + (0.20 * nebelStaerke).toFixed(3) + ")");
+      g.addColorStop(1, "rgba(198,216,236,0)");
+      wCtx.fillStyle = g;
+      wCtx.fillRect(0, 0, B, H);
+    }
+  }
+
+  // Schnee, nur im oberen Norden rund um Granite Falls
+  if (laeuft("schnee")) {
+    const mx = B * 0.39, my = H * 0.12, rad = Math.min(B, H) * 0.42;
+    flocken.forEach(f => {
+      f.y += f.v * dt; f.x += Math.sin(t * 0.7 + f.s) * f.w * dt;
+      if (f.y > 1) { f.y = -0.02; f.x = Math.random(); }
+      const px = f.x * B, py = f.y * H;
+      const d = Math.hypot(px - mx, py - my);
+      if (d > rad) return;
+      wCtx.globalAlpha = Math.max(0, 1 - d / rad) * 0.85;
+      wCtx.fillStyle = "#ffffff";
+      wCtx.beginPath(); wCtx.arc(px, py, f.r, 0, 7); wCtx.fill();
+    });
+    wCtx.globalAlpha = 1;
+  }
+
+  // Sturm: waagrechte Striche ueber Windenburg
+  if (laeuft("sturm")) {
+    const mx = B * 0.62, my = H * 0.45, rad = Math.min(B, H) * 0.40;
+    wCtx.lineCap = "round";
+    boeen.forEach(b => {
+      b.x += b.v * dt;
+      if (b.x > 1.1) { b.x = -0.15; b.y = Math.random(); }
+      const px = b.x * B, py = b.y * H;
+      const d = Math.hypot(px - mx, py - my);
+      if (d > rad) return;
+      wCtx.globalAlpha = Math.max(0, 1 - d / rad) * 0.5 * b.d;
+      wCtx.strokeStyle = "#dceaf8";
+      wCtx.lineWidth = 1.6;
+      wCtx.beginPath(); wCtx.moveTo(px, py); wCtx.lineTo(px + b.l * B, py); wCtx.stroke();
+    });
+    wCtx.globalAlpha = 1;
+  }
+
+  // Aufklaren: Sterne treten hervor
+  klarStaerke += ((laeuft("klar") ? 1 : 0) - klarStaerke) * dt * 0.5;
+  if (klarStaerke > 0.01) {
+    sterne.forEach(s => {
+      wCtx.globalAlpha = klarStaerke * (0.3 + 0.5 * Math.sin(t * 1.3 + s.p));
+      wCtx.fillStyle = "#eef4ff";
+      wCtx.beginPath(); wCtx.arc(s.x * B, s.y * H, s.r, 0, 7); wCtx.fill();
+    });
+    wCtx.globalAlpha = 1;
+  }
+  karte.classList.toggle("klar", klarStaerke > 0.4);
+
+  zeichneArtjom();
+  requestAnimationFrame(zeichneWetter);
+}
+requestAnimationFrame(zeichneWetter);
+
+/* ===================================================================
+   Takt: Schilder und Lagetafel
+   =================================================================== */
+let lageAktiv = -1;
+
+function takt() {
+  const t = quelle.currentTime;
+
+  ortsElemente.forEach((d, i) => {
+    const o = KONFIG.orte[i];
+    d.classList.toggle("an", t >= o.ein && t < o.aus);
+  });
+
+  let treffer = -1;
+  for (let i = 0; i < KONFIG.lage.length; i++) {
+    if (t >= KONFIG.lage[i].ein && t < KONFIG.lage[i].aus) treffer = i;
+  }
+  if (treffer !== lageAktiv) {
+    lageAktiv = treffer;
+    const k = el("lage");
+    if (treffer < 0) k.classList.remove("an");
+    else {
+      k.querySelector("b").textContent    = KONFIG.lage[treffer].titel;
+      k.querySelector("span").textContent = KONFIG.lage[treffer].zusatz;
+      k.classList.add("an");
+    }
+  }
+
+  el("binde").classList.toggle("sichtbar", t >= KONFIG.binde.ein && t < KONFIG.binde.aus);
+
+  const d = quelle.duration && isFinite(quelle.duration) ? quelle.duration : 0;
+  el("leiste-zeit").textContent = t.toFixed(1) + " / " + d.toFixed(1);
+  el("leiste-fuell").style.width = d ? (t / d * 100) + "%" : "0";
+
+  requestAnimationFrame(takt);
+}
+
+/* ---------- Ablauf ---------- */
+function start() {
+  el("start").classList.add("weg");
+  el("kennung").classList.add("sichtbar");
+  if (leisteAn) el("leiste").classList.add("zeig");
+  quelle.currentTime = 0;
+  quelle.play().catch(() => {});
+  baueMarker();
+  requestAnimationFrame(takt);
+}
+el("start-knopf").addEventListener("click", start);
+el("start").addEventListener("click", (e) => { if (e.target.closest("label")) return; start(); });
+el("datei").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (f) { quelle.src = URL.createObjectURL(f); quelle.load(); }
+});
+el("knopf-video").addEventListener("click", () => el("datei").click());
+
+/* ---------- Zeitleiste ---------- */
+const spur = el("leiste-spur");
+function baueMarker() {
+  spur.querySelectorAll(".marker").forEach(m => m.remove());
+  if (!quelle.duration || !isFinite(quelle.duration)) return;
+  KONFIG.orte.map(o => o.ein)
+    .concat(KONFIG.lage.map(l => l.ein))
+    .concat(KONFIG.wetter.map(w => w.ein))
+    .forEach(sek => {
+      const k = document.createElement("span");
+      k.className = "marker";
+      k.style.left = (sek / quelle.duration * 100) + "%";
+      spur.appendChild(k);
+    });
+}
+spur.addEventListener("click", (e) => {
+  if (!quelle.duration || !isFinite(quelle.duration)) return;
+  const r = spur.getBoundingClientRect();
+  springe(((e.clientX - r.left) / r.width) * quelle.duration);
+});
+function springe(sek) {
+  quelle.currentTime = Math.max(0, Math.min(sek, quelle.duration || sek));
+  lageAktiv = -1;
+  if (quelle.paused) quelle.play().catch(() => {});
+}
+
+/* ---------- Zeiten-Editor ---------- */
+function sek(v) { return Math.round(v * 10) / 10; }
+
+function baueZeiten() {
+  const liste = el("zeiten-liste");
+  liste.innerHTML = "";
+
+  KONFIG.lage.forEach((l, i) => {
+    const z = document.createElement("div");
+    z.className = "zeile"; z.dataset.art = "lage"; z.dataset.i = String(i);
+    z.innerHTML = '<span class="titel">Tafel: ' + l.titel +
+      '<small>' + l.ein.toFixed(1) + ' bis ' + l.aus.toFixed(1) + ' s</small></span>';
+    const a = document.createElement("button"); a.textContent = "ein";
+    a.addEventListener("click", () => { l.ein = sek(quelle.currentTime); aktualisiere(); });
+    z.appendChild(a);
+    liste.appendChild(z);
+  });
+
+  KONFIG.orte.forEach((o, i) => {
+    const z = document.createElement("div");
+    z.className = "zeile"; z.dataset.art = "ort"; z.dataset.i = String(i);
+    z.innerHTML = '<span class="titel">' + o.name + ' ' + o.wert +
+      '<small>' + o.ein.toFixed(1) + ' bis ' + o.aus.toFixed(1) + ' s</small></span>';
+    const a = document.createElement("button"); a.textContent = "ein";
+    a.addEventListener("click", () => { o.ein = sek(quelle.currentTime); aktualisiere(); });
+    z.appendChild(a);
+    liste.appendChild(z);
+  });
+
+  KONFIG.wetter.forEach((w, i) => {
+    const z = document.createElement("div");
+    z.className = "zeile"; z.dataset.art = "wetter"; z.dataset.i = String(i);
+    z.innerHTML = '<span class="titel">Wetter: ' + w.art +
+      '<small>' + w.ein.toFixed(1) + ' bis ' + w.aus.toFixed(1) + ' s</small></span>';
+    const a = document.createElement("button"); a.textContent = "ein";
+    a.addEventListener("click", () => { w.ein = sek(quelle.currentTime); aktualisiere(); });
+    z.appendChild(a);
+    liste.appendChild(z);
+  });
+}
+
+function aktualisiere() { baueZeiten(); baueMarker(); lageAktiv = -1; schreibeAusgabe(); }
+
+function schreibeAusgabe() {
+  const l = KONFIG.lage.map(x =>
+    '    { ein: ' + x.ein + ', aus: ' + x.aus + ', titel: "' + x.titel + '", zusatz: "' + x.zusatz + '" },').join("\n");
+  const o = KONFIG.orte.map(x =>
+    '    { ein: ' + x.ein + ', aus: ' + x.aus + ', name: "' + x.name + '", x: ' + x.x + ', y: ' + x.y +
+    ',\n      wert: "' + x.wert + '", zusatz: "' + x.zusatz + '", art: "' + x.art + '" },').join("\n");
+  const w = KONFIG.wetter.map(x =>
+    '    { ein: ' + x.ein + ', aus: ' + x.aus + ', art: "' + x.art + '", x: ' + x.x + ', y: ' + x.y + ' },').join("\n");
+  el("zeiten-text").value =
+    "lage: [\n" + l + "\n  ],\n\n  orte: [\n" + o + "\n  ],\n\n  wetter: [\n" + w + "\n  ]";
+}
+
+el("zeiten-ausgabe").addEventListener("click", () => {
+  el("zeiten").classList.toggle("ausgabe");
+  schreibeAusgabe();
+  const f = el("zeiten-text");
+  if (el("zeiten").classList.contains("ausgabe")) { f.focus(); f.select(); }
+});
+
+setInterval(() => {
+  if (!zeitenAn) return;
+  const t = quelle.currentTime;
+  el("zeiten").querySelectorAll(".zeile").forEach(z => {
+    const i = +z.dataset.i;
+    const q = z.dataset.art === "lage" ? KONFIG.lage[i]
+            : z.dataset.art === "ort"  ? KONFIG.orte[i]
+            : KONFIG.wetter[i];
+    z.classList.toggle("jetzt", t >= q.ein && t < q.aus);
+  });
+}, 200);
+
+/* ---------- Ausrichten: Schilder und Artjom ziehen ---------- */
+const bühne = document.querySelector(".bühne");
+const werte = {
+  "--art-rechts":  4.0,
+  "--art-unten":   0.0,
+  "--art-hoehe":  94.0
+};
+const schlüssel = Object.keys(werte);
+let zielIndex = 0;
+let zieht = null;
+
+function setzeWert(k, v) {
+  werte[k] = v;
+  document.documentElement.style.setProperty(k, v.toFixed(1) + "%");
+}
+
+document.addEventListener("pointerdown", (e) => {
+  if (!justierAn) return;
+  const schild = e.target.closest(".ort");
+  const r = bühne.getBoundingClientRect();
+  if (schild) {
+    const i = +schild.dataset.i;
+    zieht = { art: "ort", i, mx: e.clientX, my: e.clientY, bw: r.width, bh: r.height,
+              x: KONFIG.orte[i].x, y: KONFIG.orte[i].y };
+    e.preventDefault(); return;
+  }
+  if (e.target === artjom) {
+    zieht = { art: "artjom", mx: e.clientX, my: e.clientY, bw: r.width, bh: r.height,
+              x: werte["--art-rechts"], y: werte["--art-unten"] };
+    e.preventDefault();
+  }
+});
+document.addEventListener("pointermove", (e) => {
+  if (!zieht) return;
+  const dx = (e.clientX - zieht.mx) / zieht.bw * 100;
+  const dy = (e.clientY - zieht.my) / zieht.bh * 100;
+  if (zieht.art === "ort") {
+    const o = KONFIG.orte[zieht.i];
+    o.x = zieht.x + dx; o.y = zieht.y + dy;
+    ortsElemente[zieht.i].style.left = o.x.toFixed(1) + "%";
+    ortsElemente[zieht.i].style.top  = o.y.toFixed(1) + "%";
+  } else {
+    setzeWert("--art-rechts", zieht.x - dx);
+    setzeWert("--art-unten",  zieht.y - dy);
+  }
+  zeichneJustier();
+});
+document.addEventListener("pointerup", () => { zieht = null; });
+
+function zeichneJustier() {
+  const zeilen = schlüssel.map((k, i) =>
+    (i === zielIndex ? "\u25B8 " : "  ") + k.padEnd(14) + werte[k].toFixed(1) + "%").join("\n");
+  const css = schlüssel.map(k => "  " + k + ": " + werte[k].toFixed(1) + "%;").join("\n");
+  const orte = KONFIG.orte.map(o => "  " + o.name.padEnd(18) + o.x.toFixed(1) + " / " + o.y.toFixed(1)).join("\n");
+  el("justier").innerHTML =
+    "<b>Ausrichtemodus</b>  Schilder und Artjom ziehen  ·  Tab wechselt  ·  C zeigt die Werte  ·  J schliesst\n"
+    + zeilen + "\n\n" + orte + "<code>:root {\n" + css + "\n}</code>";
+}
+
+function justierUm() {
+  justierAn = !justierAn;
+  el("justier").classList.toggle("zeig", justierAn);
+  document.body.classList.toggle("justiert", justierAn);
+  if (justierAn) zeichneJustier();
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "j" || e.key === "J") { e.preventDefault(); justierUm(); return; }
+  if ((e.key === "c" || e.key === "C") && justierAn) {
+    e.preventDefault(); el("justier").classList.toggle("werte-zeigen"); return;
+  }
+  if (justierAn) {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      zielIndex = (zielIndex + (e.shiftKey ? -1 : 1) + schlüssel.length) % schlüssel.length;
+      zeichneJustier(); return;
+    }
+    const schritt = e.shiftKey ? 1.0 : 0.1;
+    const k = schlüssel[zielIndex];
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); setzeWert(k, werte[k] - schritt); zeichneJustier(); }
+    if (e.key === "ArrowRight" || e.key === "ArrowUp")  { e.preventDefault(); setzeWert(k, werte[k] + schritt); zeichneJustier(); }
+    return;
+  }
+  if (e.key === "z" || e.key === "Z") {
+    e.preventDefault(); zeitenAn = !zeitenAn;
+    el("zeiten").classList.toggle("zeig", zeitenAn);
+    if (zeitenAn) baueZeiten();
+    return;
+  }
+  if (e.key === "t" || e.key === "T") {
+    e.preventDefault(); leisteAn = !leisteAn;
+    el("leiste").classList.toggle("zeig", leisteAn); return;
+  }
+  if (e.code === "Space") { e.preventDefault(); quelle.paused ? quelle.play() : quelle.pause(); }
+  const weite = e.shiftKey ? 1 : 5;
+  if (e.key === "ArrowRight") { e.preventDefault(); springe(quelle.currentTime + weite); }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); springe(quelle.currentTime - weite); }
+  if (e.key === "r" || e.key === "R") {
+    quelle.pause(); lageAktiv = -1;
+    el("kennung").classList.remove("sichtbar");
+    el("binde").classList.remove("sichtbar");
+    el("start").classList.remove("weg");
+  }
+});
+</script>
+</body>
+</html>
