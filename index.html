@@ -1032,8 +1032,8 @@
     status.textContent = 'Die Flocken werden geholt …';
     const platziert = [];
     try {
-      const res = await fetch(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'action=flocken');
-      const data = await res.json();
+      const antwort = await holeJson(APPS_SCRIPT_URL + (APPS_SCRIPT_URL.includes('?') ? '&' : '?') + 'action=flocken', 3);
+      const data = antwort.data;
       const flocken = data.flocken || [];
       if (!flocken.length) {
         status.textContent = 'Noch hängt hier nichts — schneide die erste Flocke bei Anfisa in der Küche!';
@@ -1528,7 +1528,37 @@
     updateProgress();
   }
 
+  // --- Abruf mit Wiederholung ---
+  // Google schickt gelegentlich statt der Daten eine eigene Fehlerseite (HTML).
+  // Dann wird kurz gewartet und nochmal gefragt. Gibt { text, data } zurück.
+  async function holeJson(url, versuche) {
+    versuche = versuche || 3;
+    let letzterFehler = null;
+    for (let i = 1; i <= versuche; i++) {
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        try {
+          return { text: text, data: JSON.parse(text) };
+        } catch (e) {
+          // Keine Daten, sondern eine Google-Seite: Anfang für die Fehlersuche festhalten
+          console.warn('Apps Script lieferte keine Daten (Versuch ' + i + ' von ' + versuche + '):', text.slice(0, 400));
+          letzterFehler = new Error('Google hat keine Daten geliefert');
+        }
+      } catch (e) {
+        console.warn('Verbindung fehlgeschlagen (Versuch ' + i + ' von ' + versuche + '):', e);
+        letzterFehler = e;
+      }
+      if (i < versuche) await new Promise(r => setTimeout(r, 1500 * i));
+    }
+    throw letzterFehler;
+  }
+
   // --- Daten laden + initialisieren ---
+  // Zwischenspeicher im Browser: Wiederkehrende Besucher sehen den Kalender sofort
+  const DATEN_CACHE_KEY = 'adventskalender_daten_cache';
+  let schnuppenGestartet = false;
+
   async function init() {
     const loadingEl = document.getElementById('ak-loading');
     const errorEl = document.getElementById('ak-error');
@@ -1538,39 +1568,67 @@
       errorEl.classList.remove('hidden');
       return;
     }
+    // 1. Sofort anzeigen, was beim letzten Besuch geladen wurde (falls vorhanden)
+    let gespeicherterText = null;
+    try { gespeicherterText = localStorage.getItem(DATEN_CACHE_KEY); } catch (e) {}
+    let schonAngezeigt = false;
+    if (gespeicherterText) {
+      try {
+        datenAnwenden(JSON.parse(gespeicherterText));
+        loadingEl.classList.add('hidden');
+        schonAngezeigt = true;
+      } catch (e) {
+        gespeicherterText = null;   // Kaputter Speicher: ignorieren und normal laden
+      }
+    }
+
+    // 2. Im Hintergrund die aktuellen Daten holen und nur bei Änderungen neu aufbauen
     try {
-      const res = await fetch(APPS_SCRIPT_URL);
-      const data = await res.json();
+      const antwort = await holeJson(APPS_SCRIPT_URL, 3);
+      const text = antwort.text;
+      const data = antwort.data;
       if (data.error) throw new Error(data.error);
-      globalConfig = data.config || {};
-      const tueren = data.tueren || [];
-      const jahr = Number(globalConfig.jahr) || new Date().getFullYear();
-      const titel = globalConfig.titel || `Adventskalender ${jahr}`;
-      const testMode = globalConfig.test_mode;
-      const today = calcToday(jahr, testMode);
-
-      // Sprüche aus Sheet (optional)
-      (data.sprueche || []).forEach(s => {
-        const t = Number(s.tag);
-        if (t >= 1 && t <= 24 && s.text) sprueche[t] = s.text;
-      });
-
-      document.getElementById('ak-title').innerHTML = titel.replace(/(\d{4})/, '<em>$1</em>');
-      document.getElementById('ak-meta').textContent = formatToday(today, jahr, testMode);
-      document.title = titel;
-
-      setzeMondphase(today);
-      if (today >= 20) starteSchnuppenSaison();
-      if (today >= 24) document.getElementById('walker2').style.display = '';
-
-      const layout = getLayout(jahr);
-      renderDoors(layout, tueren, today, jahr);
+      if (text !== gespeicherterText) {
+        datenAnwenden(data);
+        try { localStorage.setItem(DATEN_CACHE_KEY, text); } catch (e) {}
+      }
       loadingEl.classList.add('hidden');
+      errorEl.classList.add('hidden');
     } catch (err) {
       loadingEl.classList.add('hidden');
-      errorEl.textContent = `Daten konnten nicht geladen werden. ${err.message || ''}`;
-      errorEl.classList.remove('hidden');
+      // Wer den Kalender schon sieht, bekommt keine Fehlermeldung — die alten Daten bleiben stehen
+      if (!schonAngezeigt) {
+        errorEl.textContent = `Daten konnten nicht geladen werden. ${err.message || ''}`;
+        errorEl.classList.remove('hidden');
+      }
     }
+  }
+
+  // Baut den Kalender aus den Sheet-Daten auf. Darf mehrfach laufen (Speicher, dann frische Daten).
+  function datenAnwenden(data) {
+    globalConfig = data.config || {};
+    const tueren = data.tueren || [];
+    const jahr = Number(globalConfig.jahr) || new Date().getFullYear();
+    const titel = globalConfig.titel || `Adventskalender ${jahr}`;
+    const testMode = globalConfig.test_mode;
+    const today = calcToday(jahr, testMode);
+
+    // Sprüche aus Sheet (optional)
+    (data.sprueche || []).forEach(s => {
+      const t = Number(s.tag);
+      if (t >= 1 && t <= 24 && s.text) sprueche[t] = s.text;
+    });
+
+    document.getElementById('ak-title').innerHTML = titel.replace(/(\d{4})/, '<em>$1</em>');
+    document.getElementById('ak-meta').textContent = formatToday(today, jahr, testMode);
+    document.title = titel;
+
+    setzeMondphase(today);
+    if (today >= 20 && !schnuppenGestartet) { schnuppenGestartet = true; starteSchnuppenSaison(); }
+    if (today >= 24) document.getElementById('walker2').style.display = '';
+
+    const layout = getLayout(jahr);
+    renderDoors(layout, tueren, today, jahr);
   }
 
   // Sound-Toggle
