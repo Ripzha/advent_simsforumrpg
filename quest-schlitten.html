@@ -15,6 +15,7 @@
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
   }
+  input, textarea { -webkit-user-select: text; user-select: text; }
 
   :root {
     --nacht: #0a1428; --nacht-tief: #060d1c; --panel-rand: #3a4a6a;
@@ -74,7 +75,7 @@
   <div class="screen" id="screen-intro">
     <h1>Sleigh <em>Night</em></h1>
     <p class="untertitel">Xmas is not safe</p>
-    <p class="intro-text">Vaas hat sich aus Schrott einen Schlitten geschweisst und den längsten Hang der Gegend gefunden. Bremsen? Hat er weggelassen. Waren zu schwer.<br><br>Spring über Felsen und Fässer, duck dich unter den Schrott-Schranken durch — und sammle Teile in Serie: Die <strong>Combo-Leiste</strong> läuft ab, jedes Teil füllt sie neu. Und unterwegs soll es auch Dinge geben, die… jemandem gehören.<br><br>Du hast <strong>drei Leben</strong> — ein Crash kostet eins und wirft dich aufs Anfangstempo zurück.<br><br>Und falls du unterwegs ein Grollen hörst: <strong>fahr schneller.</strong></p>
+    <p class="intro-text">Vaas hat sich aus Schrott einen Schlitten geschweisst und den längsten Hang der Gegend gefunden. Bremsen? Hat er weggelassen. Waren zu schwer.<br><br>Spring über Felsen und Fässer, duck dich unter den Schrott-Schranken durch — und sammle Teile in Serie: Die <strong>Combo-Leiste</strong> läuft ab, jedes Teil füllt sie neu. Höhere Stufen (×2, ×3, ×4) vervielfachen ALLE Punkte, laufen aber schneller ab. Wer ×4 lange genug hält, zündet den <strong>Schrott-Rausch</strong>: unverwundbar, Magnet, doppelte Punkte. Rechts am Rand: das <strong>Weihnachts-Set</strong> — fünf seltene Fundstücke, die zwischen dem Schrott glitzern. Komplett = fette Belohnung. Und unterwegs soll es auch Dinge geben, die… jemandem gehören.<br><br>Du hast <strong>drei Leben</strong> — ein Crash kostet eins und wirft dich aufs Anfangstempo zurück.<br><br>Und falls du unterwegs ein Grollen hörst: <strong>fahr schneller.</strong></p>
     <div class="knopf-reihe">
       <button class="knopf" id="start-knopf">Losfahren</button>
     </div>
@@ -177,11 +178,23 @@
   window.addEventListener('resize', resize);
 
   // ---------- Sound ----------
-  let actx = null;
+  let actx = null, master = null;
   function audio() {
-    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
-    if (actx.state === 'suspended') actx.resume();
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+      // Hauptregler: jeder Klang (Musik, Motor, Effekte) geht hier durch.
+      // Stumm = Regler auf 0, damit auch bereits geplante Töne nichts mehr hören lassen.
+      master = actx.createGain();
+      master.gain.value = musikAn ? 1 : 0;
+      master.connect(actx.destination);
+    }
+    if (actx.state === 'suspended') actx.resume().catch(() => {});
     return actx;
+  }
+  function masterSetzen(an) {
+    if (!actx || !master) return;
+    master.gain.cancelScheduledValues(actx.currentTime);
+    master.gain.setTargetAtTime(an ? 1 : 0, actx.currentTime, 0.03);
   }
   function plink(stufe) {
     const c = audio(); if (!c) return;
@@ -192,7 +205,7 @@
     g.gain.setValueAtTime(0, now);
     g.gain.linearRampToValueAtTime(0.14, now + 0.008);
     g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-    o.connect(g).connect(c.destination);
+    o.connect(g).connect(master);
     o.start(now); o.stop(now + 0.24);
   }
   function thud() {
@@ -204,7 +217,7 @@
     o.frequency.exponentialRampToValueAtTime(40, now + 0.3);
     g.gain.setValueAtTime(0.28, now);
     g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    o.connect(g).connect(c.destination);
+    o.connect(g).connect(master);
     o.start(now); o.stop(now + 0.38);
   }
   function stufeUp(stufe) {
@@ -216,7 +229,7 @@
       g.gain.setValueAtTime(0, now);
       g.gain.linearRampToValueAtTime(0.13, now + 0.01);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-      o.connect(g).connect(c.destination);
+      o.connect(g).connect(master);
       o.start(now); o.stop(now + 0.27);
     });
   }
@@ -228,7 +241,7 @@
       o.type = 'triangle'; o.frequency.value = f;
       g.gain.setValueAtTime(0.18, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-      o.connect(g).connect(c.destination);
+      o.connect(g).connect(master);
       o.start(now); o.stop(now + 0.32);
     });
   }
@@ -241,13 +254,16 @@
       g.gain.setValueAtTime(0, now);
       g.gain.linearRampToValueAtTime(0.12, now + 0.01);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-      o.connect(g).connect(c.destination);
+      o.connect(g).connect(master);
       o.start(now); o.stop(now + 0.32);
     });
   }
 
   // ---------- Musik: Jingle Bells (gemeinfrei, 1857) — Tempo koppelt ans Spiel ----------
-  let musikAn = localStorage.getItem('schlitten_musik') !== 'aus';
+  // Speicher-Zugriffe können im iframe oder Privatmodus fehlschlagen — nie das Spiel abbrechen lassen
+  function speicherLesen(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+  function speicherSchreiben(key, wert) { try { localStorage.setItem(key, wert); } catch (e) {} }
+  let musikAn = speicherLesen('schlitten_musik') !== 'aus';
   let musikTimer = null, naechsteNote = 0, melodiePos = 0, achtelIndex = 0;
   // [Halbton relativ zu C4, Dauer in Achteln] — null = Pause.
   // Strophe (16 Takte) + Refrain (8 Takte) = 24 Takte Loop.
@@ -297,7 +313,7 @@
     g.gain.linearRampToValueAtTime(vol, zeit + 0.012);
     g.gain.setValueAtTime(vol, zeit + dauer * 0.7);
     g.gain.exponentialRampToValueAtTime(0.001, zeit + dauer);
-    dist.connect(f).connect(g).connect(c.destination);
+    dist.connect(f).connect(g).connect(master);
     // Grundton (verstimmt gedoppelt) + Quinte = Powerchord
     [[1, 0.997], [1, 1.004], [1.5, 1.0]].forEach(([intervall, det]) => {
       const o = c.createOscillator();
@@ -316,7 +332,7 @@
       g.gain.setValueAtTime(0, zeit);
       g.gain.linearRampToValueAtTime(0.09, zeit + 0.008);
       g.gain.exponentialRampToValueAtTime(0.001, zeit + dauer * 0.55);
-      f.connect(g).connect(c.destination);
+      f.connect(g).connect(master);
       const o = c.createOscillator();
       o.type = 'sawtooth'; o.frequency.value = freq;
       o.connect(f);
@@ -327,7 +343,7 @@
       g.gain.setValueAtTime(0, zeit);
       g.gain.linearRampToValueAtTime(0.05, zeit + 0.01);
       g.gain.exponentialRampToValueAtTime(0.001, zeit + dauer * 0.92);
-      o.connect(g).connect(c.destination);
+      o.connect(g).connect(master);
       o.start(zeit); o.stop(zeit + dauer);
     }
   }
@@ -339,7 +355,7 @@
     o.frequency.exponentialRampToValueAtTime(42, zeit + 0.09);
     g.gain.setValueAtTime(0.24, zeit);
     g.gain.exponentialRampToValueAtTime(0.001, zeit + 0.14);
-    o.connect(g).connect(c.destination);
+    o.connect(g).connect(master);
     o.start(zeit); o.stop(zeit + 0.16);
   }
   function spieleSnare(zeit) {
@@ -351,11 +367,12 @@
     const q = c.createBufferSource(); q.buffer = puffer;
     const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1600;
     const g = c.createGain(); g.gain.value = 0.09;
-    q.connect(f).connect(g).connect(c.destination);
+    q.connect(f).connect(g).connect(master);
     q.start(zeit);
   }
   function planeMusik() {
     const c = audio(); if (!c || !musikAn) return;
+    if (naechsteNote < c.currentTime - 0.5) naechsteNote = c.currentTime + 0.1; // Rückstand verwerfen
     let wache3 = 0;
     while (naechsteNote < c.currentTime + 0.4) {
       if (++wache3 > 60) break;
@@ -403,7 +420,7 @@
     g.gain.setValueAtTime(0, now);
     g.gain.linearRampToValueAtTime(0.34, now + 0.018);
     g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-    o.connect(f).connect(g).connect(c.destination);
+    o.connect(f).connect(g).connect(master);
     o.start(now); vib.start(now);
     o.stop(now + 0.44); vib.stop(now + 0.44);
     // Fauchen hinterher: kurzes scharfes „Tss!"
@@ -414,7 +431,7 @@
     const q = c.createBufferSource(); q.buffer = puffer;
     const f2 = c.createBiquadFilter(); f2.type = 'highpass'; f2.frequency.value = 3400;
     const g2 = c.createGain(); g2.gain.value = 0.22;
-    q.connect(f2).connect(g2).connect(c.destination);
+    q.connect(f2).connect(g2).connect(master);
     q.start(now + 0.3);
   }
 
@@ -442,7 +459,7 @@
     o1.connect(f);
     o2.connect(o2g).connect(f);
     noise.connect(nf).connect(ng).connect(f);
-    f.connect(g).connect(c.destination);
+    f.connect(g).connect(master);
     lfo.connect(lfoG).connect(g.gain);
     o1.start(); o2.start(); noise.start(); lfo.start();
     motor = { o1: o1, o2: o2, g: g, f: f, lfo: lfo, lfoG: lfoG };
@@ -481,12 +498,13 @@
     g.gain.setValueAtTime(0, now);
     g.gain.linearRampToValueAtTime(0.07, now + 0.03);
     g.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
-    o.connect(f).connect(g).connect(c.destination);
+    o.connect(f).connect(g).connect(master);
     o.start(now); o.stop(now + 0.36);
   }
 
   // ---------- Musik-Datei: Loop mit Rausch-Beschleunigung ----------
   let musikBuffer = null, musikLaedt = false, musikSource = null, musikGain = null;
+  let musikModus = 'normal';
   let musikLoopStart = 0, musikLoopEnd = 0, musikRauschZustand = false;
   let musikFehler = false;
   async function ladeMusik() {
@@ -535,7 +553,7 @@
     musikGain = c.createGain();
     musikGain.gain.value = 0;
     musikGain.gain.linearRampToValueAtTime(0.5, c.currentTime + 0.6);
-    musikSource.connect(musikGain).connect(c.destination);
+    musikSource.connect(musikGain).connect(master);
     musikSource.playbackRate.value = rausch ? 1.3 : 1;
     musikRauschZustand = rausch;
     musikSource.start(0, musikLoopStart);
@@ -550,6 +568,7 @@
     starteSynth();
   }
   function musikStop() {
+    musikModus = 'normal';
     if (musikTimer) { clearInterval(musikTimer); musikTimer = null; }
     if (musikSource) {
       const c = audio();
@@ -563,7 +582,6 @@
       }
     }
   }
-  let musikModus = 'normal';
   function musikRauschUpdate() {
     if (!musikSource) return;
     const ziel = rausch ? 'rausch' : (bossAktiv ? 'boss' : 'normal');
@@ -613,7 +631,7 @@
     g.gain.setValueAtTime(0, zeit);
     g.gain.linearRampToValueAtTime(0.05, zeit + 0.008);
     g.gain.exponentialRampToValueAtTime(0.001, zeit + dauer);
-    dist.connect(f).connect(g).connect(c.destination);
+    dist.connect(f).connect(g).connect(master);
     [[1, 0.997], [1, 1.004], [1.5, 1.0]].forEach(([intervall, det]) => {
       const o = c.createOscillator();
       o.type = 'sawtooth'; o.frequency.value = freq * intervall * det;
@@ -623,6 +641,7 @@
   }
   function planeBossMusik() {
     const c = audio(); if (!c || !musikAn) return;
+    if (bossNaechste < c.currentTime - 0.5) bossNaechste = c.currentTime + 0.1;
     let wache4 = 0;
     while (bossNaechste < c.currentTime + 0.35) {
       if (++wache4 > 60) break;
@@ -725,7 +744,7 @@
     bossSpruch = { t: 0, txt: liste[Math.floor(Math.random() * liste.length)] };
   }
   let yetiStolpert = 0; // > 0: Abgangs-Animation
-  let rekord = parseInt(localStorage.getItem('schlitten_rekord') || '0', 10) || 0;
+  let rekord = parseInt(speicherLesen('schlitten_rekord') || '0', 10) || 0;
   let rekordGefeiert = false, rekordFlash = 0;
   const JUBEL_SPRUECHE = [
     'JAWOLL!', 'Genau sowas!', 'Der Schlitten dankt!', 'Schrott ist Gold!',
@@ -798,6 +817,8 @@
     letztesHindernisWx = 0; letztesWarSchranke = false; letztesWarDoppel = false;
     punkte = 0; teileZaehler = 0;
     tot = false; totTimer = 0; totRot = 0;
+    sprungHalten = false; haltZeit = 0;           // sonst springt der Schlitten nach „Nochmal" von allein höher
+    bossAngriffeUeberlebt = 0; bossZeit = 0; naechsterAngriffIn = 0; bossSpruch = null;
     document.getElementById('hud-punkte').textContent = '0';
     document.getElementById('hud-teile').textContent = '';
   }
@@ -2122,6 +2143,22 @@
     { name: 'VAAS', punkte: 2400 }, { name: 'BLAZE', punkte: 1850 },
     { name: 'EVE', punkte: 1200 }, { name: 'ARTJOM', punkte: 760 }
   ];
+  // Abruf mit Wiederholung: Google schickt gelegentlich eine Fehlerseite (HTML) statt Daten
+  async function holeJson(url, versuche) {
+    versuche = versuche || 3;
+    let letzterFehler = null;
+    for (let i = 1; i <= versuche; i++) {
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        try { return JSON.parse(text); }
+        catch (e) { letzterFehler = new Error('Google hat keine Daten geliefert'); }
+      } catch (e) { letzterFehler = e; }
+      if (i < versuche) await new Promise(r => setTimeout(r, 1500 * i));
+    }
+    throw letzterFehler;
+  }
+
   async function ladeRangliste(zielId, eigenerName) {
     const el = document.getElementById(zielId);
     if (!APPS_SCRIPT_URL) {
@@ -2136,8 +2173,7 @@
       return;
     }
     try {
-      const res = await fetch(APPS_SCRIPT_URL + '?action=scores&spiel=' + SPIEL_ID);
-      const data = await res.json();
+      const data = await holeJson(APPS_SCRIPT_URL + '?action=scores&spiel=' + SPIEL_ID, 3);
       if (!data.scores || !data.scores.length) {
         el.innerHTML = '<p class="rang-laedt">Noch keine Einträge — sei der erste!</p>';
         return;
@@ -2170,7 +2206,10 @@
     try {
       const res = await fetch(APPS_SCRIPT_URL + '?action=score_save&spiel=' + SPIEL_ID +
         '&name=' + encodeURIComponent(name) + '&punkte=' + punkte);
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch (e) { throw new Error('Google hat gerade nicht geantwortet — bitte nochmal auf den Knopf'); }
       if (data.ok) {
         document.getElementById('eintrag-bereich').style.display = 'none';
         ladeRangliste('rangliste-ende', name);
@@ -2250,7 +2289,7 @@
     document.getElementById('ende-punkte').textContent = punkte;
     if (punkte > rekord) {
       rekord = punkte;
-      localStorage.setItem('schlitten_rekord', String(rekord));
+      speicherSchreiben('schlitten_rekord', String(rekord));
       document.getElementById('rekord-label').textContent = '★ Neuer persönlicher Rekord!';
     } else {
       document.getElementById('rekord-label').textContent = rekord > 0 ? 'Dein Rekord: ' + rekord : '';
@@ -2265,13 +2304,30 @@
 
   const musikKnopf = document.getElementById('musik-knopf');
   musikKnopf.textContent = musikAn ? '🔊' : '🔇';
-  musikKnopf.onclick = () => {
-    musikAn = !musikAn;
+  function tonSetzen(an) {
+    musikAn = an;
     musikKnopf.textContent = musikAn ? '🔊' : '🔇';
-    localStorage.setItem('schlitten_musik', musikAn ? 'an' : 'aus');
-    if (musikAn && laufend) { musikStart(); motorStart(); }
-    else { musikStop(); motorStop(); }
-  };
+    masterSetzen(musikAn);
+    if (musikAn) { if (laufend) { musikStart(); motorStart(); } }
+    else {
+      musikStop(); motorStop();
+      if (bossMusikTimer) { clearInterval(bossMusikTimer); bossMusikTimer = null; }
+    }
+    speicherSchreiben('schlitten_musik', musikAn ? 'an' : 'aus');
+  }
+  musikKnopf.onclick = () => tonSetzen(!musikAn);
+
+  // Tab im Hintergrund: Planer anhalten, beim Zurückkommen sauber weitermachen
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (musikTimer) { clearInterval(musikTimer); musikTimer = null; }
+      if (bossMusikTimer) { clearInterval(bossMusikTimer); bossMusikTimer = null; }
+      motorStop();
+    } else if (laufend && musikAn) {
+      if (!musikSource) musikStart();
+      motorStart();
+    }
+  });
   document.getElementById('start-knopf').onclick = starte;
   document.getElementById('nochmal-knopf').onclick = starte;
   document.getElementById('eintragen-knopf').onclick = speicherePunkte;
@@ -2289,7 +2345,11 @@
    Betrifft nur das Verhalten des Browsers, nicht die Spielsteuerung. */
 (function(){
   var letzterTipp = 0;
+  function bedienelement(el){
+    return el && (el.tagName === 'INPUT' || el.tagName === 'BUTTON' || el.tagName === 'A' || el.closest('button, a, input'));
+  }
   document.addEventListener('touchend', function(e){
+    if (bedienelement(e.target)) return;   // Knöpfe und Eingabefeld normal lassen
     var jetzt = Date.now();
     if (jetzt - letzterTipp < 350) e.preventDefault();  // zweiter schneller Tipp -> kein Zoom
     letzterTipp = jetzt;
@@ -2302,7 +2362,10 @@
   document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
   document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
   document.addEventListener('gesturechange', function(e){ e.preventDefault(); });
-  document.addEventListener('selectstart', function(e){ e.preventDefault(); });
+  document.addEventListener('selectstart', function(e){
+    if (bedienelement(e.target)) return;
+    e.preventDefault();
+  });
   document.addEventListener('dblclick', function(e){ e.preventDefault(); });
 })();
 </script>
