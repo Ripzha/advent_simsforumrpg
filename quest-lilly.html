@@ -107,6 +107,13 @@
   .ergebnis-zahl { font-family: var(--serif); font-size: 42px; color: var(--gold-hell); margin: 0 0 4px; }
   .ergebnis-label { color: var(--himmel-text); font-size: 13px; margin: 0 0 24px; }
 
+  /* Touch-Geräte: Notenname gross, Tastatur-Buchstabe ausgeblendet */
+  body.touch .taste .name, body.touch .schwarz .name { display: none; }
+  body.touch .taste .kuerzel { font-size: 13px; color: #6a5a40; font-family: var(--serif); margin-top: 0; }
+  body.touch .schwarz .kuerzel { font-size: 10px; color: #b8c8e0; font-family: var(--serif); }
+  body.touch .hilfe-tastatur { display: none; }
+  body:not(.touch) .hilfe-touch { display: none; }
+
   @media (prefers-reduced-motion: reduce) {
     .flocken span { display: none; }
   }
@@ -141,7 +148,8 @@
       <button class="knopf" id="start-knopf">Spielen</button>
       <button class="knopf sekundaer" id="vorspiel-knopf">Erst mal anhören</button>
     </div>
-    <p class="hilfe">Klicke die Tasten wenn die Note sie erreicht — oder nutze die Tastatur: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> für die weissen, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Z</kbd> <kbd>U</kbd> für die schwarzen Tasten.</p>
+    <p class="hilfe hilfe-tastatur">Klicke die Tasten, wenn die Note sie erreicht — oder nutze die Tastatur: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> für die weissen, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Z</kbd> <kbd>U</kbd> für die schwarzen Tasten.</p>
+    <p class="hilfe hilfe-touch">Tippe die Taste, sobald die fallende Note sie erreicht. Am besten im Querformat.</p>
   </div>
 
   <!-- Ende: geschafft -->
@@ -262,6 +270,10 @@
     return { noten, laenge: t };
   }
 
+  // Touch-Gerät? Dann Notennamen statt Tastatur-Buchstaben zeigen
+  const TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (TOUCH) document.body.classList.add('touch');
+
   // ---------- Audio ----------
   let ctx = null;
   function ensureAudio() {
@@ -377,7 +389,7 @@
     song.noten.forEach((n) => {
       const el = document.createElement('div');
       el.className = 'note' + (n.note.includes('is') ? ' schwarz-note' : '');
-      el.textContent = ALLE[n.note].kuerzel;
+      el.textContent = TOUCH ? anzeigeName(n.note) : ALLE[n.note].kuerzel;
       el.style.display = 'none';
       spielfeld.appendChild(el);
       n.el = el;
@@ -424,6 +436,7 @@
       if (!vorspiel && n.status === 'offen' && dt < -GUT) {
         n.status = 'verpasst';
         n.el.classList.add('verpasst');
+        zeigeUrteil('Verpasst', '#e08a8a');
         serie = 0;
         serieEl.textContent = '';
         setTimeout(() => { n.el.style.display = 'none'; }, 500);
@@ -450,7 +463,8 @@
     song.noten.forEach((n) => {
       if (n.status !== 'offen' || n.note !== note) return;
       const diff = Math.abs(n.zeit - t);
-      if (diff < besteDiff) { besteDiff = diff; beste = n; }
+      if (diff > GUT) return;                       // ausserhalb des Fensters: ignorieren
+      if (!beste || n.zeit < beste.zeit) { beste = n; besteDiff = diff; }   // die früheste gewinnt
     });
     if (beste && besteDiff <= GUT) {
       beste.status = 'getroffen';
@@ -462,7 +476,7 @@
         punkte += 100;
         zeigeUrteil('Perfekt', 'var(--gruen)');
       } else {
-        punkte += 60;
+        punkte += 80;
         zeigeUrteil('Gut', 'var(--gelb)');
       }
       punkteEl.textContent = punkte;
@@ -526,7 +540,9 @@
    Betrifft nur das Verhalten des Browsers, nicht die Spielsteuerung. */
 (function(){
   var letzterTipp = 0;
+  function bedienelement(el){ return el && el.closest && el.closest('button, a'); }
   document.addEventListener('touchend', function(e){
+    if (bedienelement(e.target)) return;   // Knöpfe und Links normal lassen
     var jetzt = Date.now();
     if (jetzt - letzterTipp < 350) e.preventDefault();  // zweiter schneller Tipp -> kein Zoom
     letzterTipp = jetzt;
