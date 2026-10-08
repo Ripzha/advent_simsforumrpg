@@ -388,8 +388,8 @@
     document.querySelectorAll('#wz-schere, #wz-locher').forEach(b => b.classList.remove('aktiv'));
     el.classList.add('aktiv');
   }
-  document.getElementById('wz-undo').onclick = () => { strokes.pop(); zeichnePapier(); };
-  document.getElementById('wz-neu').onclick = () => { strokes = []; zeichnePapier(); };
+  document.getElementById('wz-undo').onclick = () => { aktiverStroke = null; strokes.pop(); zeichnePapier(); };
+  document.getElementById('wz-neu').onclick = () => { aktiverStroke = null; strokes = []; zeichnePapier(); };
 
   // ---------- Auffalten ----------
   const faltCanvas = document.getElementById('falt-canvas');
@@ -445,16 +445,36 @@
   function ladeLokal() {
     try { return JSON.parse(localStorage.getItem('flocke_meine') || 'null'); } catch (e) { return null; }
   }
-  document.getElementById('haengen-knopf').onclick = async () => {
-    const name = document.getElementById('flocke-name').value.trim().slice(0, 16);
+  // Speichern kann im iframe oder Privatmodus fehlschlagen — darf nie den Ablauf abbrechen
+  function speichereLokal(name) {
+    try { localStorage.setItem('flocke_meine', JSON.stringify({ name: name, s: strokes, n: faltung })); } catch (e) {}
+  }
+  const MAX_DATEN = 20000;   // Grenze im Apps Script (speichereFlocke)
+  let haengtGerade = false;  // gegen Doppeltipp -> doppelte Flocke im Sheet
+
+  async function flockeAufhaengen() {
+    if (haengtGerade) return;
+    const nameFeld = document.getElementById('flocke-name');
+    const knopf = document.getElementById('haengen-knopf');
+    const name = nameFeld.value.trim().slice(0, 16);
     const status = document.getElementById('haeng-status');
     status.classList.remove('fehler');
     if (name.length < 2) {
       status.textContent = 'Der Name braucht mindestens 2 Zeichen.';
       status.classList.add('fehler');
+      nameFeld.focus();
       return;
     }
     const daten = JSON.stringify({ s: strokes, n: faltung });
+    if (daten.length > MAX_DATEN) {
+      status.textContent = 'Diese Flocke ist zu fein geschnitten, um sie zu speichern — nimm mit „Zurück" ein paar Schnitte weg.';
+      status.classList.add('fehler');
+      return;
+    }
+    haengtGerade = true;
+    knopf.disabled = true;
+    const knopfText = knopf.textContent;
+    knopf.textContent = 'Hängt auf …';
     status.textContent = 'Wird ans Fenster gehängt …';
     try {
       const res = await fetch(APPS_SCRIPT_URL, {
@@ -462,19 +482,36 @@
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'flocke_save', name: name, daten: daten })
       });
-      const antwort = await res.json();
-      if (!antwort.ok) throw new Error(antwort.grund || 'abgelehnt');
-      localStorage.setItem('flocke_meine', JSON.stringify({ name: name, s: strokes, n: faltung }));
+      const text = await res.text();
+      let antwort;
+      try { antwort = JSON.parse(text); }
+      catch (e) { throw new Error('keine-antwort'); }
+      if (!antwort.ok) {
+        // Der Server hat bewusst abgelehnt (z. B. Name schon vergeben) — das ist KEIN Verbindungsproblem
+        status.textContent = 'Das Fenster hat die Flocke nicht angenommen: ' + (antwort.grund || 'unbekannter Grund') + '.';
+        status.classList.add('fehler');
+        return;
+      }
+      speichereLokal(name);
       flockenRegen();
       setTimeout(() => { zeigeScreen('screen-galerie'); ladeGalerie(); }, 900);
     } catch (e) {
-      // Offline / Sandbox: wenigstens lokal behalten
-      localStorage.setItem('flocke_meine', JSON.stringify({ name: name, s: strokes, n: faltung }));
-      status.textContent = 'Keine Verbindung zum Fenster — deine Flocke ist lokal gespeichert und wird in der Galerie gezeigt.';
+      speichereLokal(name);
+      status.textContent = (e && e.message === 'keine-antwort')
+        ? 'Das Fenster hat nicht geantwortet — die Flocke ist lokal gespeichert. Schau in der Galerie nach, ob sie hängt, sonst nochmal versuchen.'
+        : 'Keine Verbindung zum Fenster — deine Flocke ist lokal gespeichert und wird in der Galerie gezeigt.';
       status.classList.add('fehler');
       setTimeout(() => { zeigeScreen('screen-galerie'); ladeGalerie(); }, 1600);
+    } finally {
+      haengtGerade = false;
+      knopf.disabled = false;
+      knopf.textContent = knopfText;
     }
-  };
+  }
+  document.getElementById('haengen-knopf').onclick = flockeAufhaengen;
+  document.getElementById('flocke-name').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); flockeAufhaengen(); }
+  });
 
   // Google schickt gelegentlich statt der Daten eine eigene Fehlerseite (HTML).
   // Dann wird kurz gewartet und nochmal gefragt.
