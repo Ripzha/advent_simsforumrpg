@@ -263,6 +263,59 @@ html, body {
 .leiste .hinweis { flex: 0 0 auto; color: var(--silber); font-size: 11px; }
 
 /* ---------- Zeiten-Editor ---------- */
+/* ---------- Spur zum Ziehen ---------- */
+.spuren {
+  position: absolute; left: 2%; right: 2%; bottom: 10%; z-index: 93;
+  display: none; flex-direction: column; gap: 4px;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  padding: 0.6em 0.8em 0.7em;
+  font-family: var(--text); font-size: 12px; color: var(--weiss);
+}
+.spuren.zeig { display: flex; }
+.spur-kopf {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--eng); font-weight: 600; font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--silber);
+}
+.spur-zeit { color: var(--messing-hell); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.spur-zeile { display: flex; align-items: center; gap: 0.7em; }
+.spur-zeile b {
+  flex: 0 0 4.6em; font-family: var(--eng); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--messing-hell);
+}
+.spur-feld {
+  position: relative; flex: 1 1 auto; height: 30px;
+  background: rgba(201,214,228,0.1); overflow: hidden;
+}
+.spur-feld .abschnitt {
+  position: absolute; top: 0; bottom: 0; background: rgba(201,153,47,0.1);
+  pointer-events: none;
+}
+.spur-feld .kopf {
+  position: absolute; top: 0; bottom: 0; width: 2px; background: var(--weiss);
+  pointer-events: none; z-index: 5;
+}
+.spur-feld .block {
+  position: absolute; top: 3px; bottom: 3px;
+  background: var(--messing); color: var(--nacht);
+  font-family: var(--eng); font-weight: 700; font-size: 10px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  display: flex; align-items: center; padding: 0 0.5em;
+  overflow: hidden; white-space: nowrap; cursor: grab; user-select: none;
+}
+.spur-feld .block:hover { background: var(--messing-hell); }
+.spur-feld .block .rand {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 7px;
+  background: rgba(4,10,20,0.45); cursor: ew-resize;
+}
+#spur-rest { color: var(--silber); }
+#spur-rest button {
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px;
+  border: 1px solid rgba(232,200,119,0.5); background: transparent;
+  color: var(--messing-hell); padding: 0.2em 0.45em; margin-left: 0.35em; cursor: pointer;
+}
+#spur-rest button:hover { background: var(--messing); color: var(--nacht); }
+
 .zeiten {
   position: absolute; left: 1.5%; right: auto; top: 2%; bottom: 12%; width: 30%; min-width: 320px;
   z-index: 92; display: none; flex-direction: column;
@@ -379,7 +432,17 @@ body.justiert .griff { display: block; }
     <span class="zeit" id="leiste-zeit">Studio · 0.0 / 0.0</span>
     <span class="spur2" id="leiste-spur"><span class="füll" id="leiste-füll"></span></span>
     <button id="knopf-video">Video wählen…</button>
-    <span class="hinweis">Z Zeiten · X Seite · J ausrichten · T ausblenden</span>
+    <span class="hinweis">V Spur · Z Zeiten · J ausrichten · T ausblenden</span>
+  </div>
+
+  <div class="spuren" id="spuren">
+    <div class="spur-kopf">
+      <span>Ziehen verschiebt · rechter Rand setzt das Ende · Doppelklick legt still</span>
+      <span class="spur-zeit" id="spur-zeit">0.0 s</span>
+    </div>
+    <div class="spur-zeile"><b>Studio</b><div class="spur-feld" id="spur-links"></div></div>
+    <div class="spur-zeile"><b>Schalte</b><div class="spur-feld" id="spur-rechts"></div></div>
+    <div class="spur-kopf"><span id="spur-rest"></span></div>
   </div>
 
   <div class="zeiten" id="zeiten">
@@ -410,7 +473,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v11 · deine Zeiten, Editor abgesichert",
+  fassung: "v12 · Spur zum Ziehen",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -442,9 +505,7 @@ const KONFIG = {
 
   /* Kasten rechts: nur in der Schalte, also 15,3 bis 86 */
   rechts: [
-    { ab: 25.2, bis: 30.1, bild: "bilder/gh-auktion.png",
-      titel: "Städtische Auktion", ort: "Objekt 7" },
-    { ab: 32.1, bild: "bilder/gh-hanan.png",
+    { ab: 30.5, bild: "bilder/gh-hanan.png",
       titel: "Der Käufer", ort: "Yitzhak Hanan" },
     { ab: 35.2, bild: "bilder/gh-schluessel.png",
       titel: "Der Zuschlag", ort: "Yitzhak Hanan" },
@@ -454,6 +515,8 @@ const KONFIG = {
       titel: "Helfer gesucht", ort: "Bezahlt wird nicht" },
     { ab: 73.0, bis: 84.3, bild: "bilder/gh-jack.png",
       titel: "Das Jobangebot", ort: "Wer Regeln will" },
+    { aus: true, ab: 0, bild: "bilder/gh-auktion.png",
+      titel: "Städtische Auktion", ort: "Objekt 7" },
     { aus: true, ab: 0, bild: "bilder/gh-innen.png",
       titel: "Blinde Fenster", ort: "Seit zwei Jahrzehnten" },
     { aus: true, ab: 0, bild: "bilder/gh-papiere.png",
@@ -761,6 +824,161 @@ setInterval(() => {
   });
 }, 200);
 
+/* ===================================================================
+   Spur: Einblendungen mit der Maus setzen
+   Ziehen verschiebt, der rechte Rand setzt das Ende,
+   Doppelklick legt still.
+   =================================================================== */
+let spurAn = false;
+
+function spurDauer() {
+  return (clip.duration && isFinite(clip.duration)) ? clip.duration : 111;
+}
+
+function baueSpuren() {
+  [["links", KONFIG.links, el("spur-links")],
+   ["rechts", KONFIG.rechts, el("spur-rechts")]].forEach(([art, liste, feld]) => {
+    feld.innerHTML = "";
+    const d = spurDauer();
+
+    // Abschnitt einfärben, in dem diese Spur überhaupt läuft
+    const a = document.createElement("span");
+    a.className = "abschnitt";
+    if (art === "links") { a.style.left = "0%"; a.style.width = (KONFIG.schalteAb / d * 100) + "%"; }
+    else { a.style.left = (KONFIG.schalteAb / d * 100) + "%";
+           a.style.width = ((KONFIG.studioAb - KONFIG.schalteAb) / d * 100) + "%"; }
+    feld.appendChild(a);
+
+    const kopf = document.createElement("span");
+    kopf.className = "kopf"; kopf.id = "kopf-" + art;
+    feld.appendChild(kopf);
+
+    liste.forEach((e, i) => {
+      if (e.aus) return;
+      const ende = (e.bis && e.bis > e.ab) ? e.bis : naechsterStart(liste, e, art);
+      const b = document.createElement("div");
+      b.className = "block";
+      b.dataset.art = art; b.dataset.i = String(i);
+      b.style.left  = (e.ab / d * 100) + "%";
+      b.style.width = Math.max(1.2, (ende - e.ab) / d * 100) + "%";
+      b.title = e.titel + "  " + e.ab.toFixed(1) + " bis " + ende.toFixed(1) + " s";
+      b.textContent = e.titel;
+      const r = document.createElement("span");
+      r.className = "rand"; r.dataset.art = art; r.dataset.i = String(i);
+      b.appendChild(r);
+      feld.appendChild(b);
+    });
+  });
+  zeigeRest();
+}
+
+function naechsterStart(liste, e, art) {
+  let folgt = (art === "links") ? KONFIG.schalteAb : KONFIG.studioAb;
+  liste.forEach(x => {
+    if (x.aus || x === e) return;
+    if (x.ab > e.ab && x.ab < folgt) folgt = x.ab;
+  });
+  return folgt;
+}
+
+function zeigeRest() {
+  const r = el("spur-rest");
+  r.innerHTML = "";
+  const offen = [];
+  KONFIG.links.forEach((e, i)  => { if (e.aus) offen.push(["links", i, e]); });
+  KONFIG.rechts.forEach((e, i) => { if (e.aus) offen.push(["rechts", i, e]); });
+  if (!offen.length) { r.textContent = "Alle Bilder sind gesetzt."; return; }
+  r.appendChild(document.createTextNode("Noch frei:"));
+  offen.forEach(([art, i, e]) => {
+    const k = document.createElement("button");
+    k.textContent = e.titel;
+    k.title = "Ab der laufenden Sekunde einblenden";
+    k.addEventListener("click", () => {
+      const jetzt = Math.round(clip.currentTime * 10) / 10;
+      const imStudio = jetzt < KONFIG.schalteAb || jetzt >= KONFIG.studioAb;
+      if ((art === "links" && !imStudio) || (art === "rechts" && imStudio)) {
+        k.textContent = art === "links" ? "nur im Studio" : "nur in der Schalte";
+        setTimeout(() => { k.textContent = e.titel; }, 1200);
+        return;
+      }
+      e.ab = jetzt; e.aus = false; e.bis = null;
+      baueSpuren(); baueMarker();
+      if (zeitenAn) baueZeiten();
+    });
+    r.appendChild(k);
+  });
+}
+
+let spurZieht = null;
+
+function spurPos(ev, feld) {
+  const r = feld.getBoundingClientRect();
+  return Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * spurDauer();
+}
+
+document.addEventListener("pointerdown", (ev) => {
+  if (!spurAn) return;
+  const rand = ev.target.closest(".rand");
+  const block = ev.target.closest(".block");
+  if (!block) return;
+  const art = block.dataset.art;
+  const liste = art === "links" ? KONFIG.links : KONFIG.rechts;
+  const e = liste[+block.dataset.i];
+  const feld = block.parentElement;
+  spurZieht = { art, e, feld, modus: rand ? "ende" : "schieben",
+                griff: spurPos(ev, feld), ab: e.ab,
+                bis: (e.bis && e.bis > e.ab) ? e.bis : naechsterStart(liste, e, art) };
+  ev.preventDefault();
+});
+
+document.addEventListener("pointermove", (ev) => {
+  if (!spurZieht) return;
+  const z = spurZieht;
+  const jetzt = spurPos(ev, z.feld);
+  const grenzeA = z.art === "links" ? 0 : KONFIG.schalteAb;
+  const grenzeE = z.art === "links" ? KONFIG.schalteAb : KONFIG.studioAb;
+  if (z.modus === "schieben") {
+    let neu = z.ab + (jetzt - z.griff);
+    neu = Math.max(grenzeA, Math.min(grenzeE - 0.5, neu));
+    if (z.e.bis) z.e.bis = z.e.bis + (neu - z.e.ab);
+    z.e.ab = Math.round(neu * 10) / 10;
+  } else {
+    let neu = Math.max(z.e.ab + 0.4, Math.min(grenzeE, jetzt));
+    z.e.bis = Math.round(neu * 10) / 10;
+  }
+  baueSpuren();
+});
+
+document.addEventListener("pointerup", () => {
+  if (!spurZieht) return;
+  spurZieht = null;
+  baueMarker();
+  if (zeitenAn) baueZeiten();
+  letzterLinks = -2; letzterRechts = -2;
+});
+
+document.addEventListener("dblclick", (ev) => {
+  if (!spurAn) return;
+  const block = ev.target.closest(".block");
+  if (!block) return;
+  const liste = block.dataset.art === "links" ? KONFIG.links : KONFIG.rechts;
+  const e = liste[+block.dataset.i];
+  e.aus = true; e.bis = null;
+  baueSpuren(); baueMarker();
+  if (zeitenAn) baueZeiten();
+});
+
+// Abspielkopf in der Spur mitlaufen lassen
+setInterval(() => {
+  if (!spurAn) return;
+  const d = spurDauer(), p = (clip.currentTime / d * 100) + "%";
+  ["links", "rechts"].forEach(a => {
+    const k = el("kopf-" + a);
+    if (k) k.style.left = p;
+  });
+  el("spur-zeit").textContent = clip.currentTime.toFixed(1) + " s";
+}, 120);
+
 /* ---------- Ausrichten ---------- */
 const bühne = document.querySelector(".bühne");
 const werte = {
@@ -876,6 +1094,12 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault(); zeitenAn = !zeitenAn;
     el("zeiten").classList.toggle("zeig", zeitenAn);
     if (zeitenAn) baueZeiten();
+    return;
+  }
+  if (e.key === "v" || e.key === "V") {
+    e.preventDefault(); spurAn = !spurAn;
+    el("spuren").classList.toggle("zeig", spurAn);
+    if (spurAn) { clip.pause(); baueSpuren(); }
     return;
   }
   if ((e.key === "x" || e.key === "X") && zeitenAn) {
