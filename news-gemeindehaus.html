@@ -125,6 +125,25 @@ html, body {
   padding-left: 0.75em; border-left: 1px solid rgba(201,214,228,0.35);
 }
 
+/* ---------- Live-Kennung, läuft durch die ganze Schalte ---------- */
+.livemarke {
+  position: absolute; left: 3.2%; top: 4.4%; z-index: 23;
+  display: flex; align-items: center; gap: 0.5em;
+  background: #c0182b; color: var(--weiss);
+  font-family: var(--eng); font-weight: 700;
+  font-size: clamp(10px, 1.25vw, 21px); letter-spacing: 0.22em;
+  padding: 0.3em 0.85em 0.34em;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  opacity: 0; transform: translateY(-6px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.livemarke.sichtbar { opacity: 1; transform: translateY(0); }
+.livemarke i {
+  width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--weiss);
+  animation: pulsen 1.6s ease-in-out infinite;
+}
+@keyframes pulsen { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
 /* ---------- Bildkästen ---------- */
 .kasten {
   position: absolute; z-index: 15;
@@ -324,6 +343,8 @@ body.justiert .griff { display: block; }
   <video id="clip" playsinline preload="auto"></video>
   <div class="fehlt" id="clip-fehlt">Studio-Video nicht gefunden — Pfad in KONFIG.clip prüfen</div>
 
+  <div class="livemarke" id="livemarke"><i></i>LIVE</div>
+
   <div class="kennung" id="kennung">
     <span>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></span>
     <span class="uhr" id="uhr">20:00</span>
@@ -389,7 +410,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v9 · alle Bilder bereit, keines gesetzt",
+  fassung: "v10 · Live-Kennung und zweite Bauchbinde",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -403,10 +424,15 @@ const KONFIG = {
   /* Bauchbinden: eine für Konstanze, eine für Riva */
   binden: [
     { ab:  2.0,  bis:  9.0,  flagge: "HEUTE", name: "Konstanze Immalaut", rolle: "Moderatorin" },
-    { ab: 16.5,  bis: 24.0,  flagge: "LIVE",  name: "Riva Babylon",       rolle: "Chefredaktion · Windenburg" }
+    { ab: 16.5,  bis: 26.0,  flagge: "LIVE",  name: "Riva Babylon",       rolle: "Chefredaktion · Windenburg" },
+    // Sender wiederholen den Namen bei längeren Berichten
+    { ab: 55.0,  bis: 62.0,  flagge: "LIVE",  name: "Riva Babylon",       rolle: "Vor Ort in Windenburg" }
   ],
 
-  ortmarke: { ab: 15.6, bis: 22.0, text: "Windenburg — Altes Gemeindehaus" },
+  /* Rote Live-Kennung oben links, die ganze Schalte über */
+  livemarke: { ab: 15.4, bis: 85.8 },
+
+  ortmarke: { ab: 15.6, bis: 28.0, text: "Windenburg — Altes Gemeindehaus" },
 
   /* Kasten links, während Konstanze anmoderiert.
      Nachrichtensender zeigen hier das Thema, nicht die Reporterin.   */
@@ -544,6 +570,10 @@ function takt() {
     el("binde-name").textContent   = KONFIG.binden[b].name;
     el("binde-rolle").textContent  = KONFIG.binden[b].rolle;
   }
+
+  // Live-Kennung
+  const lm = KONFIG.livemarke;
+  el("livemarke").classList.toggle("sichtbar", t >= lm.ab && t < lm.bis);
 
   // Ortsmarke
   const o = KONFIG.ortmarke;
@@ -847,6 +877,7 @@ document.addEventListener("keydown", (e) => {
     el("kasten-rechts").classList.remove("sichtbar");
     el("binde").classList.remove("sichtbar");
     el("ortmarke").classList.remove("sichtbar");
+    el("livemarke").classList.remove("sichtbar");
     el("kennung").classList.remove("sichtbar");
     el("laufband").classList.remove("sichtbar");
     el("start").classList.remove("weg");
