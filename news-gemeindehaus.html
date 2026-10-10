@@ -483,7 +483,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v17 · Nieselregen",
+  fassung: "v20 · leichter Regen, gleichmässig",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -504,8 +504,10 @@ const KONFIG = {
   livemarke: { ab: 15.4, bis: 85.8 },
 
   /* Regen während der Schalte. staerke 0 bis 1, schraeg in Prozent */
+  /* Leichter, gleichmässiger Regen. Sehr leise, weil Rivas Mikrofon
+     die Umgebung ohnehin unterdrückt.                                  */
   regen: { ab: 15.4, bis: 85.8, tropfen: 420, staerke: 0.55, schraeg: 10,
-           ton: "clips/regen-loop.mp3", lautstaerke: 0.45 },
+           ton: "clips/regen-loop.mp3", lautstaerke: 0.35 },
 
   ortmarke: { ab: 15.6, bis: 28.0, text: "Windenburg — Altes Gemeindehaus" },
 
