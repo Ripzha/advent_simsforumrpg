@@ -483,7 +483,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v25 · Aussenbild raus, Innenansicht benannt",
+  fassung: "v26 · deine Bildfolge, Regen bis zum Schnitt",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -505,7 +505,7 @@ const KONFIG = {
 
   /* Leichter, gleichmässiger Regen. Sehr leise, weil Rivas Mikrofon
      die Umgebung ohnehin unterdrückt.                                  */
-  regen: { ab: 15.4, bis: 84.4, tropfen: 230, staerke: 0.26, schraeg: 10,
+  regen: { ab: 15.4, bis: 85.9, tropfen: 230, staerke: 0.26, schraeg: 10,
            ton: "clips/regen-loop.mp3", lautstaerke: 0.35 },
 
   ortmarke: { ab: 15.6, bis: 28.0, text: "Windenburg — Altes Gemeindehaus" },
@@ -520,20 +520,18 @@ const KONFIG = {
   rechts: [
     { ab: 30.5, bild: "bilder/gh-hanan.png",
       titel: "Yitzhak Hanan", ort: "Der neue Besitzer" },
+    { ab: 35.5, bild: "bilder/gh-schluessel.png",
+      titel: "Der Zuschlag", ort: "Vertrag und Schlüssel" },
     { ab: 42.6, bild: "bilder/gh-innen.png",
       titel: "Von innen", ort: "Hier soll gebaut werden" },
-    { ab: 54.2, bild: "bilder/gh-jack.png",
-      titel: "Das Jobangebot", ort: "Wer Regeln will" },
-    { ab: 68.2, bis: 84.3, bild: "bilder/gh-objekt.png",
-      titel: "Objekt 7", ort: "Sanierungsbedürftig · 1898" },
-
-    // bereit, aber nicht gesetzt
-    { aus: true, ab: 0, bild: "bilder/gh-auktion.png",
+    { ab: 54.0, bild: "bilder/gh-papiere.png",
+      titel: "Die Akten", ort: "Windenburg Verwaltung" },
+    { ab: 61.7, bild: "bilder/gh-auktion.png",
       titel: "Die Versteigerung", ort: "Objekt 7 · Startgebot 25 000" },
-    { aus: true, ab: 0, bild: "bilder/gh-schluessel.png",
-      titel: "Der Zuschlag", ort: "Vertrag und Schlüssel" },
-    { aus: true, ab: 0, bild: "bilder/gh-papiere.png",
-      titel: "Die Akten", ort: "Windenburg Verwaltung" }
+    { ab: 70.1, bild: "bilder/gh-jack.png",
+      titel: "Das Jobangebot", ort: "Wer Regeln will" },
+    { ab: 78.0, bis: 85.4, bild: "bilder/gh-objekt.png",
+      titel: "Objekt 7", ort: "Sanierungsbedürftig · 1898" }
   ],
 
   ticker: [
