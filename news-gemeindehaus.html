@@ -483,7 +483,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v22 · Bildfolge nach deiner Vorgabe",
+  fassung: "v23 · deine Zeiten",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -503,7 +503,6 @@ const KONFIG = {
   /* Rote Live-Kennung oben links, die ganze Schalte über */
   livemarke: { ab: 15.4, bis: 85.8 },
 
-  /* Regen während der Schalte. staerke 0 bis 1, schraeg in Prozent */
   /* Leichter, gleichmässiger Regen. Sehr leise, weil Rivas Mikrofon
      die Umgebung ohnehin unterdrückt.                                  */
   regen: { ab: 15.4, bis: 84.4, tropfen: 230, staerke: 0.26, schraeg: 10,
@@ -523,22 +522,22 @@ const KONFIG = {
   rechts: [
     { ab: 30.5, bild: "bilder/gh-hanan.png",
       titel: "Yitzhak Hanan", ort: "Der neue Besitzer" },
-    { ab: 35.2, bild: "bilder/gh-auktion.png",
-      titel: "Die Versteigerung", ort: "Objekt 7 · Startgebot 25 000" },
-    { ab: 56.4, bild: "bilder/gh-schluessel.png",
-      titel: "Der Zuschlag", ort: "Vertrag und Schlüssel" },
-    { ab: 68.2, bild: "bilder/gh-innen.png",
-      titel: "Helfer gesucht", ort: "Bezahlt wird nicht" },
-    { ab: 73.0, bis: 84.3, bild: "bilder/gh-jack.png",
+    { ab: 42.6, bild: "bilder/gh-innen.png",
+      titel: "Der grosse Saal", ort: "Leerstand seit 20 Jahren" },
+    { ab: 54.2, bild: "bilder/gh-jack.png",
       titel: "Das Jobangebot", ort: "Wer Regeln will" },
+    { ab: 56.4, bild: "bilder/gh-haus-nacht.png",
+      titel: "Zwanzig Jahre leer", ort: "Windenburg" },
+    { ab: 68.2, bis: 84.3, bild: "bilder/gh-objekt.png",
+      titel: "Objekt 7", ort: "Sanierungsbedürftig · 1898" },
 
     // bereit, aber nicht gesetzt
-    { aus: true, ab: 0, bild: "bilder/gh-objekt.png",
-      titel: "Objekt 7", ort: "Sanierungsbedürftig · 1898" },
+    { aus: true, ab: 0, bild: "bilder/gh-auktion.png",
+      titel: "Die Versteigerung", ort: "Objekt 7 · Startgebot 25 000" },
+    { aus: true, ab: 0, bild: "bilder/gh-schluessel.png",
+      titel: "Der Zuschlag", ort: "Vertrag und Schlüssel" },
     { aus: true, ab: 0, bild: "bilder/gh-papiere.png",
-      titel: "Die Akten", ort: "Windenburg Verwaltung" },
-    { aus: true, ab: 0, bild: "bilder/gh-haus-nacht.png",
-      titel: "Zwanzig Jahre leer", ort: "Windenburg" }
+      titel: "Die Akten", ort: "Windenburg Verwaltung" }
   ],
 
   ticker: [
