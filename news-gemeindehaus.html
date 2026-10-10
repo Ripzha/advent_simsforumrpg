@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimsWelt News — Das alte Gemeindehaus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   SIMSWELT NEWS — Gemeindehaus
+   Ein Video, drei Abschnitte:
+     Studio    Konstanze moderiert an, Kasten links
+     Schalte   Riva vor dem Haus, Kasten rechts
+     Studio    Konstanze moderiert ab
+   Die Abschnitte wechseln an den gemessenen Bildschnitten.
+   =================================================================== */
+
+:root {
+  --nacht:       #040a14;
+  --silber:      #c9d6e4;
+  --weiss:       #ffffff;
+  --messing:     #c9992f;
+  --messing-hell:#e8c877;
+
+  /* Kasten links im Studio */
+  --links-links:   5.0%;
+  --links-oben:   16.0%;
+  --links-breite: 32.0%;
+
+  /* Kasten rechts in der Schalte */
+  --rechts-rechts:  4.5%;
+  --rechts-oben:   14.0%;
+  --rechts-breite: 34.0%;
+
+  --binde-links:  4.5%;
+  --binde-unten: 15.0%;
+
+  --marke: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --eng:   "Barlow Condensed", "Arial Narrow", sans-serif;
+  --text:  "Barlow", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: #02060c; font-family: var(--text); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.bühne {
+  position: relative; aspect-ratio: 16 / 9;
+  width: min(100vw, calc(100vh * 16 / 9)); height: auto;
+  background: #000; overflow: hidden; container-type: size;
+}
+
+#clip { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--nacht); }
+
+/* ---------- Raute ---------- */
+.raute { display: inline-block; position: relative; width: .30em; height: .62em; margin: 0 .085em; }
+.raute::before { content: ""; position: absolute; inset: 0;   background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.raute::after  { content: ""; position: absolute; inset: 22%; background: var(--nacht);   clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+
+/* ---------- Senderkennung ---------- */
+.kennung {
+  position: absolute; top: 4.2%; right: 3.2%; z-index: 22;
+  display: flex; align-items: baseline; gap: 0.7em;
+  font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.5vw, 25px); letter-spacing: -0.012em;
+  color: var(--weiss); text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.kennung.sichtbar { opacity: 1; }
+.kennung .news { color: var(--messing-hell); }
+.kennung .uhr {
+  font-family: var(--eng); font-weight: 600; font-size: 0.66em;
+  letter-spacing: 0.22em; color: var(--silber);
+  padding-left: 0.75em; border-left: 1px solid rgba(201,214,228,0.35);
+}
+
+/* ---------- Bildkästen ---------- */
+.kasten {
+  position: absolute; z-index: 15;
+  opacity: 0; transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2,0.8,0.3,1);
+}
+.kasten.sichtbar { opacity: 1; transform: none; }
+
+#kasten-links {
+  left: var(--links-links); top: var(--links-oben); width: var(--links-breite);
+  transform: translateX(-16px);
+}
+#kasten-rechts {
+  right: var(--rechts-rechts); top: var(--rechts-oben); width: var(--rechts-breite);
+  transform: translateX(16px);
+}
+
+.kasten .rahmen {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  border: 2px solid var(--messing); overflow: hidden; background: var(--nacht);
+  box-shadow: 0 12px 38px rgba(0,0,0,0.65);
+}
+.kasten .rahmen img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; opacity: 0;
+  transition: opacity 0.5s ease; will-change: transform;
+}
+.kasten .rahmen img.an { opacity: 1; }
+.kasten .zeile {
+  margin-top: 6px; background: rgba(6,16,30,0.94);
+  border-left: 4px solid var(--messing);
+  padding: 0.5em 0.9em 0.55em; text-align: left;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.55);
+}
+.kasten .zeile b {
+  display: block; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.55vw, 26px); line-height: 1.06; color: var(--weiss);
+}
+.kasten .zeile span {
+  display: block; margin-top: 0.2em;
+  font-family: var(--eng); font-weight: 600;
+  font-size: clamp(9px, 0.98vw, 16px);
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--messing-hell);
+}
+
+/* ---------- Bauchbinde ---------- */
+.binde {
+  position: absolute; left: var(--binde-links); bottom: var(--binde-unten);
+  z-index: 18; display: flex; align-items: stretch;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.binde.sichtbar { opacity: 1; transform: translateY(0); }
+.binde .flagge {
+  background: var(--messing); color: #0a1220;
+  font-family: var(--eng); font-weight: 700;
+  font-size: clamp(9px, 1.05vw, 18px); letter-spacing: 0.18em;
+  display: flex; align-items: center; padding: 0 0.9em;
+}
+.binde .inhalt { background: rgba(6,16,30,0.94); border-left: 1px solid rgba(201,214,228,0.22); padding: 0.55em 2em 0.6em 1.05em; }
+.binde .name { font-family: var(--marke); font-weight: 800; font-size: clamp(12px, 1.65vw, 28px); line-height: 1.06; color: var(--weiss); }
+.binde .rolle { font-family: var(--eng); font-weight: 600; font-size: clamp(9px, 1vw, 17px); letter-spacing: 0.22em; text-transform: uppercase; color: var(--messing-hell); }
+
+/* ---------- Ortsmarke in der Schalte ---------- */
+.ort {
+  position: absolute; left: var(--binde-links); bottom: calc(var(--binde-unten) + 9%);
+  z-index: 18; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.45vw, 25px); color: var(--weiss);
+  background: rgba(6,16,30,0.92); border-left: 5px solid var(--messing);
+  padding: 0.4em 1.1em 0.44em 0.85em;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.ort.sichtbar { opacity: 1; transform: translateY(0); }
+
+/* ---------- Laufband ---------- */
+.laufband {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 25; height: 8.6%;
+  display: flex; align-items: stretch;
+  background: linear-gradient(180deg, #08192e 0%, var(--nacht) 100%);
+  border-top: 2px solid var(--messing); overflow: hidden;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.laufband.sichtbar { opacity: 1; }
+.laufband .marke {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 0.6em; padding: 0 1.4em;
+  background: var(--messing); color: var(--nacht);
+  font-family: var(--eng); font-weight: 700;
+  font-size: clamp(10px, 1.3vw, 22px); letter-spacing: 0.16em;
+}
+.laufband .marke i { font-style: normal; display: inline-block; width: 0.34em; height: 0.68em; background: var(--nacht); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.laufband .spur { position: relative; flex: 1 1 auto; overflow: hidden; display: flex; align-items: center; }
+.laufband .zug {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  font-family: var(--eng); font-weight: 500;
+  font-size: clamp(11px, 1.4vw, 23px); letter-spacing: 0.04em;
+  color: var(--silber); animation: ticker 150s linear infinite; padding-left: 100%;
+}
+.laufband .zug i { font-style: normal; display: inline-block; width: 0.32em; height: 0.64em; background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); margin: 0 1.6em; }
+@keyframes ticker { to { transform: translateX(-100%); } }
+
+/* ---------- Zeitleiste ---------- */
+.leiste {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 88;
+  display: none; align-items: center; gap: 0.9em; padding: 0.5em 1em 0.6em;
+  background: linear-gradient(0deg, rgba(4,10,20,0.95), rgba(4,10,20,0.6));
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; color: var(--messing-hell);
+}
+.leiste.zeig { display: flex; }
+.leiste .zeit { flex: 0 0 auto; min-width: 12em; }
+.leiste .spur2 { position: relative; flex: 1 1 auto; height: 16px; background: rgba(201,214,228,0.14); cursor: pointer; }
+.leiste .füll { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing); }
+.leiste .marker { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.55); }
+.leiste .schnitt { position: absolute; top: 0; bottom: 0; width: 3px; background: #35d6a0; }
+.leiste button { flex: 0 0 auto; font-family: inherit; font-size: 11px; letter-spacing: 0.06em;
+  color: var(--nacht); background: var(--messing-hell); border: none; padding: 0.45em 0.9em; cursor: pointer; }
+.leiste button:hover { background: var(--weiss); }
+.leiste .hinweis { flex: 0 0 auto; color: var(--silber); font-size: 11px; }
+
+/* ---------- Zeiten-Editor ---------- */
+.zeiten {
+  position: absolute; right: 1.5%; top: 2%; bottom: 12%; width: 32%; min-width: 340px;
+  z-index: 92; display: none; flex-direction: column;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  font-family: var(--text); font-size: 12px; color: var(--weiss);
+}
+.zeiten.zeig { display: flex; }
+.zeiten h3 { margin: 0; padding: 0.7em 0.9em; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--nacht); background: var(--messing-hell); }
+.zeiten .liste { flex: 1 1 auto; overflow-y: auto; padding: 0.4em 0.6em; }
+.zeiten .zeile { display: grid; grid-template-columns: 1fr auto auto; gap: 0.35em; align-items: center; padding: 0.4em 0.3em; border-bottom: 1px solid rgba(201,214,228,0.14); }
+.zeiten .zeile.jetzt { background: rgba(201,153,47,0.22); }
+.zeiten .titel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zeiten .titel small { display: block; color: var(--silber); font-size: 10px; }
+.zeiten button { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; border: 1px solid rgba(232,200,119,0.5); background: transparent; color: var(--messing-hell); padding: 0.28em 0.5em; cursor: pointer; }
+.zeiten button:hover { background: var(--messing); color: var(--nacht); }
+.zeiten .fuss { padding: 0.55em 0.7em; border-top: 1px solid rgba(201,214,228,0.2); }
+.zeiten textarea { display: none; width: 100%; height: 180px; margin-top: 0.5em; background: #071322; color: var(--messing-hell); border: 1px solid rgba(232,200,119,0.4); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; padding: 0.4em; }
+.zeiten.ausgabe textarea { display: block; }
+
+/* ---------- Ausrichtemodus ---------- */
+body.justiert .kasten, body.justiert .binde {
+  opacity: 1 !important; transform: none !important;
+  outline: 1px dashed rgba(232,200,119,0.65); cursor: move;
+}
+.griff { position: absolute; right: -7px; bottom: -7px; width: 16px; height: 16px; z-index: 40;
+  background: #35d6a0; border: 2px solid var(--nacht); cursor: nwse-resize; display: none; }
+body.justiert .griff { display: block; }
+.justier {
+  position: absolute; left: 1.5%; top: 2%; z-index: 95; display: none;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  padding: 0.75em 1.15em; font-family: var(--text); font-size: 13px; line-height: 1.6;
+  color: var(--weiss); white-space: pre; pointer-events: none;
+}
+.justier.zeig { display: block; }
+.justier b { color: var(--messing-hell); font-weight: 600; }
+.justier code { display: none; margin-top: 0.55em; padding: 0.45em 0.65em; background: #071322; color: var(--messing-hell); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; user-select: all; }
+.justier.werte-zeigen code { display: block; pointer-events: auto; }
+
+/* ---------- Startbildschirm ---------- */
+.start {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.1rem;
+  background: radial-gradient(ellipse at 50% 44%, #16314f 0%, #0a1c33 44%, #040a14 100%);
+  cursor: pointer; transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.start.weg { opacity: 0; visibility: hidden; }
+.start h1 { margin: 0; font-family: var(--marke); font-weight: 800; font-size: clamp(26px, 5vw, 84px); letter-spacing: -0.012em; color: var(--weiss); display: flex; align-items: baseline; }
+.start h1 .news { color: var(--messing-hell); }
+.start .linie { width: 42%; height: 2px; background: var(--messing); }
+.start p { margin: 0; font-family: var(--eng); font-weight: 600; font-size: clamp(11px,1.3vw,21px); letter-spacing: 0.42em; text-indent: 0.42em; text-transform: uppercase; color: rgba(201,214,228,0.82); }
+.start button { margin-top: 0.3rem; font-family: var(--eng); font-weight: 700; font-size: clamp(13px,1.4vw,22px); letter-spacing: 0.16em; text-transform: uppercase; color: var(--nacht); background: var(--messing); border: none; padding: 0.8em 2.6em; cursor: pointer; }
+.start button:hover { background: var(--messing-hell); }
+.start label { font-family: var(--eng); font-weight: 600; font-size: clamp(11px,1.15vw,18px); letter-spacing: 0.1em; text-transform: uppercase; color: var(--messing-hell); border-bottom: 1px solid rgba(232,200,119,0.5); cursor: pointer; }
+.start label input { display: none; }
+.start small { font-family: var(--text); font-size: clamp(10px,0.95vw,14px); color: rgba(201,214,228,0.5); }
+
+.fehlt {
+  position: absolute; inset: 0; z-index: 12; display: none;
+  align-items: center; justify-content: center;
+  background: repeating-linear-gradient(45deg, #0b1a2e 0 22px, #071322 22px 44px);
+  color: var(--messing-hell); font-family: var(--eng); font-weight: 600;
+  font-size: clamp(12px, 1.5vw, 22px); letter-spacing: 0.08em; text-align: center; padding: 2em;
+}
+.fehlt.zeig { display: flex; }
+</style>
+</head>
+<body>
+
+<div class="bühne" id="bühne">
+
+  <video id="clip" playsinline preload="auto"></video>
+  <div class="fehlt" id="clip-fehlt">Studio-Video nicht gefunden — Pfad in KONFIG.clip prüfen</div>
+
+  <div class="kennung" id="kennung">
+    <span>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></span>
+    <span class="uhr" id="uhr">20:00</span>
+  </div>
+
+  <div class="kasten" id="kasten-links">
+    <div class="rahmen" id="rahmen-links"></div>
+    <div class="zeile"><b id="links-titel"></b><span id="links-ort"></span></div>
+  </div>
+
+  <div class="kasten" id="kasten-rechts">
+    <div class="rahmen" id="rahmen-rechts"></div>
+    <div class="zeile"><b id="rechts-titel"></b><span id="rechts-ort"></span></div>
+  </div>
+
+  <div class="binde" id="binde">
+    <div class="flagge" id="binde-flagge">LIVE</div>
+    <div class="inhalt">
+      <div class="name" id="binde-name"></div>
+      <div class="rolle" id="binde-rolle"></div>
+    </div>
+  </div>
+
+  <div class="ort" id="ortmarke"></div>
+
+  <div class="laufband" id="laufband">
+    <div class="marke"><i></i>EILMELDUNGEN</div>
+    <div class="spur"><div class="zug" id="zug"></div></div>
+  </div>
+
+  <div class="leiste" id="leiste">
+    <span class="zeit" id="leiste-zeit">Studio · 0.0 / 0.0</span>
+    <span class="spur2" id="leiste-spur"><span class="füll" id="leiste-füll"></span></span>
+    <button id="knopf-video">Video wählen…</button>
+    <span class="hinweis">Z Zeiten · J ausrichten · T ausblenden</span>
+  </div>
+
+  <div class="zeiten" id="zeiten">
+    <h3>Einblendezeiten · Z schliesst</h3>
+    <div class="liste" id="zeiten-liste"></div>
+    <div class="fuss">
+      <button id="zeiten-ausgabe">Werte zum Kopieren</button>
+      <textarea id="zeiten-text" readonly></textarea>
+    </div>
+  </div>
+
+  <div class="justier" id="justier"></div>
+
+  <div class="start" id="start">
+    <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
+    <div class="linie"></div>
+    <p>Das alte Gemeindehaus</p>
+    <button id="start-knopf">Abspielen</button>
+    <label>Video von Hand wählen<input type="file" id="datei" accept="video/*"></label>
+    <small>Leertaste pausiert · Pfeile springen · Z setzt Zeiten · J richtet aus · T blendet aus · R startet neu</small>
+  </div>
+
+</div>
+
+<script>
+/* ===================================================================
+   KONFIG — alle Zeiten in Sekunden des Videos
+   =================================================================== */
+const KONFIG = {
+
+  fassung: "v1 · Gemeindehaus",
+
+  clip: "clips/gemeindehaus-schalte.mp4",
+
+  uhrzeit: "20:00",
+
+  /* Die beiden Bildschnitte, gemessen am Videobild */
+  schalteAb:  15.3,     // Schnitt ins Freie
+  studioAb:   86.0,     // Schnitt zurück ins Studio
+
+  /* Bauchbinden: eine für Konstanze, eine für Riva */
+  binden: [
+    { ab:  2.0,  bis:  9.0,  flagge: "HEUTE", name: "Konstanze Immalaut", rolle: "Moderatorin" },
+    { ab: 16.5,  bis: 24.0,  flagge: "LIVE",  name: "Riva Babylon",       rolle: "Chefredaktion · Windenburg" }
+  ],
+
+  ortmarke: { ab: 15.6, bis: 22.0, text: "Windenburg — Altes Gemeindehaus" },
+
+  /* Kasten links, während Konstanze anmoderiert.
+     Nachrichtensender zeigen hier das Thema, nicht die Reporterin.   */
+  links: [
+    { ab: 3.2, bild: "bilder/gh-haus-nacht.png",
+      titel: "Zwanzig Jahre leer", ort: "Windenburg" }
+  ],
+
+  /* Kasten rechts neben Riva. Die Zeiten liegen auf ihren
+     Sprechpausen, gemessen aus der Tonspur.                          */
+  rechts: [
+    { ab: 16.4, bild: "bilder/gh-innen.png",       titel: "Blinde Fenster",      ort: "Seit zwei Jahrzehnten" },
+    { ab: 25.2, bild: "bilder/gh-auktion.png",     titel: "Städtische Auktion",  ort: "Objekt 7" },
+    { ab: 30.2, bild: "bilder/gh-objekt.png",      titel: "Sanierungsbedürftig", ort: "Baujahr 1898" },
+    { ab: 35.2, bild: "bilder/gh-schluessel.png",  titel: "Der Zuschlag",        ort: "Yitzhak Hanan" },
+    { ab: 46.2, bild: "bilder/gh-hanan.png",       titel: "Helfer gesucht",      ort: "Bezahlt wird nicht" },
+    { ab: 62.6, bild: "bilder/gh-papiere.png",     titel: "Raum für alle",       ort: "Wer will, richtet ein" },
+    { ab: 73.0, bild: "bilder/gh-jack.png",        titel: "Das Jobangebot",      ort: "Wer Regeln will" }
+  ],
+
+  ticker: [
+    "Windenburg — Gemeindehaus sucht weiterhin freiwillige Helfer",
+    "Brindelton Bay — Pflegeheim sucht Verstärkung im Nachtdienst",
+    "San Sequoia — Boutique erwägt Sicherheitspersonal nach Vorfall mit Stiefel",
+    "Innisgreen — Wanderwege bis Februar nur eingeschränkt begehbar",
+    "SimsWelt News sucht Verstärkung: Kolumne, Interview, Stadtgeflüster, Leserpost",
+    "Granite Falls — Campleitung bittet um sorgsamen Umgang mit Rauchwaren",
+    "Würstchen und Ketchup — zwei Zutaten, eine Überzeugung",
+    "Hinweis der Redaktion — vereinzelte Beiträge können Spuren von Nüssen enthalten"
+  ]
+};
+
+/* =================================================================== */
+
+const el = (id) => document.getElementById(id);
+const clip = el("clip");
+let leisteAn = true, zeitenAn = false, justierAn = false;
+
+clip.src = KONFIG.clip;
+clip.addEventListener("error", () => el("clip-fehlt").classList.add("zeig"));
+el("uhr").textContent = KONFIG.uhrzeit;
+
+(function baueTicker() {
+  const einmal = KONFIG.ticker.map(t => "<span>" + t + "</span><i></i>").join("");
+  el("zug").innerHTML = einmal + einmal;
+})();
+
+/* ---------- Bilder in die Kästen legen ---------- */
+function baueKasten(rahmen, liste) {
+  return liste.map(e => {
+    const img = document.createElement("img");
+    img.src = e.bild; img.alt = "";
+    e.fehlt = false;
+    img.addEventListener("error", () => { e.fehlt = true; });
+    rahmen.appendChild(img);
+    return img;
+  });
+}
+const bilderLinks  = baueKasten(el("rahmen-links"),  KONFIG.links);
+const bilderRechts = baueKasten(el("rahmen-rechts"), KONFIG.rechts);
+
+/* ---------- Auswahl innerhalb eines Kastens ---------- */
+function waehle(liste, bilder, t, bis) {
+  let treffer = -1;
+  for (let i = 0; i < liste.length; i++) {
+    if (t >= liste[i].ab && !liste[i].fehlt) treffer = i;
+  }
+  if (t >= bis) treffer = -1;
+  bilder.forEach((img, i) => img.classList.toggle("an", i === treffer));
+  return treffer;
+}
+
+/* ---------- Takt ---------- */
+let letzterLinks = -2, letzterRechts = -2, abschnitt = "";
+
+function takt() {
+  const t = clip.currentTime;
+  const istSchalte = t >= KONFIG.schalteAb && t < KONFIG.studioAb;
+  const neuerAbschnitt = t < KONFIG.schalteAb ? "studio-vor"
+                        : istSchalte ? "schalte" : "studio-nach";
+  if (neuerAbschnitt !== abschnitt) abschnitt = neuerAbschnitt;
+
+  // Kasten links läuft nur im ersten Studioteil
+  const l = (abschnitt === "studio-vor") ? waehle(KONFIG.links, bilderLinks, t, KONFIG.schalteAb) : -1;
+  if (l !== letzterLinks) {
+    letzterLinks = l;
+    el("kasten-links").classList.toggle("sichtbar", l >= 0);
+    if (l >= 0) {
+      el("links-titel").textContent = KONFIG.links[l].titel;
+      el("links-ort").textContent   = KONFIG.links[l].ort;
+    }
+  }
+  if (abschnitt !== "studio-vor") bilderLinks.forEach(i => i.classList.remove("an"));
+
+  // Kasten rechts läuft nur in der Schalte
+  const r = istSchalte ? waehle(KONFIG.rechts, bilderRechts, t, KONFIG.studioAb) : -1;
+  if (r !== letzterRechts) {
+    letzterRechts = r;
+    el("kasten-rechts").classList.toggle("sichtbar", r >= 0);
+    if (r >= 0) {
+      el("rechts-titel").textContent = KONFIG.rechts[r].titel;
+      el("rechts-ort").textContent   = KONFIG.rechts[r].ort;
+    }
+  }
+  if (!istSchalte) bilderRechts.forEach(i => i.classList.remove("an"));
+
+  // Bauchbinde
+  let b = -1;
+  for (let i = 0; i < KONFIG.binden.length; i++) {
+    if (t >= KONFIG.binden[i].ab && t < KONFIG.binden[i].bis) b = i;
+  }
+  el("binde").classList.toggle("sichtbar", b >= 0);
+  if (b >= 0) {
+    el("binde-flagge").textContent = KONFIG.binden[b].flagge;
+    el("binde-name").textContent   = KONFIG.binden[b].name;
+    el("binde-rolle").textContent  = KONFIG.binden[b].rolle;
+  }
+
+  // Ortsmarke
+  const o = KONFIG.ortmarke;
+  el("ortmarke").classList.toggle("sichtbar", t >= o.ab && t < o.bis);
+  if (t >= o.ab && t < o.bis) el("ortmarke").textContent = o.text;
+
+  const d = clip.duration && isFinite(clip.duration) ? clip.duration : 0;
+  const name = abschnitt === "schalte" ? "Schalte" : "Studio";
+  el("leiste-zeit").textContent = name + " · " + t.toFixed(1) + " / " + d.toFixed(1);
+  el("leiste-füll").style.width = d ? (t / d * 100) + "%" : "0";
+
+  requestAnimationFrame(takt);
+}
+
+/* ---------- Ablauf ---------- */
+function start() {
+  el("start").classList.add("weg");
+  el("kennung").classList.add("sichtbar");
+  el("laufband").classList.add("sichtbar");
+  if (leisteAn) el("leiste").classList.add("zeig");
+  letzterLinks = -2; letzterRechts = -2; abschnitt = "";
+  clip.currentTime = 0;
+  clip.play().catch(() => {});
+  baueMarker();
+  requestAnimationFrame(takt);
+}
+el("start-knopf").addEventListener("click", start);
+el("start").addEventListener("click", (e) => { if (e.target.closest("label")) return; start(); });
+el("datei").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  el("clip-fehlt").classList.remove("zeig");
+  clip.src = URL.createObjectURL(f); clip.load();
+});
+el("knopf-video").addEventListener("click", () => el("datei").click());
+
+/* ---------- Zeitleiste ---------- */
+const spur = el("leiste-spur");
+function baueMarker() {
+  spur.querySelectorAll(".marker, .schnitt").forEach(m => m.remove());
+  if (!clip.duration || !isFinite(clip.duration)) return;
+  KONFIG.links.concat(KONFIG.rechts).forEach(e => {
+    const k = document.createElement("span");
+    k.className = "marker";
+    k.style.left = (e.ab / clip.duration * 100) + "%";
+    spur.appendChild(k);
+  });
+  [KONFIG.schalteAb, KONFIG.studioAb].forEach(sek => {
+    const k = document.createElement("span");
+    k.className = "schnitt";
+    k.style.left = (sek / clip.duration * 100) + "%";
+    spur.appendChild(k);
+  });
+}
+clip.addEventListener("loadedmetadata", baueMarker);
+spur.addEventListener("click", (e) => {
+  if (!clip.duration || !isFinite(clip.duration)) return;
+  const r = spur.getBoundingClientRect();
+  springe(((e.clientX - r.left) / r.width) * clip.duration);
+});
+function springe(sek) {
+  clip.currentTime = Math.max(0, Math.min(sek, clip.duration || sek));
+  letzterLinks = -2; letzterRechts = -2; abschnitt = "";
+  if (clip.paused) clip.play().catch(() => {});
+}
+
+/* ---------- Zeiten-Editor ---------- */
+function sek(v) { return Math.round(v * 10) / 10; }
+
+function baueZeiten() {
+  const liste = el("zeiten-liste");
+  liste.innerHTML = "";
+
+  const zeile = (art, i, text, unter, setzen, hin) => {
+    const z = document.createElement("div");
+    z.className = "zeile"; z.dataset.art = art; z.dataset.i = String(i);
+    z.innerHTML = '<span class="titel">' + text + '<small>' + unter + '</small></span>';
+    const a = document.createElement("button"); a.textContent = "jetzt";
+    a.addEventListener("click", () => { setzen(sek(clip.currentTime)); aktualisiere(); });
+    const v = document.createElement("button"); v.textContent = "→";
+    v.addEventListener("click", () => springe(hin()));
+    z.appendChild(a); z.appendChild(v);
+    liste.appendChild(z);
+  };
+
+  zeile("schnitt", 0, "Schnitt ins Freie", "ab " + KONFIG.schalteAb.toFixed(1) + " s",
+        v => KONFIG.schalteAb = v, () => KONFIG.schalteAb - 1);
+  zeile("schnitt", 1, "Schnitt ins Studio", "ab " + KONFIG.studioAb.toFixed(1) + " s",
+        v => KONFIG.studioAb = v, () => KONFIG.studioAb - 1);
+
+  KONFIG.links.forEach((e, i) => {
+    const n = e.bild.split("/").pop().replace(".png", "");
+    zeile("links", i, "Links: " + e.titel, n + " · ab " + e.ab.toFixed(1) + " s",
+          v => e.ab = v, () => e.ab + 0.2);
+  });
+  KONFIG.rechts.forEach((e, i) => {
+    const n = e.bild.split("/").pop().replace(".png", "");
+    zeile("rechts", i, e.titel, n + " · ab " + e.ab.toFixed(1) + " s",
+          v => e.ab = v, () => e.ab + 0.2);
+  });
+  KONFIG.binden.forEach((b, i) => {
+    zeile("binde", i, "Binde: " + b.name, b.ab.toFixed(1) + " bis " + b.bis.toFixed(1) + " s",
+          v => b.ab = v, () => b.ab + 0.2);
+  });
+}
+
+function aktualisiere() {
+  KONFIG.links.sort((a, b) => a.ab - b.ab);
+  KONFIG.rechts.sort((a, b) => a.ab - b.ab);
+  baueZeiten(); baueMarker();
+  letzterLinks = -2; letzterRechts = -2;
+  schreibeAusgabe();
+}
+
+function schreibeAusgabe() {
+  const z = (e) => '    { ab: ' + e.ab + ', bild: "' + e.bild + '",\n      titel: "' +
+                   e.titel + '", ort: "' + e.ort + '" },';
+  const b = (x) => '    { ab: ' + x.ab + ', bis: ' + x.bis + ', flagge: "' + x.flagge +
+                   '", name: "' + x.name + '", rolle: "' + x.rolle + '" },';
+  el("zeiten-text").value =
+    "schalteAb: " + KONFIG.schalteAb + ",\n  studioAb:  " + KONFIG.studioAb + ",\n\n" +
+    "  binden: [\n" + KONFIG.binden.map(b).join("\n") + "\n  ],\n\n" +
+    "  links: [\n" + KONFIG.links.map(z).join("\n") + "\n  ],\n\n" +
+    "  rechts: [\n" + KONFIG.rechts.map(z).join("\n") + "\n  ]";
+}
+
+el("zeiten-ausgabe").addEventListener("click", () => {
+  el("zeiten").classList.toggle("ausgabe");
+  schreibeAusgabe();
+  const f = el("zeiten-text");
+  if (el("zeiten").classList.contains("ausgabe")) { f.focus(); f.select(); }
+});
+
+setInterval(() => {
+  if (!zeitenAn) return;
+  el("zeiten").querySelectorAll(".zeile").forEach(z => {
+    const i = +z.dataset.i, a = z.dataset.art;
+    let an = false;
+    if (a === "links")  an = (i === letzterLinks);
+    if (a === "rechts") an = (i === letzterRechts);
+    if (a === "binde")  an = clip.currentTime >= KONFIG.binden[i].ab && clip.currentTime < KONFIG.binden[i].bis;
+    z.classList.toggle("jetzt", an);
+  });
+}, 200);
+
+/* ---------- Ausrichten ---------- */
+const bühne = document.querySelector(".bühne");
+const werte = {
+  "--links-links":    5.0,
+  "--links-oben":    16.0,
+  "--links-breite":  32.0,
+  "--rechts-rechts":  4.5,
+  "--rechts-oben":   14.0,
+  "--rechts-breite": 34.0,
+  "--binde-links":    4.5,
+  "--binde-unten":   15.0
+};
+const schlüssel = Object.keys(werte);
+let zielIndex = 0, zieht = null;
+
+function setzeWert(k, v) {
+  werte[k] = v;
+  document.documentElement.style.setProperty(k, v.toFixed(1) + "%");
+}
+
+const ziele = [
+  { knoten: () => el("kasten-links"),  xVar: "--links-links",   xDreh:  1, yVar: "--links-oben",   yDreh:  1, bVar: "--links-breite" },
+  { knoten: () => el("kasten-rechts"), xVar: "--rechts-rechts", xDreh: -1, yVar: "--rechts-oben",  yDreh:  1, bVar: "--rechts-breite" },
+  { knoten: () => el("binde"),         xVar: "--binde-links",   xDreh:  1, yVar: "--binde-unten",  yDreh: -1, bVar: null }
+];
+
+function setzeGriffe() {
+  ziele.forEach((z, i) => {
+    if (!z.bVar) return;
+    const k = z.knoten();
+    if (k.querySelector(":scope > .griff")) return;
+    const g = document.createElement("span");
+    g.className = "griff"; g.dataset.ziel = String(i);
+    k.appendChild(g);
+  });
+}
+
+document.addEventListener("pointerdown", (e) => {
+  if (!justierAn) return;
+  const r = bühne.getBoundingClientRect();
+  const griff = e.target.closest(".griff");
+  if (griff) {
+    const z = ziele[+griff.dataset.ziel];
+    zieht = { z, modus: "groesse", mx: e.clientX, my: e.clientY, bw: r.width, bh: r.height,
+              x: werte[z.xVar], y: werte[z.yVar], b: werte[z.bVar] };
+    zielIndex = schlüssel.indexOf(z.bVar);
+    e.preventDefault(); e.stopPropagation(); zeichneJustier(); return;
+  }
+  const treffer = ziele.filter(z => z.knoten().contains(e.target))[0];
+  if (treffer) {
+    zieht = { z: treffer, modus: "schieben", mx: e.clientX, my: e.clientY, bw: r.width, bh: r.height,
+              x: werte[treffer.xVar], y: werte[treffer.yVar], b: 0 };
+    zielIndex = schlüssel.indexOf(treffer.xVar);
+    e.preventDefault(); zeichneJustier();
+  }
+});
+document.addEventListener("pointermove", (e) => {
+  if (!zieht) return;
+  const dx = (e.clientX - zieht.mx) / zieht.bw * 100;
+  const dy = (e.clientY - zieht.my) / zieht.bh * 100;
+  const z = zieht.z;
+  if (zieht.modus === "schieben") {
+    setzeWert(z.xVar, zieht.x + dx * z.xDreh);
+    setzeWert(z.yVar, zieht.y + dy * z.yDreh);
+  } else if (z.bVar) {
+    setzeWert(z.bVar, Math.max(8, zieht.b + dx * (z.xDreh > 0 ? 1 : -1)));
+  }
+  zeichneJustier();
+});
+document.addEventListener("pointerup", () => { zieht = null; });
+
+function zeichneJustier() {
+  const zeilen = schlüssel.map((k, i) =>
+    (i === zielIndex ? "\u25B8 " : "  ") + k.padEnd(18) + werte[k].toFixed(1) + "%").join("\n");
+  const css = schlüssel.map(k => "  " + k + ": " + werte[k].toFixed(1) + "%;").join("\n");
+  el("justier").innerHTML =
+    "<b>Ausrichtemodus</b>  ziehen  ·  grüner Griff = Breite  ·  Tab wechselt  ·  C zeigt die Werte  ·  J schliesst\n"
+    + zeilen + "<code>:root {\n" + css + "\n}</code>";
+}
+
+function justierUm() {
+  justierAn = !justierAn;
+  el("justier").classList.toggle("zeig", justierAn);
+  document.body.classList.toggle("justiert", justierAn);
+  if (justierAn) {
+    el("kasten-links").classList.add("sichtbar");
+    el("kasten-rechts").classList.add("sichtbar");
+    el("binde").classList.add("sichtbar");
+    if (bilderLinks[0])  bilderLinks[0].classList.add("an");
+    if (bilderRechts[0]) bilderRechts[0].classList.add("an");
+    setzeGriffe(); zeichneJustier();
+  } else { letzterLinks = -2; letzterRechts = -2; }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "j" || e.key === "J") { e.preventDefault(); justierUm(); return; }
+  if ((e.key === "c" || e.key === "C") && justierAn) {
+    e.preventDefault(); el("justier").classList.toggle("werte-zeigen"); return;
+  }
+  if (justierAn) {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      zielIndex = (zielIndex + (e.shiftKey ? -1 : 1) + schlüssel.length) % schlüssel.length;
+      zeichneJustier(); return;
+    }
+    const schritt = e.shiftKey ? 1.0 : 0.1;
+    const k = schlüssel[zielIndex];
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); setzeWert(k, werte[k] - schritt); zeichneJustier(); }
+    if (e.key === "ArrowRight" || e.key === "ArrowUp")  { e.preventDefault(); setzeWert(k, werte[k] + schritt); zeichneJustier(); }
+    return;
+  }
+  if (e.key === "z" || e.key === "Z") {
+    e.preventDefault(); zeitenAn = !zeitenAn;
+    el("zeiten").classList.toggle("zeig", zeitenAn);
+    if (zeitenAn) baueZeiten();
+    return;
+  }
+  if (e.key === "t" || e.key === "T") {
+    e.preventDefault(); leisteAn = !leisteAn;
+    el("leiste").classList.toggle("zeig", leisteAn); return;
+  }
+  if (e.code === "Space") { e.preventDefault(); clip.paused ? clip.play() : clip.pause(); }
+  const weite = e.shiftKey ? 1 : 5;
+  if (e.key === "ArrowRight") { e.preventDefault(); springe(clip.currentTime + weite); }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); springe(clip.currentTime - weite); }
+  if (e.key === "s" || e.key === "S") { e.preventDefault(); springe(KONFIG.schalteAb + 0.3); }
+  if (e.key === "r" || e.key === "R") {
+    clip.pause();
+    letzterLinks = -2; letzterRechts = -2; abschnitt = "";
+    el("kasten-links").classList.remove("sichtbar");
+    el("kasten-rechts").classList.remove("sichtbar");
+    el("binde").classList.remove("sichtbar");
+    el("ortmarke").classList.remove("sichtbar");
+    el("kennung").classList.remove("sichtbar");
+    el("laufband").classList.remove("sichtbar");
+    el("start").classList.remove("weg");
+  }
+});
+</script>
+</body>
+</html>
