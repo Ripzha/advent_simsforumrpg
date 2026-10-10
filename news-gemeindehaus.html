@@ -125,6 +125,13 @@ html, body {
   padding-left: 0.75em; border-left: 1px solid rgba(201,214,228,0.35);
 }
 
+/* ---------- Regen über der Schalte ---------- */
+#regen {
+  position: absolute; inset: 0; z-index: 10; width: 100%; height: 100%;
+  pointer-events: none; opacity: 0; transition: opacity 1.2s ease;
+}
+#regen.an { opacity: 1; }
+
 /* ---------- Live-Kennung, läuft durch die ganze Schalte ---------- */
 .livemarke {
   position: absolute; left: 3.2%; top: 4.4%; z-index: 23;
@@ -396,6 +403,8 @@ body.justiert .griff { display: block; }
   <video id="clip" playsinline preload="auto"></video>
   <div class="fehlt" id="clip-fehlt">Studio-Video nicht gefunden — Pfad in KONFIG.clip prüfen</div>
 
+  <canvas id="regen"></canvas>
+
   <div class="livemarke" id="livemarke"><i></i>LIVE</div>
 
   <div class="kennung" id="kennung">
@@ -473,7 +482,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v13 · Beschriftungen passen zu den Bildern",
+  fassung: "v14 · Regen in der Schalte",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -492,6 +501,9 @@ const KONFIG = {
 
   /* Rote Live-Kennung oben links, die ganze Schalte über */
   livemarke: { ab: 15.4, bis: 85.8 },
+
+  /* Regen während der Schalte. staerke 0 bis 1, schraeg in Prozent */
+  regen: { ab: 15.4, bis: 85.8, tropfen: 420, staerke: 0.55, schraeg: 10 },
 
   ortmarke: { ab: 15.6, bis: 28.0, text: "Windenburg — Altes Gemeindehaus" },
 
@@ -584,6 +596,63 @@ function waehle(liste, bilder, t, ende) {
   bilder.forEach((img, i) => img.classList.toggle("an", i === treffer));
   return treffer;
 }
+
+/* ===================================================================
+   Regen
+   Die Tropfen fallen leicht schräg und unterschiedlich schnell,
+   dazu vereinzelt ein heller Schleier als Böe.
+   =================================================================== */
+const regen = el("regen");
+const rCtx  = regen.getContext("2d");
+const tropfen = Array.from({ length: KONFIG.regen.tropfen }, () => {
+  const tiefe = 0.3 + Math.random() * 0.7;
+  return { x: Math.random(), y: Math.random(), t: tiefe,
+           l: 0.015 + tiefe * 0.045, v: 0.55 + tiefe * 1.15 };
+});
+let regenZeit = performance.now();
+
+function passeRegenAn() {
+  const r = document.querySelector(".bühne").getBoundingClientRect();
+  const b = Math.round(r.width), h = Math.round(r.height);
+  if (b && h && (Math.abs(regen.width - b) > 3 || Math.abs(regen.height - h) > 3)) {
+    regen.width = b; regen.height = h;
+  }
+}
+setInterval(passeRegenAn, 500);
+
+function zeichneRegen(jetzt) {
+  const dt = Math.min(0.05, (jetzt - regenZeit) / 1000);
+  regenZeit = jetzt;
+  const B = regen.width, H = regen.height;
+  if (!B) { requestAnimationFrame(zeichneRegen); return; }
+  rCtx.clearRect(0, 0, B, H);
+
+  const t = clip.currentTime;
+  const laeuft = t >= KONFIG.regen.ab && t < KONFIG.regen.bis;
+  regen.classList.toggle("an", laeuft);
+  if (!laeuft) { requestAnimationFrame(zeichneRegen); return; }
+
+  const neig = KONFIG.regen.schraeg / 100;
+  const boe = 0.8 + 0.2 * Math.sin(jetzt / 1000 * 0.6);
+  rCtx.lineCap = "round";
+  tropfen.forEach(d => {
+    d.y += d.v * dt * boe;
+    d.x += d.v * dt * neig * boe;
+    if (d.y > 1.05) { d.y = -0.05; d.x = Math.random() * 1.2 - 0.1; }
+    if (d.x > 1.1)  { d.x = -0.1; }
+    const px = d.x * B, py = d.y * H;
+    rCtx.globalAlpha = KONFIG.regen.staerke * (0.18 + d.t * 0.45);
+    rCtx.strokeStyle = "#dceaf8";
+    rCtx.lineWidth = 0.7 + d.t * 1.1;
+    rCtx.beginPath();
+    rCtx.moveTo(px, py);
+    rCtx.lineTo(px + d.l * B * neig * 2.2, py + d.l * H);
+    rCtx.stroke();
+  });
+  rCtx.globalAlpha = 1;
+  requestAnimationFrame(zeichneRegen);
+}
+requestAnimationFrame(zeichneRegen);
 
 /* ---------- Takt ---------- */
 let letzterLinks = -2, letzterRechts = -2, abschnitt = "";
