@@ -404,6 +404,7 @@ body.justiert .griff { display: block; }
   <div class="fehlt" id="clip-fehlt">Studio-Video nicht gefunden — Pfad in KONFIG.clip prüfen</div>
 
   <canvas id="regen"></canvas>
+  <audio id="regenton" loop preload="auto" style="display:none"></audio>
 
   <div class="livemarke" id="livemarke"><i></i>LIVE</div>
 
@@ -482,7 +483,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v14 · Regen in der Schalte",
+  fassung: "v15 · Regen mit Ton",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -503,7 +504,8 @@ const KONFIG = {
   livemarke: { ab: 15.4, bis: 85.8 },
 
   /* Regen während der Schalte. staerke 0 bis 1, schraeg in Prozent */
-  regen: { ab: 15.4, bis: 85.8, tropfen: 420, staerke: 0.55, schraeg: 10 },
+  regen: { ab: 15.4, bis: 85.8, tropfen: 420, staerke: 0.55, schraeg: 10,
+           ton: "clips/regen-loop.mp3", lautstaerke: 0.18 },
 
   ortmarke: { ab: 15.6, bis: 28.0, text: "Windenburg — Altes Gemeindehaus" },
 
@@ -604,6 +606,9 @@ function waehle(liste, bilder, t, ende) {
    =================================================================== */
 const regen = el("regen");
 const rCtx  = regen.getContext("2d");
+const regenton = el("regenton");
+regenton.src = KONFIG.regen.ton;
+regenton.volume = 0;
 const tropfen = Array.from({ length: KONFIG.regen.tropfen }, () => {
   const tiefe = 0.3 + Math.random() * 0.7;
   return { x: Math.random(), y: Math.random(), t: tiefe,
@@ -630,6 +635,12 @@ function zeichneRegen(jetzt) {
   const t = clip.currentTime;
   const laeuft = t >= KONFIG.regen.ab && t < KONFIG.regen.bis;
   regen.classList.toggle("an", laeuft);
+
+  // Ton weich dazu- und wegblenden, damit es nicht abrupt einsetzt
+  const ziel = (laeuft && !clip.paused) ? KONFIG.regen.lautstaerke : 0;
+  regenton.volume += (ziel - regenton.volume) * Math.min(1, dt * 1.4);
+  if (regenton.volume > 0.005 && regenton.paused) regenton.play().catch(() => {});
+  if (regenton.volume <= 0.005 && !regenton.paused) regenton.pause();
   if (!laeuft) { requestAnimationFrame(zeichneRegen); return; }
 
   const neig = KONFIG.regen.schraeg / 100;
