@@ -483,7 +483,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v23 · deine Zeiten",
+  fassung: "v25 · Aussenbild raus, Innenansicht benannt",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -514,8 +514,6 @@ const KONFIG = {
   links: [
     { ab: 8.8, bis: 15.0, bild: "bilder/gh-riva-steht.png",
       titel: "Riva Babylon", ort: "Live · Windenburg" },
-    { aus: true, ab: 0, bild: "bilder/gh-haus-nacht.png",
-      titel: "Zwanzig Jahre leer", ort: "Windenburg" }
   ],
 
   /* Kasten rechts: nur in der Schalte, also 15,3 bis 86 */
@@ -523,11 +521,9 @@ const KONFIG = {
     { ab: 30.5, bild: "bilder/gh-hanan.png",
       titel: "Yitzhak Hanan", ort: "Der neue Besitzer" },
     { ab: 42.6, bild: "bilder/gh-innen.png",
-      titel: "Der grosse Saal", ort: "Leerstand seit 20 Jahren" },
+      titel: "Von innen", ort: "Hier soll gebaut werden" },
     { ab: 54.2, bild: "bilder/gh-jack.png",
       titel: "Das Jobangebot", ort: "Wer Regeln will" },
-    { ab: 56.4, bild: "bilder/gh-haus-nacht.png",
-      titel: "Zwanzig Jahre leer", ort: "Windenburg" },
     { ab: 68.2, bis: 84.3, bild: "bilder/gh-objekt.png",
       titel: "Objekt 7", ort: "Sanierungsbedürftig · 1898" },
 
@@ -569,20 +565,20 @@ el("uhr").textContent = KONFIG.uhrzeit;
 
 /* ---------- Bilder in die Kästen legen ---------- */
 function baueKasten(rahmen, liste) {
-  return liste.map(e => {
+  liste.forEach(e => {
     const img = document.createElement("img");
     img.src = e.bild; img.alt = "";
     e.fehlt = false;
     img.addEventListener("error", () => { e.fehlt = true; });
     rahmen.appendChild(img);
-    return img;
+    e.el = img;              // fest am Eintrag, damit Sortieren nichts verschiebt
   });
 }
-const bilderLinks  = baueKasten(el("rahmen-links"),  KONFIG.links);
-const bilderRechts = baueKasten(el("rahmen-rechts"), KONFIG.rechts);
+baueKasten(el("rahmen-links"),  KONFIG.links);
+baueKasten(el("rahmen-rechts"), KONFIG.rechts);
 
 /* ---------- Auswahl innerhalb eines Kastens ---------- */
-function waehle(liste, bilder, t, ende) {
+function waehle(liste, t, ende) {
   let treffer = -1;
   for (let i = 0; i < liste.length; i++) {
     const e = liste[i];
@@ -597,7 +593,7 @@ function waehle(liste, bilder, t, ende) {
     if (t < ende2) treffer = i;
   }
   if (t >= ende) treffer = -1;
-  bilder.forEach((img, i) => img.classList.toggle("an", i === treffer));
+  liste.forEach((e, i) => { if (e.el) e.el.classList.toggle("an", i === treffer); });
   return treffer;
 }
 
@@ -686,7 +682,7 @@ function takt() {
   clip.classList.toggle("klein", klein);
   el("grund").classList.toggle("an", klein);
 
-  const l = (abschnitt === "studio-vor") ? waehle(KONFIG.links, bilderLinks, t, KONFIG.schalteAb) : -1;
+  const l = (abschnitt === "studio-vor") ? waehle(KONFIG.links, t, KONFIG.schalteAb) : -1;
   if (l !== letzterLinks) {
     letzterLinks = l;
     el("kasten-links").classList.toggle("sichtbar", l >= 0);
@@ -695,10 +691,10 @@ function takt() {
       el("links-ort").textContent   = KONFIG.links[l].ort;
     }
   }
-  if (abschnitt !== "studio-vor") bilderLinks.forEach(i => i.classList.remove("an"));
+  if (abschnitt !== "studio-vor") KONFIG.links.forEach(e => { if (e.el) e.el.classList.remove("an"); });
 
   // Kasten rechts läuft nur in der Schalte
-  const r = istSchalte ? waehle(KONFIG.rechts, bilderRechts, t, KONFIG.studioAb) : -1;
+  const r = istSchalte ? waehle(KONFIG.rechts, t, KONFIG.studioAb) : -1;
   if (r !== letzterRechts) {
     letzterRechts = r;
     el("kasten-rechts").classList.toggle("sichtbar", r >= 0);
@@ -707,7 +703,7 @@ function takt() {
       el("rechts-ort").textContent   = KONFIG.rechts[r].ort;
     }
   }
-  if (!istSchalte) bilderRechts.forEach(i => i.classList.remove("an"));
+  if (!istSchalte) KONFIG.rechts.forEach(e => { if (e.el) e.el.classList.remove("an"); });
 
   // Bauchbinde
   let b = -1;
@@ -1152,8 +1148,8 @@ function justierUm() {
     el("kasten-links").classList.add("sichtbar");
     el("kasten-rechts").classList.add("sichtbar");
     el("binde").classList.add("sichtbar");
-    if (bilderLinks[0])  bilderLinks[0].classList.add("an");
-    if (bilderRechts[0]) bilderRechts[0].classList.add("an");
+    if (KONFIG.links[0]  && KONFIG.links[0].el)  KONFIG.links[0].el.classList.add("an");
+    if (KONFIG.rechts[0] && KONFIG.rechts[0].el) KONFIG.rechts[0].el.classList.add("an");
     setzeGriffe(); zeichneJustier();
   } else { letzterLinks = -2; letzterRechts = -2; }
 }
