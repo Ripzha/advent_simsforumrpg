@@ -389,7 +389,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v8 · Editor links, Riva früher",
+  fassung: "v9 · alle Bilder bereit, keines gesetzt",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -420,12 +420,18 @@ const KONFIG = {
 
   /* Kasten rechts neben Riva. Die Zeiten liegen auf ihren
      Sprechpausen, gemessen aus der Tonspur.                          */
+  /* Alle Bilder liegen bereit, aber keines ist gesetzt.
+     Im Editor mit "ein" aktivieren, mit "weg" wieder stilllegen.      */
   rechts: [
-    { ab: 25.2, bild: "bilder/gh-auktion.png",     titel: "Städtische Auktion",  ort: "Objekt 7" },
-    { ab: 30.2, bild: "bilder/gh-hanan.png",       titel: "Der Käufer",          ort: "Yitzhak Hanan" },
-    { ab: 35.2, bild: "bilder/gh-schluessel.png",  titel: "Der Zuschlag",        ort: "Yitzhak Hanan" },
-    { ab: 46.2, bild: "bilder/gh-objekt.png",      titel: "Helfer gesucht",      ort: "Bezahlt wird nicht" },
-    { ab: 73.0, bis: 84.3, bild: "bilder/gh-jack.png", titel: "Das Jobangebot",     ort: "Wer Regeln will" }
+    { aus: true, ab: 0, bild: "bilder/gh-haus-nacht.png", titel: "Zwanzig Jahre leer", ort: "Windenburg" },
+    { aus: true, ab: 0, bild: "bilder/gh-innen.png",      titel: "Blinde Fenster",     ort: "Seit zwei Jahrzehnten" },
+    { aus: true, ab: 0, bild: "bilder/gh-auktion.png",    titel: "Städtische Auktion", ort: "Objekt 7" },
+    { aus: true, ab: 0, bild: "bilder/gh-objekt.png",     titel: "Objekt 7",           ort: "Baujahr 1898" },
+    { aus: true, ab: 0, bild: "bilder/gh-schluessel.png", titel: "Der Zuschlag",       ort: "Yitzhak Hanan" },
+    { aus: true, ab: 0, bild: "bilder/gh-hanan.png",      titel: "Der Käufer",         ort: "Yitzhak Hanan" },
+    { aus: true, ab: 0, bild: "bilder/gh-papiere.png",    titel: "Raum für alle",      ort: "Wer will, richtet ein" },
+    { aus: true, ab: 0, bild: "bilder/gh-jack.png",       titel: "Das Jobangebot",     ort: "Wer Regeln will" }
+  
   ],
 
   ticker: [
@@ -474,11 +480,14 @@ function waehle(liste, bilder, t, ende) {
   let treffer = -1;
   for (let i = 0; i < liste.length; i++) {
     const e = liste[i];
-    if (e.fehlt) continue;
+    if (e.fehlt || e.aus) continue;
     if (t < e.ab) continue;
-    // eigenes Ende, sonst bis zum naechsten Bild, sonst bis zum Abschnittsende
-    const aus = e.bis || (liste[i + 1] ? liste[i + 1].ab : ende);
-    if (t < aus) treffer = i;
+    // eigenes Ende, sonst bis zum naechsten gesetzten Bild, sonst bis zum Abschnittsende
+    let folgt = ende;
+    for (let n = i + 1; n < liste.length; n++) {
+      if (!liste[n].aus && !liste[n].fehlt && liste[n].ab > e.ab) { folgt = liste[n].ab; break; }
+    }
+    if (t < (e.bis || folgt)) treffer = i;
   }
   if (t >= ende) treffer = -1;
   bilder.forEach((img, i) => img.classList.toggle("an", i === treffer));
@@ -608,7 +617,7 @@ function baueZeiten() {
   const liste = el("zeiten-liste");
   liste.innerHTML = "";
 
-  const zeile = (art, i, text, unter, setzen, hin, enden) => {
+  const zeile = (art, i, text, unter, setzen, hin, enden, weg) => {
     const z = document.createElement("div");
     z.className = "zeile"; z.dataset.art = art; z.dataset.i = String(i);
     z.innerHTML = '<span class="titel">' + text + '<small>' + unter + '</small></span>';
@@ -625,8 +634,10 @@ function baueZeiten() {
     } else {
       e.addEventListener("click", () => springe(hin()));
     }
-    const v = document.createElement("button"); v.textContent = "→";
-    v.addEventListener("click", () => springe(hin()));
+    const v = document.createElement("button");
+    v.textContent = weg ? "weg" : "→";
+    v.title = weg ? "Diese Einblendung stilllegen" : "Dorthin springen";
+    v.addEventListener("click", () => weg ? (weg(), aktualisiere()) : springe(hin()));
     z.appendChild(a); z.appendChild(e);
     if (enden) z.appendChild(v);
     liste.appendChild(z);
@@ -639,14 +650,17 @@ function baueZeiten() {
   zeile("schnitt", 2, "Schnitt ins Studio", "ab " + KONFIG.studioAb.toFixed(1) + " s",
         v => KONFIG.studioAb = v, () => KONFIG.studioAb - 1);
 
-  const spanne = (e) => e.ab.toFixed(1) + (e.bis ? " bis " + e.bis.toFixed(1) : " bis zum nächsten") + " s";
+  const spanne = (e) => e.aus ? "nicht gesetzt"
+        : e.ab.toFixed(1) + (e.bis ? " bis " + e.bis.toFixed(1) : " bis zum nächsten") + " s";
   KONFIG.links.forEach((e, i) => {
     zeile("links", i, "Links: " + e.titel, spanne(e),
-          v => e.ab = v, () => e.ab + 0.2, v => e.bis = v);
+          v => { e.ab = v; e.aus = false; }, () => e.ab + 0.2,
+          v => e.bis = v, () => { e.aus = true; e.bis = null; });
   });
   KONFIG.rechts.forEach((e, i) => {
     zeile("rechts", i, e.titel, spanne(e),
-          v => e.ab = v, () => e.ab + 0.2, v => e.bis = v);
+          v => { e.ab = v; e.aus = false; }, () => e.ab + 0.2,
+          v => e.bis = v, () => { e.aus = true; e.bis = null; });
   });
   KONFIG.binden.forEach((b, i) => {
     zeile("binde", i, "Binde: " + b.name, b.ab.toFixed(1) + " bis " + b.bis.toFixed(1) + " s",
@@ -655,15 +669,17 @@ function baueZeiten() {
 }
 
 function aktualisiere() {
-  KONFIG.links.sort((a, b) => a.ab - b.ab);
-  KONFIG.rechts.sort((a, b) => a.ab - b.ab);
+  const ordne = (x, y) => (x.aus ? 1 : 0) - (y.aus ? 1 : 0) || x.ab - y.ab;
+  KONFIG.links.sort(ordne);
+  KONFIG.rechts.sort(ordne);
   baueZeiten(); baueMarker();
   letzterLinks = -2; letzterRechts = -2;
   schreibeAusgabe();
 }
 
 function schreibeAusgabe() {
-  const z = (e) => '    { ab: ' + e.ab + (e.bis ? ', bis: ' + e.bis : '') +
+  const z = (e) => '    { ' + (e.aus ? 'aus: true, ' : '') + 'ab: ' + e.ab +
+                   (e.bis ? ', bis: ' + e.bis : '') +
                    ', bild: "' + e.bild + '",\n      titel: "' +
                    e.titel + '", ort: "' + e.ort + '" },';
   const b = (x) => '    { ab: ' + x.ab + ', bis: ' + x.bis + ', flagge: "' + x.flagge +
