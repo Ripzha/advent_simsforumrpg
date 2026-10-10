@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimsWelt News — Durchlauf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   SIMSWELT NEWS — Durchlauf
+   Spielt die fertigen Blöcke nacheinander ab. Der jeweils nächste
+   wird im Hintergrund geladen, damit beim Schnitt nichts hakt.
+   Die einzelnen Seiten bleiben unverändert — sie laufen in einem
+   Rahmen und werden von hier aus gestartet und überwacht.
+   =================================================================== */
+
+:root {
+  --nacht:       #040a14;
+  --navy:        #08192e;
+  --silber:      #c9d6e4;
+  --weiss:       #ffffff;
+  --messing:     #c9992f;
+  --messing-hell:#e8c877;
+  --marke: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --eng:   "Barlow Condensed", "Arial Narrow", sans-serif;
+  --text:  "Barlow", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: #02060c; font-family: var(--text); color: var(--weiss);
+  overflow: hidden;
+}
+
+/* ---------- Bühne mit den Rahmen ---------- */
+.bühne {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #02060c;
+}
+.feld {
+  position: relative; aspect-ratio: 16 / 9;
+  width: min(100vw, calc(100vh * 16 / 9)); height: auto;
+  background: #000; overflow: hidden;
+}
+.feld iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  border: 0; opacity: 0; transition: opacity 0.45s ease;
+  pointer-events: none;
+}
+.feld iframe.vorn { opacity: 1; pointer-events: auto; }
+
+/* ---------- Übergangsblende ---------- */
+.blende {
+  position: absolute; inset: 0; z-index: 40; background: #000;
+  opacity: 0; pointer-events: none; transition: opacity 0.35s ease;
+}
+.blende.an { opacity: 1; }
+
+/* ---------- Ladeanzeige ---------- */
+.laden {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 45; text-align: center; display: none;
+}
+.laden.an { display: block; }
+.laden b {
+  display: block; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(16px, 2.2vw, 34px); color: var(--weiss);
+}
+.laden span {
+  display: block; margin-top: 0.5em; font-family: var(--eng); font-weight: 600;
+  font-size: clamp(10px, 1.1vw, 17px); letter-spacing: 0.28em;
+  text-transform: uppercase; color: var(--messing-hell);
+}
+.laden .balken {
+  width: 14em; height: 3px; margin: 1.1em auto 0; background: rgba(201,214,228,0.2);
+  overflow: hidden;
+}
+.laden .balken i {
+  display: block; height: 100%; width: 40%; background: var(--messing);
+  animation: wandern 1.1s ease-in-out infinite;
+}
+@keyframes wandern {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+/* ---------- Leiste unten ---------- */
+.leiste {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: flex; align-items: center; gap: 1em; padding: 0.55em 1.1em 0.65em;
+  background: linear-gradient(0deg, rgba(4,10,20,0.96), rgba(4,10,20,0.55));
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
+  color: var(--messing-hell);
+  opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+}
+.leiste.zeig { opacity: 1; pointer-events: auto; }
+.leiste .stand { flex: 0 0 auto; min-width: 16em; }
+.leiste .kette { flex: 1 1 auto; display: flex; gap: 3px; }
+.leiste .kette span {
+  flex: 1 1 0; height: 14px; background: rgba(201,214,228,0.16); cursor: pointer;
+  position: relative; overflow: hidden;
+}
+.leiste .kette span.fertig { background: rgba(201,153,47,0.45); }
+.leiste .kette span.jetzt  { background: rgba(201,214,228,0.16); }
+.leiste .kette span.jetzt i {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing);
+}
+.leiste button {
+  flex: 0 0 auto; font-family: inherit; font-size: 11px; letter-spacing: 0.06em;
+  color: var(--nacht); background: var(--messing-hell); border: none;
+  padding: 0.45em 0.9em; cursor: pointer;
+}
+.leiste button:hover { background: var(--weiss); }
+.leiste .hinweis { flex: 0 0 auto; color: var(--silber); }
+
+/* ---------- Startbildschirm ---------- */
+.start {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1.2rem; padding: 2rem;
+  background: radial-gradient(ellipse at 50% 44%, #16314f 0%, #0a1c33 44%, #040a14 100%);
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+}
+.start.weg { opacity: 0; visibility: hidden; }
+.raute { display: inline-block; position: relative; width: .30em; height: .62em; margin: 0 .085em; }
+.raute::before { content: ""; position: absolute; inset: 0;   background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.raute::after  { content: ""; position: absolute; inset: 22%; background: var(--nacht);   clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.start h1 {
+  margin: 0; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(26px, 5vw, 78px); letter-spacing: -0.012em;
+  color: var(--weiss); display: flex; align-items: baseline;
+}
+.start h1 .news { color: var(--messing-hell); }
+.start .linie { width: 38%; height: 2px; background: var(--messing); }
+.start p {
+  margin: 0; font-family: var(--eng); font-weight: 600;
+  font-size: clamp(11px, 1.3vw, 20px); letter-spacing: 0.4em;
+  text-indent: 0.4em; text-transform: uppercase; color: rgba(201,214,228,0.82);
+}
+.start button {
+  font-family: var(--eng); font-weight: 700; font-size: clamp(13px, 1.4vw, 22px);
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--nacht);
+  background: var(--messing); border: none; padding: 0.8em 2.8em; cursor: pointer;
+}
+.start button:hover { background: var(--messing-hell); }
+
+/* Blockliste auf dem Startbildschirm */
+.liste {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.55rem; width: min(900px, 92%); margin-top: 0.4rem;
+}
+.liste a {
+  display: block; text-decoration: none; padding: 0.7em 0.9em;
+  background: rgba(8,25,46,0.8); border-left: 3px solid var(--messing);
+  transition: background 0.2s ease;
+}
+.liste a:hover { background: rgba(14,38,68,0.95); }
+.liste a b {
+  display: block; font-family: var(--marke); font-weight: 800;
+  font-size: 15px; color: var(--weiss);
+}
+.liste a span {
+  display: block; margin-top: 0.2em; font-family: var(--eng); font-weight: 600;
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--messing-hell);
+}
+.start small {
+  font-family: var(--text); font-size: clamp(10px, 0.95vw, 13px);
+  color: rgba(201,214,228,0.5); text-align: center; max-width: 42em;
+}
+</style>
+</head>
+<body>
+
+<div class="bühne">
+  <div class="feld" id="feld">
+    <div class="blende" id="blende"></div>
+    <div class="laden" id="laden">
+      <b id="laden-titel"></b>
+      <span id="laden-nummer"></span>
+      <div class="balken"><i></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="leiste" id="leiste">
+  <span class="stand" id="stand">—</span>
+  <span class="kette" id="kette"></span>
+  <button id="knopf-zurueck">◀ Block</button>
+  <button id="knopf-weiter">Block ▶</button>
+  <button id="knopf-neu">Neu</button>
+  <span class="hinweis">Leertaste pausiert · B blendet die Leiste aus</span>
+</div>
+
+<div class="start" id="start">
+  <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
+  <div class="linie"></div>
+  <p>Sondersendung · Durchlauf</p>
+  <button id="start-knopf">Alles abspielen</button>
+  <div class="liste" id="start-liste"></div>
+  <small>Einzeln anschauen: auf einen Block klicken. Beim Durchlauf wird der jeweils
+         nächste Block im Hintergrund geladen. Die Sendung ist noch nicht vollständig —
+         es laufen nur die fertigen Blöcke.</small>
+</div>
+
+<script>
+/* ===================================================================
+   KONFIG — die Blöcke in Sendereihenfolge
+   nummer   wie im Ablaufplan
+   titel    Anzeige
+   datei    die Seite, die abgespielt wird
+   dauer    ungefähre Länge in Sekunden, nur für die Anzeige
+   =================================================================== */
+const BLOECKE = [
+  { nummer: "1–4",  titel: "Ident, Begrüssung, Remy", datei: "news-remy.html",         dauer: 132 },
+  { nummer: "6",    titel: "Gemeindehaus",            datei: "news-gemeindehaus.html", dauer: 111 },
+  { nummer: "7",    titel: "Werbung ATLAS",           datei: "news-werbung.html",      dauer:  25 },
+  { nummer: "8–9b", titel: "Boom Boom und Bite",      datei: "news-boom.html",         dauer: 102 },
+  { nummer: "20",   titel: "Wetter mit Artjom",       datei: "wetterkarte.html",       dauer:  84 }
+];
+
+/* =================================================================== */
+
+const el = (id) => document.getElementById(id);
+const feld   = el("feld");
+const blende = el("blende");
+
+let rahmen = [];          // zwei Rahmen im Wechsel
+let vorn = 0;             // welcher gerade zu sehen ist
+let index = -1;           // laufender Block
+let uhr = null;
+let leisteAn = true;
+
+/* ---------- Startbildschirm aufbauen ---------- */
+(function baueListe() {
+  const l = el("start-liste");
+  BLOECKE.forEach((b, i) => {
+    const a = document.createElement("a");
+    a.href = b.datei;
+    a.innerHTML = "<b>" + b.titel + "</b><span>Block " + b.nummer + " · " + laenge(b.dauer) + "</span>";
+    a.addEventListener("click", (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey) return;   // in neuem Tab öffnen zulassen
+      e.preventDefault();
+      el("start").classList.add("weg");
+      el("leiste").classList.toggle("zeig", leisteAn);
+      baueKette();
+      spiele(i);
+    });
+    l.appendChild(a);
+  });
+})();
+
+function laenge(s) {
+  const m = Math.floor(s / 60), r = Math.round(s % 60);
+  return m + ":" + String(r).padStart(2, "0");
+}
+
+function baueKette() {
+  const k = el("kette");
+  k.innerHTML = "";
+  BLOECKE.forEach((b, i) => {
+    const s = document.createElement("span");
+    s.title = b.titel;
+    s.innerHTML = "<i></i>";
+    s.addEventListener("click", () => spiele(i));
+    k.appendChild(s);
+  });
+}
+
+/* ---------- Rahmen verwalten ---------- */
+function neuerRahmen() {
+  const f = document.createElement("iframe");
+  f.setAttribute("allow", "autoplay; fullscreen");
+  f.setAttribute("scrolling", "no");
+  feld.insertBefore(f, blende);
+  return f;
+}
+
+function ladeIn(rahmenNr, i) {
+  if (i < 0 || i >= BLOECKE.length) return null;
+  if (!rahmen[rahmenNr]) rahmen[rahmenNr] = neuerRahmen();
+  const f = rahmen[rahmenNr];
+  if (f.dataset.block !== String(i)) {
+    f.dataset.block = String(i);
+    f.dataset.bereit = "";
+    f.src = BLOECKE[i].datei;
+  }
+  return f;
+}
+
+/* ---------- Das Medium in einem Rahmen finden ---------- */
+function medium(f) {
+  try {
+    const d = f.contentDocument;
+    if (!d) return null;
+    const alle = Array.prototype.slice.call(d.querySelectorAll("video, audio"));
+    // das längste Medium ist das eigentliche Programm, nicht die Kennung
+    let best = null;
+    alle.forEach(m => {
+      if (!m.duration || !isFinite(m.duration)) return;
+      if (!best || m.duration > best.duration) best = m;
+    });
+    return best;
+  } catch (e) { return null; }
+}
+
+function starte(f) {
+  try {
+    const d = f.contentDocument;
+    if (!d) return false;
+    const k = d.getElementById("start-knopf");
+    if (!k) return false;
+    k.click();
+    return true;
+  } catch (e) { return false; }
+}
+
+/* ---------- Abspielen ---------- */
+function spiele(i) {
+  if (i < 0) i = 0;
+  if (i >= BLOECKE.length) { fertig(); return; }
+  index = i;
+
+  clearInterval(uhr);
+  blende.classList.add("an");
+  zeigeLaden(i);
+
+  // Läuft der Block schon im hinteren Rahmen? Dann nur tauschen.
+  const hinten = 1 - vorn;
+  let f;
+  if (rahmen[hinten] && rahmen[hinten].dataset.block === String(i)) {
+    f = rahmen[hinten];
+    vorn = hinten;
+  } else {
+    f = ladeIn(vorn, i);
+  }
+  rahmen.forEach((r, n) => r && r.classList.toggle("vorn", n === vorn));
+
+  // Warten, bis die Seite im Rahmen bereit ist, dann starten
+  let versuche = 0;
+  const warte = setInterval(() => {
+    versuche++;
+    if (starte(f)) {
+      clearInterval(warte);
+      setTimeout(() => {
+        blende.classList.remove("an");
+        versteckeLaden();
+        ueberwache(f, i);
+        ladeVor(i + 1);
+      }, 350);
+    } else if (versuche > 160) {        // nach 16 Sekunden aufgeben
+      clearInterval(warte);
+      blende.classList.remove("an");
+      versteckeLaden();
+      ueberwache(f, i);
+      ladeVor(i + 1);
+    }
+  }, 100);
+}
+
+/* Den nächsten Block still im zweiten Rahmen laden */
+function ladeVor(i) {
+  if (i >= BLOECKE.length) return;
+  ladeIn(1 - vorn, i);
+}
+
+/* Auf das Ende des Blocks warten */
+function ueberwache(f, i) {
+  clearInterval(uhr);
+  uhr = setInterval(() => {
+    const m = medium(f);
+    const s = el("kette").children[i];
+    if (!m) { zeigeStand(i, 0, BLOECKE[i].dauer); return; }
+    zeigeStand(i, m.currentTime, m.duration);
+    if (s) {
+      const b = s.querySelector("i");
+      if (b) b.style.width = (m.currentTime / m.duration * 100) + "%";
+    }
+    // Ende erreicht
+    if (m.duration && m.currentTime >= m.duration - 0.35) {
+      clearInterval(uhr);
+      if (s) { s.classList.remove("jetzt"); s.classList.add("fertig"); }
+      spiele(i + 1);
+    }
+  }, 200);
+
+  Array.prototype.forEach.call(el("kette").children, (s, n) => {
+    s.classList.toggle("jetzt", n === i);
+    if (n < i) s.classList.add("fertig");
+    if (n > i) { s.classList.remove("fertig"); const b = s.querySelector("i"); if (b) b.style.width = "0"; }
+  });
+}
+
+function zeigeStand(i, t, d) {
+  const b = BLOECKE[i];
+  el("stand").textContent = "Block " + b.nummer + " · " + b.titel +
+    "  " + t.toFixed(0) + "/" + (d || b.dauer).toFixed(0) + " s";
+}
+
+function zeigeLaden(i) {
+  el("laden-titel").textContent  = BLOECKE[i].titel;
+  el("laden-nummer").textContent = "Block " + BLOECKE[i].nummer;
+  el("laden").classList.add("an");
+}
+function versteckeLaden() { el("laden").classList.remove("an"); }
+
+function fertig() {
+  clearInterval(uhr);
+  blende.classList.add("an");
+  el("laden-titel").textContent  = "Ende der Sendung";
+  el("laden-nummer").textContent = "SimsWelt News";
+  el("laden").classList.add("an");
+}
+
+/* ---------- Bedienung ---------- */
+el("start-knopf").addEventListener("click", () => {
+  el("start").classList.add("weg");
+  el("leiste").classList.toggle("zeig", leisteAn);
+  baueKette();
+  spiele(0);
+});
+el("knopf-weiter").addEventListener("click", () => spiele(index + 1));
+el("knopf-zurueck").addEventListener("click", () => spiele(Math.max(0, index - 1)));
+el("knopf-neu").addEventListener("click", () => spiele(index));
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "b" || e.key === "B") {
+    e.preventDefault(); leisteAn = !leisteAn;
+    el("leiste").classList.toggle("zeig", leisteAn); return;
+  }
+  if (e.code === "Space") {
+    e.preventDefault();
+    const m = medium(rahmen[vorn]);
+    if (m) m.paused ? m.play() : m.pause();
+    return;
+  }
+  if (e.key === "ArrowRight" && e.shiftKey) { e.preventDefault(); spiele(index + 1); return; }
+  if (e.key === "ArrowLeft"  && e.shiftKey) { e.preventDefault(); spiele(Math.max(0, index - 1)); return; }
+  // einfache Pfeile an den laufenden Block weiterreichen
+  const m = medium(rahmen[vorn]);
+  if (!m) return;
+  const weite = 5;
+  if (e.key === "ArrowRight") { e.preventDefault(); m.currentTime = Math.min(m.duration, m.currentTime + weite); }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); m.currentTime = Math.max(0, m.currentTime - weite); }
+});
+</script>
+</body>
+</html>
