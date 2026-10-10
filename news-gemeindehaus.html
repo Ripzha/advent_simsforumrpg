@@ -69,6 +69,7 @@ html, body {
 }
 /* Riva zuerst im kleinen Fenster, dann auf Vollbild */
 #clip.klein {
+  transition: transform 0.75s cubic-bezier(0.3,0,0.18,1), box-shadow 0.75s ease;
   background: #000;
   transform: translate(var(--klein-x), var(--klein-y)) scale(var(--klein-skala));
   outline: 2px solid var(--messing);
@@ -483,7 +484,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v26 · deine Bildfolge, Regen bis zum Schnitt",
+  fassung: "v27 · Handkamera",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -502,6 +503,11 @@ const KONFIG = {
 
   /* Rote Live-Kennung oben links, die ganze Schalte über */
   livemarke: { ab: 15.4, bis: 85.8 },
+
+  /* Handkamera: leichtes Wackeln während der Schalte.
+     weite = Ausschlag in Prozent der Bildbreite, tempo = Geschwindigkeit,
+     drehung = Neigung in Grad, zoom = Reserve, damit kein Rand entsteht.  */
+  handkamera: { ab: 15.3, bis: 86.0, weite: 1.10, tempo: 1.15, drehung: 0.35, zoom: 1.055 },
 
   /* Leichter, gleichmässiger Regen. Sehr leise, weil Rivas Mikrofon
      die Umgebung ohnehin unterdrückt.                                  */
@@ -663,6 +669,67 @@ function zeichneRegen(jetzt) {
   requestAnimationFrame(zeichneRegen);
 }
 requestAnimationFrame(zeichneRegen);
+
+/* ===================================================================
+   Handkamera
+   Drei überlagerte Schwingungen mit krummen Verhältnissen, dazu
+   gelegentlich ein kleiner Versatz. Dadurch entsteht kein Muster,
+   wie man es bei einer einzelnen Sinuswelle sofort erkennt.
+   =================================================================== */
+let wackelZeit = 0;
+let stoss = { x: 0, y: 0, r: 0, rest: 0 };
+
+function wackle(jetzt) {
+  const h = KONFIG.handkamera;
+  const t = clip.currentTime;
+  const an = h && t >= h.ab && t < h.bis && !clip.paused;
+
+  if (!an) {
+    if (clip.dataset.wackelt) {
+      clip.style.transition = "";          // weiche Überblendung zurückgeben
+      clip.style.transform = "";
+      delete clip.dataset.wackelt;
+    }
+    requestAnimationFrame(wackle);
+    return;
+  }
+
+  // Die Überblendung würde jede Bewegung wegdämpfen, deshalb aus
+  if (!clip.dataset.wackelt) {
+    clip.style.transition = "none";
+    clip.dataset.wackelt = "1";
+  }
+
+  const dt = Math.min(0.05, (jetzt - wackelZeit) / 1000);
+  wackelZeit = jetzt;
+  const z = jetzt / 1000 * h.tempo;
+
+  // Atmen des Kameramanns: drei Schwingungen ohne gemeinsames Vielfaches
+  let x = Math.sin(z * 0.73) * 0.6 + Math.sin(z * 1.31 + 1.7) * 0.3 + Math.sin(z * 2.17 + 0.4) * 0.14;
+  let y = Math.sin(z * 0.61 + 2.2) * 0.55 + Math.sin(z * 1.47 + 0.9) * 0.28 + Math.sin(z * 2.63) * 0.12;
+  let r = Math.sin(z * 0.49 + 1.1) * 0.7 + Math.sin(z * 1.13 + 2.6) * 0.3;
+
+  // ab und zu ein kleiner Ruck, wie beim Umgreifen
+  stoss.rest -= dt;
+  if (stoss.rest <= 0) {
+    stoss.rest = 2.5 + Math.random() * 5.5;
+    stoss.x = (Math.random() - 0.5) * 1.6;
+    stoss.y = (Math.random() - 0.5) * 1.2;
+    stoss.r = (Math.random() - 0.5) * 1.4;
+  }
+  const abkling = Math.max(0, Math.min(1, stoss.rest / 0.55));
+  x += stoss.x * abkling;
+  y += stoss.y * abkling;
+  r += stoss.r * abkling;
+
+  clip.style.transform =
+    "scale(" + h.zoom + ") translate(" +
+    (x * h.weite).toFixed(3) + "%, " + (y * h.weite * 0.75).toFixed(3) + "%) rotate(" +
+    (r * h.drehung).toFixed(3) + "deg)";
+
+  requestAnimationFrame(wackle);
+}
+requestAnimationFrame(wackle);
 
 /* ---------- Takt ---------- */
 let letzterLinks = -2, letzterRechts = -2, abschnitt = "";
