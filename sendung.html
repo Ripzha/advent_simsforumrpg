@@ -3,17 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SimsWelt News — Durchlauf</title>
+<title>SimsWelt News — Werbeblock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;800&display=swap" rel="stylesheet">
 <style>
 /* ===================================================================
-   SIMSWELT NEWS — Durchlauf
-   Spielt die fertigen Blöcke nacheinander ab. Der jeweils nächste
-   wird im Hintergrund geladen, damit beim Schnitt nichts hakt.
-   Die einzelnen Seiten bleiben unverändert — sie laufen in einem
-   Rahmen und werden von hier aus gestartet und überwacht.
+   SIMSWELT NEWS — Werbeblock
+   Harte Schnitte im Takt der Off-Stimme. Jeder Schnitt hat ein Bild,
+   eine Schnittart und einen Stoerer. Zeiten mit Z beim Hoeren setzen.
    =================================================================== */
 
 :root {
@@ -23,6 +21,8 @@
   --weiss:       #ffffff;
   --messing:     #c9992f;
   --messing-hell:#e8c877;
+  --knall:       #e0483c;
+
   --marke: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --eng:   "Barlow Condensed", "Arial Narrow", sans-serif;
   --text:  "Barlow", system-ui, sans-serif;
@@ -31,422 +31,745 @@
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0; width: 100%; height: 100%;
-  background: #02060c; font-family: var(--text); color: var(--weiss);
-  overflow: hidden;
+  background: #02060c; font-family: var(--text); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
 }
 
-/* ---------- Bühne mit den Rahmen ---------- */
 .bühne {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: #02060c;
-}
-.feld {
   position: relative; aspect-ratio: 16 / 9;
   width: min(100vw, calc(100vh * 16 / 9)); height: auto;
-  background: #000; overflow: hidden;
-}
-.feld iframe {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  border: 0; opacity: 0; transition: opacity 0.45s ease;
-  pointer-events: none;
-}
-.feld iframe.vorn { opacity: 1; pointer-events: auto; }
-
-/* ---------- Übergangsblende ---------- */
-.blende {
-  position: absolute; inset: 0; z-index: 40; background: #000;
-  opacity: 0; pointer-events: none; transition: opacity 0.35s ease;
-}
-.blende.an { opacity: 1; }
-
-/* ---------- Ladeanzeige ---------- */
-.laden {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  z-index: 45; text-align: center; display: none;
-}
-.laden.an { display: block; }
-.laden b {
-  display: block; font-family: var(--marke); font-weight: 800;
-  font-size: clamp(16px, 2.2vw, 34px); color: var(--weiss);
-}
-.laden span {
-  display: block; margin-top: 0.5em; font-family: var(--eng); font-weight: 600;
-  font-size: clamp(10px, 1.1vw, 17px); letter-spacing: 0.28em;
-  text-transform: uppercase; color: var(--messing-hell);
-}
-.laden .balken {
-  width: 14em; height: 3px; margin: 1.1em auto 0; background: rgba(201,214,228,0.2);
-  overflow: hidden;
-}
-.laden .balken i {
-  display: block; height: 100%; width: 40%; background: var(--messing);
-  animation: wandern 1.1s ease-in-out infinite;
-}
-@keyframes wandern {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(250%); }
+  background: #000; overflow: hidden; container-type: size;
 }
 
-/* ---------- Leiste unten ---------- */
-.leiste {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 60;
-  display: flex; align-items: center; gap: 1em; padding: 0.55em 1.1em 0.65em;
-  background: linear-gradient(0deg, rgba(4,10,20,0.96), rgba(4,10,20,0.55));
-  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
-  color: var(--messing-hell);
-  opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+/* ---------- Bildebene ---------- */
+.szene { position: absolute; inset: 0; overflow: hidden; background: #000; }
+.bild {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  opacity: 0; will-change: transform, opacity;
 }
-.leiste.zeig { opacity: 1; pointer-events: auto; }
-.leiste .stand { flex: 0 0 auto; min-width: 16em; }
-.leiste .kette { flex: 1 1 auto; display: flex; gap: 3px; }
-.leiste .kette span {
-  flex: 1 1 0; height: 14px; background: rgba(201,214,228,0.16); cursor: pointer;
-  position: relative; overflow: hidden;
-}
-.leiste .kette span.fertig { background: rgba(201,153,47,0.45); }
-.leiste .kette span.jetzt  { background: rgba(201,214,228,0.16); }
-.leiste .kette span.jetzt i {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing);
-}
-.leiste button {
-  flex: 0 0 auto; font-family: inherit; font-size: 11px; letter-spacing: 0.06em;
-  color: var(--nacht); background: var(--messing-hell); border: none;
-  padding: 0.45em 0.9em; cursor: pointer;
-}
-.leiste button:hover { background: var(--weiss); }
-.leiste .hinweis { flex: 0 0 auto; color: var(--silber); }
+.bild.an { opacity: 1; }
 
-/* ---------- Startbildschirm ---------- */
-.start {
-  position: absolute; inset: 0; z-index: 90;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 1.2rem; padding: 2rem;
-  background: radial-gradient(ellipse at 50% 44%, #16314f 0%, #0a1c33 44%, #040a14 100%);
-  transition: opacity 0.45s ease, visibility 0.45s ease;
+/* Schnittarten */
+@keyframes punch   { from { transform: scale(1.18); } to { transform: scale(1.02); } }
+@keyframes whip    { from { transform: translateX(22%) scale(1.12); filter: blur(9px); }
+                     to   { transform: translateX(0)   scale(1.02); filter: blur(0); } }
+@keyframes whipL   { from { transform: translateX(-22%) scale(1.12); filter: blur(9px); }
+                     to   { transform: translateX(0)    scale(1.02); filter: blur(0); } }
+@keyframes kipp    { from { transform: rotate(-3deg) scale(1.2); } to { transform: rotate(0) scale(1.03); } }
+@keyframes fahrt   { from { transform: scale(1.02); } to { transform: scale(1.16); } }
+@keyframes ruhig   { from { transform: scale(1.05); } to { transform: scale(1.09); } }
+
+.bild.punch { animation: punch .34s cubic-bezier(.2,.9,.25,1) forwards; }
+.bild.whip  { animation: whip  .26s cubic-bezier(.2,.9,.25,1) forwards; }
+.bild.whipL { animation: whipL .26s cubic-bezier(.2,.9,.25,1) forwards; }
+.bild.kipp  { animation: kipp  .30s cubic-bezier(.2,.9,.25,1) forwards; }
+.bild.fahrt { animation: fahrt 3.2s linear forwards; }
+.bild.ruhig { animation: ruhig 4.5s linear forwards; }
+.bild.zip   { transition: background-position .07s linear; }
+.bild.zipbild { background-size: cover; background-position: center; }
+
+/* Raster fuer die anderen Welten */
+.raster {
+  position: absolute; inset: 0; z-index: 24; display: none;
+  grid-template-columns: repeat(4, 1fr); gap: .6cqw;
+  padding: 9cqw 6cqw 12cqw;
 }
-.start.weg { opacity: 0; visibility: hidden; }
+.raster.an { display: grid; }
+.raster .kachel {
+  position: relative; overflow: hidden; border: 1px solid rgba(232,200,119,.45);
+  background: #071322; opacity: 0; transform: scale(.88);
+  animation: kachelRein .28s cubic-bezier(.2,1.4,.4,1) forwards;
+}
+@keyframes kachelRein { to { opacity: 1; transform: scale(1); } }
+.raster .kachel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.raster .kachel span {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(0deg, rgba(4,10,20,.92), rgba(4,10,20,0));
+  font-family: var(--eng); font-weight: 600; font-size: 1.35cqw;
+  color: var(--weiss); padding: .9em .5em .35em; text-align: center;
+}
+
+/* Ortsname und Zaehler beim Durchzippen */
+.zipname {
+  position: absolute; left: 6%; bottom: 22%; z-index: 27;
+  font-family: var(--eng); font-weight: 700; font-size: 4.6cqw;
+  letter-spacing: .01em; color: var(--weiss);
+  text-shadow: 0 4px 20px rgba(0,0,0,.85); opacity: 0;
+}
+.zipname.an { opacity: 1; }
+.zipzaehler {
+  position: absolute; right: 6%; bottom: 20%; z-index: 27;
+  font-family: var(--marke); font-weight: 800; font-size: 11cqw;
+  line-height: .9; color: var(--messing-hell);
+  text-shadow: 0 6px 26px rgba(0,0,0,.8); opacity: 0;
+  font-variant-numeric: tabular-nums;
+}
+.zipzaehler.an { opacity: 1; }
+.zipzaehler small { display: block; font-family: var(--eng); font-weight: 600;
+  font-size: .2em; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--silber); text-align: right; }
+/* Fadenkreuz in der Bildmitte, wie bei einer Vermessung */
+.kreuz {
+  position: absolute; inset: 0; z-index: 26; opacity: 0; pointer-events: none;
+}
+.kreuz.an { opacity: .75; }
+.kreuz::before, .kreuz::after {
+  content: ""; position: absolute; background: rgba(232,200,119,.55);
+}
+.kreuz::before { left: 50%; top: 42%; bottom: 42%; width: 1px; }
+.kreuz::after  { top: 50%; left: 46%; right: 46%; height: 1px; }
+
+/* ---------- Blitz beim Schnitt ---------- */
+.blitz {
+  position: absolute; inset: 0; background: #fff; opacity: 0;
+  pointer-events: none; z-index: 30;
+}
+.blitz.an { animation: blitzen .18s ease-out; }
+@keyframes blitzen { 0% { opacity: .85; } 100% { opacity: 0; } }
+
+/* ---------- Stoerer ---------- */
+.stoerer {
+  position: absolute; z-index: 25;
+  left: 6%; bottom: 16%;
+  font-family: var(--eng); font-weight: 800;
+  font-size: 7cqw; line-height: .96; letter-spacing: -0.01em;
+  color: var(--weiss);
+  text-shadow: 0 6px 24px rgba(0,0,0,.75);
+  transform: rotate(-3deg) scale(.7); opacity: 0;
+  max-width: 62%;
+}
+.stoerer.an { animation: knallRein .28s cubic-bezier(.2,1.5,.4,1) forwards; }
+@keyframes knallRein { to { transform: rotate(-3deg) scale(1); opacity: 1; } }
+.stoerer.rechts { left: auto; right: 6%; text-align: right; transform: rotate(3deg) scale(.7); }
+.stoerer.rechts.an { animation: knallReinR .28s cubic-bezier(.2,1.5,.4,1) forwards; }
+@keyframes knallReinR { to { transform: rotate(3deg) scale(1); opacity: 1; } }
+.stoerer.oben { bottom: auto; top: 12%; }
+.stoerer em { font-style: normal; color: var(--messing-hell); }
+.stoerer .schild {
+  display: inline-block; background: var(--knall); color: var(--weiss);
+  padding: .06em .3em; transform: rotate(-2deg);
+}
+
+/* ---------- Rechtshinweis ---------- */
+.klein {
+  position: absolute; left: 0; right: 0; bottom: 4%;
+  z-index: 26; text-align: center;
+  font-family: var(--text); font-size: 1.5cqw; letter-spacing: .02em;
+  color: rgba(255,255,255,.82); opacity: 0; transition: opacity .2s ease;
+}
+.klein.an { opacity: 1; }
+
+/* ---------- Senderkennung ---------- */
+.kennung {
+  position: absolute; top: 4.6%; right: 3.4%; z-index: 28;
+  display: flex; align-items: baseline; gap: .7em;
+  font-family: var(--marke); font-weight: 800;
+  font-size: 2.1cqw; letter-spacing: -.012em; color: var(--weiss);
+  text-shadow: 0 2px 12px rgba(0,0,0,.8); opacity: .9;
+}
+.kennung .news { color: var(--messing-hell); }
 .raute { display: inline-block; position: relative; width: .30em; height: .62em; margin: 0 .085em; }
 .raute::before { content: ""; position: absolute; inset: 0;   background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
 .raute::after  { content: ""; position: absolute; inset: 22%; background: var(--nacht);   clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
-.start h1 {
-  margin: 0; font-family: var(--marke); font-weight: 800;
-  font-size: clamp(26px, 5vw, 78px); letter-spacing: -0.012em;
-  color: var(--weiss); display: flex; align-items: baseline;
-}
-.start h1 .news { color: var(--messing-hell); }
-.start .linie { width: 38%; height: 2px; background: var(--messing); }
-.start p {
-  margin: 0; font-family: var(--eng); font-weight: 600;
-  font-size: clamp(11px, 1.3vw, 20px); letter-spacing: 0.4em;
-  text-indent: 0.4em; text-transform: uppercase; color: rgba(201,214,228,0.82);
-}
-.start button {
-  font-family: var(--eng); font-weight: 700; font-size: clamp(13px, 1.4vw, 22px);
-  letter-spacing: 0.16em; text-transform: uppercase; color: var(--nacht);
-  background: var(--messing); border: none; padding: 0.8em 2.8em; cursor: pointer;
-}
-.start button:hover { background: var(--messing-hell); }
 
-/* Blockliste auf dem Startbildschirm */
-.liste {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 0.55rem; width: min(900px, 92%); margin-top: 0.4rem;
+/* ---------- Werbemarke unten links ---------- */
+.werbemarke {
+  position: absolute; left: 3.4%; top: 4.6%; z-index: 28;
+  font-family: var(--eng); font-weight: 700; font-size: 1.5cqw;
+  letter-spacing: .28em; text-transform: uppercase;
+  color: var(--nacht); background: var(--messing-hell);
+  padding: .35em .9em;
 }
-.liste a {
-  display: block; text-decoration: none; padding: 0.7em 0.9em;
-  background: rgba(8,25,46,0.8); border-left: 3px solid var(--messing);
-  transition: background 0.2s ease;
-}
-.liste a:hover { background: rgba(14,38,68,0.95); }
-.liste a b {
-  display: block; font-family: var(--marke); font-weight: 800;
-  font-size: 15px; color: var(--weiss);
-}
-.liste a span {
-  display: block; margin-top: 0.2em; font-family: var(--eng); font-weight: 600;
-  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+
+/* ---------- Bedienung ---------- */
+.leiste {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: none; align-items: center; gap: .9em; padding: .5em 1em .6em;
+  background: linear-gradient(0deg, rgba(4,10,20,.95), rgba(4,10,20,.6));
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px;
   color: var(--messing-hell);
 }
-.start small {
-  font-family: var(--text); font-size: clamp(10px, 0.95vw, 13px);
-  color: rgba(201,214,228,0.5); text-align: center; max-width: 42em;
+.leiste.zeig { display: flex; }
+.leiste .zeit { flex: 0 0 auto; min-width: 8em; }
+.leiste .spur { position: relative; flex: 1 1 auto; height: 16px; background: rgba(201,214,228,.14); cursor: pointer; }
+.leiste .fuell { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing); }
+.leiste .marker { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.6); }
+.leiste select, .leiste button {
+  font-family: inherit; font-size: 11px; border: none; cursor: pointer;
+  background: var(--messing-hell); color: var(--nacht); padding: .45em .8em;
 }
+.leiste button:hover, .leiste select:hover { background: var(--weiss); }
+.leiste .hinweis { color: var(--silber); font-size: 11px; }
+
+.zeiten {
+  position: absolute; right: 1.5%; top: 2%; bottom: 12%; width: 30%; min-width: 320px;
+  z-index: 62; display: none; flex-direction: column;
+  background: rgba(4,10,20,.96); border: 1px solid var(--messing);
+  font-family: var(--text); font-size: 12px; color: var(--weiss);
+}
+.zeiten.zeig { display: flex; }
+.zeiten h3 { margin: 0; padding: .7em .9em; font-size: 12px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--nacht); background: var(--messing-hell); }
+.zeiten .liste { flex: 1 1 auto; overflow-y: auto; padding: .4em .6em; }
+.zeiten .zeile { display: grid; grid-template-columns: 1fr auto; gap: .4em; align-items: center;
+  padding: .35em .3em; border-bottom: 1px solid rgba(201,214,228,.14); }
+.zeiten .zeile.jetzt { background: rgba(201,153,47,.22); }
+.zeiten .titel small { display: block; color: var(--silber); font-size: 10px; }
+.zeiten button { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+  border: 1px solid rgba(232,200,119,.5); background: transparent; color: var(--messing-hell);
+  padding: .28em .5em; cursor: pointer; }
+.zeiten button:hover { background: var(--messing); color: var(--nacht); }
+.zeiten .fuss { padding: .55em .7em; border-top: 1px solid rgba(201,214,228,.2); }
+.zeiten textarea { display: none; width: 100%; height: 170px; margin-top: .5em;
+  background: #071322; color: var(--messing-hell); border: 1px solid rgba(232,200,119,.4);
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; padding: .4em; }
+.zeiten.ausgabe textarea { display: block; }
+
+.start {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+  background: radial-gradient(ellipse at 50% 44%, #16314f 0%, #0a1c33 44%, #040a14 100%);
+  cursor: pointer; transition: opacity .4s ease, visibility .4s ease;
+}
+.start.weg { opacity: 0; visibility: hidden; }
+.start h1 { margin: 0; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(24px, 4.4vw, 74px); letter-spacing: -.012em; color: var(--weiss);
+  display: flex; align-items: baseline; }
+.start h1 .news { color: var(--messing-hell); }
+.start p { margin: 0; font-family: var(--eng); font-weight: 600; font-size: clamp(11px,1.3vw,20px);
+  letter-spacing: .4em; text-indent: .4em; text-transform: uppercase; color: rgba(201,214,228,.82); }
+.start button { font-family: var(--eng); font-weight: 700; font-size: clamp(13px,1.4vw,21px);
+  letter-spacing: .16em; text-transform: uppercase; color: var(--nacht);
+  background: var(--messing); border: none; padding: .8em 2.4em; cursor: pointer; }
+.start button:hover { background: var(--messing-hell); }
+.start label { font-family: var(--eng); font-weight: 600; font-size: clamp(11px,1.1vw,17px);
+  letter-spacing: .1em; text-transform: uppercase; color: var(--messing-hell);
+  border-bottom: 1px solid rgba(232,200,119,.5); cursor: pointer; }
+.start label input { display: none; }
+.start small { font-family: var(--text); font-size: clamp(10px,.95vw,14px); color: rgba(201,214,228,.5); }
 </style>
 </head>
 <body>
 
-<div class="bühne">
-  <div class="feld" id="feld">
-    <div class="blende" id="blende"></div>
-    <div class="laden" id="laden">
-      <b id="laden-titel"></b>
-      <span id="laden-nummer"></span>
-      <div class="balken"><i></i></div>
+<div class="bühne" id="bühne">
+  <div class="szene" id="szene"></div>
+  <div class="blitz" id="blitz"></div>
+
+  <div class="raster" id="raster"></div>
+  <div class="kreuz" id="kreuz"></div>
+  <div class="zipname" id="zipname"></div>
+  <div class="zipzaehler" id="zipzaehler"></div>
+  <div class="stoerer" id="stoerer"></div>
+  <div class="klein" id="klein"></div>
+
+  <div class="werbemarke" id="werbemarke">Werbung</div>
+  <div class="kennung">
+    <span>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></span>
+  </div>
+
+  <div class="leiste" id="leiste">
+    <span class="zeit" id="zeit">0.0 / 0.0</span>
+    <span class="spur" id="spur"><span class="fuell" id="fuell"></span></span>
+    <select id="wahl"></select>
+    <button id="knopf-ton">Ton…</button>
+    <span class="hinweis">Z Schnitte · T ausblenden · Leertaste pausiert</span>
+  </div>
+
+  <div class="zeiten" id="zeiten">
+    <h3>Schnittpunkte · Z schliesst</h3>
+    <div class="liste" id="zeiten-liste"></div>
+    <div class="fuss">
+      <button id="zeiten-ausgabe">Werte zum Kopieren</button>
+      <textarea id="zeiten-text" readonly></textarea>
     </div>
+  </div>
+
+  <div class="start" id="start">
+    <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
+    <p>Werbeblock</p>
+    <button id="start-knopf">Abspielen</button>
+    <label>Tonspur von Hand wählen<input type="file" id="datei-ton" accept="audio/*,video/*"></label>
+    <small>Z setzt Schnitte · T blendet aus · R startet neu</small>
   </div>
 </div>
 
-<div class="leiste" id="leiste">
-  <span class="stand" id="stand">—</span>
-  <span class="kette" id="kette"></span>
-  <button id="knopf-zurueck">◀ Block</button>
-  <button id="knopf-weiter">Block ▶</button>
-  <button id="knopf-neu">Neu</button>
-  <span class="hinweis">Leertaste pausiert · B blendet die Leiste aus</span>
-</div>
-
-<div class="start" id="start">
-  <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
-  <div class="linie"></div>
-  <p>Sondersendung · Durchlauf</p>
-  <button id="start-knopf">Alles abspielen</button>
-  <div class="liste" id="start-liste"></div>
-  <small>Einzeln anschauen: auf einen Block klicken. Beim Durchlauf wird der jeweils
-         nächste Block im Hintergrund geladen. Die Sendung ist noch nicht vollständig —
-         es laufen nur die fertigen Blöcke.</small>
-</div>
+<audio id="ton" preload="auto" style="display:none"></audio>
 
 <script>
 /* ===================================================================
-   KONFIG — die Blöcke in Sendereihenfolge
-   nummer   wie im Ablaufplan
-   titel    Anzeige
-   datei    die Seite, die abgespielt wird
-   dauer    ungefähre Länge in Sekunden, nur für die Anzeige
+   KONFIG — ein Eintrag je Spot.
+   art: punch, whip, whipL, kipp, fahrt, ruhig
+   blitz: true setzt einen weissen Schnittblitz
+   stoerer: Text auf dem Bild. <em> faerbt messing, <span class="schild">
+   legt ihn auf ein rotes Schild.
+   klein: Rechtshinweis unten, erscheint ab dieser Sekunde.
    =================================================================== */
-const BLOECKE = [
-  { nummer: "1–4",  titel: "Ident, Begrüssung, Remy", datei: "news-remy.html",         dauer: 132 },
-  { nummer: "6",    titel: "Gemeindehaus",            datei: "news-gemeindehaus.html", dauer: 111 },
-  { nummer: "7",    titel: "Werbung ATLAS",           datei: "news-werbung.html",      dauer:  25 },
-  { nummer: "8–9b", titel: "Boom Boom und Bite",      datei: "news-boom.html",         dauer: 102 },
-  { nummer: "20",   titel: "Wetter mit Artjom",       datei: "wetterkarte.html",       dauer:  84 }
+/* Uebersichtsbilder der Welten, aus dem ATLAS-Datenblatt */
+const WELTEN = {
+  "Brindleton Bay": "https://files.homepagemodules.de/b855163/f51848t204p3067n4_YilKTQzC.png",
+  "Britechester": "https://files.homepagemodules.de/b855163/f51848t204p3072n4_EiybMShs.png",
+  "Chestnut Ridge": "https://files.homepagemodules.de/b855163/f51848t204p3080n4_OpIFfJSU.png",
+  "Ciudad Enamorada": "https://files.homepagemodules.de/b855163/f51848t204p3786n4_IELDgfGt.png",
+  "Copperdale": "https://files.homepagemodules.de/b855163/f51848t204p3078n4_ObmfsMnP.png",
+  "Del Sol Valley": "https://files.homepagemodules.de/b855163/f51848t204p3068n4_HaOBXkQA.png",
+  "Evergreen Harbor": "https://files.homepagemodules.de/b855163/f51848t204p3073n6_eFxmWgEw.png",
+  "Forgotten Hollow": "https://files.homepagemodules.de/b855163/f51848t204p3066n4_IrqeVvtN.png",
+  "Gibbi Point": "https://files.homepagemodules.de/b855163/f51848t204p6440n4_oyTxWXPs.png",
+  "Glimmerbrook": "https://files.homepagemodules.de/b855163/f51848t204p3071n4_jALqgQCZ.png",
+  "Granite Falls": "https://files.homepagemodules.de/b855163/f51848t204p7355n4_OXkiNuPH.png",
+  "Henford-on-Bagley": "https://files.homepagemodules.de/b855163/f51848t204p3075n4_cVrPNKpq.png",
+  "Innisgreen": "https://files.homepagemodules.de/b855163/f51848t204p6439n4_LwMKFodA.png",
+  "Magnolia Promenade": "https://files.homepagemodules.de/b855163/f51848t204p3063n4_YKdbCpTW.png",
+  "Moonwood Mill": "https://files.homepagemodules.de/b855163/f51848t204p3077n4_wRObBDgF.png",
+  "Mt. Komorebi": "https://files.homepagemodules.de/b855163/f51848t204p3074n4_wQziqPfe.png",
+  "Newcrest": "https://files.homepagemodules.de/b855163/f51848t204p3062n4_xuRTnLBW.png",
+  "Nordhaven": "https://files.homepagemodules.de/b855163/f51848t204p5730n4_GlUPxojv.png",
+  "Oasis Springs": "https://files.homepagemodules.de/b855163/f51848t204p3061n4_lhtpsHxX.png",
+  "Ondarion": "https://files.homepagemodules.de/b855163/f51848t204p6856n6_GvzAtSiY.png",
+  "Ravenwood": "https://files.homepagemodules.de/b855163/f51848t204p4824n4_MvHYaqiS.png",
+  "San Myshuno": "https://files.homepagemodules.de/b855163/f51848t204p3065n12_xjcYLKmp.png",
+  "San Sequoia": "https://files.homepagemodules.de/b855163/f51848t204p3079n4_UKMZDbBE.png",
+  "Selvadorada": "https://files.homepagemodules.de/b855163/f51848t204p7356n4_vPRejyzq.png",
+  "Strangerville": "https://files.homepagemodules.de/b855163/f51848t204p3069n4_lnUriHQG.png",
+  "Sulani": "https://files.homepagemodules.de/b855163/f51848t204p3070n4_SNoRgaOG.png",
+  "Tartosa": "https://files.homepagemodules.de/b855163/f51848t204p3076n4_Nlqpvkcw.png",
+  "Tomarang": "https://files.homepagemodules.de/b855163/f51848t204p3081n4_jYMlkGCo.png",
+  "Willow Creek": "https://files.homepagemodules.de/b855163/f51848t204p3060n4_asEQqPcu.png",
+  "Windenburg": "https://files.homepagemodules.de/b855163/f51848t204p3064n4_QPOIDiEF.png"
+};
+
+const ANDERE_WELTEN = {
+  "Bloodmoon Valley": "https://files.homepagemodules.de/b855163/resize/1920x1200/f53861t380p3446n2_bGsQFBhr.png",
+  "Zauberallee": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t406p3532n2_obFYOumL.png",
+  "Die Unterwelt": "https://files.homepagemodules.de/b855163/resize/700x700/f51855t425p3615n2_SdqTrAyp.png",
+  "Der Zauberwald": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t90p1006n2_cgJWwteb.png",
+  "Europa": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t206p2661n2_LrURBnpa.jpg",
+  "Kanada": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t644p5918n2_KHliXsLA.png",
+  "Vampirwelt - Transsylvanien": "https://files.homepagemodules.de/b855163/resize/700x700/f51855t340p3281n2_CbdxvVWa.png",
+  "Paralleluniversum - Oasis Springs": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t220p2764n2_XtTNcofK.png",
+  "Toronto": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51855t652p6035n2_zUwxMuKc.jpg"
+};
+
+/* Orte auf der ATLAS-Karte, in Prozent der Bildbreite und -hoehe.
+   Beim Durchzippen springt der Ausschnitt von Punkt zu Punkt.        */
+const ORTE = [
+  ["Willow Creek", 49, 21], ["Oasis Springs", 36.5, 58], ["Newcrest", 39, 25.5],
+  ["Magnolia Promenade", 49, 35], ["Windenburg", 62, 44], ["San Myshuno", 56, 24],
+  ["Forgotten Hollow", 28.5, 18.5], ["Brindleton Bay", 69, 35], ["Del Sol Valley", 14, 73],
+  ["Strangerville", 31.5, 70.5], ["Sulani", 66, 90], ["Glimmerbrook", 46, 14],
+  ["Britechester", 37, 36], ["Selvadorada", 84, 62], ["Granite Falls", 39, 10],
+  ["Mt. Komorebi", 21.5, 15], ["Sto. Ondarion", 40, 48.5], ["Evergreen Harbor", 77, 12],
+  ["Henford-on-Bagley", 30, 28], ["Tartosa", 34, 86], ["Moonwood Mill", 54, 15],
+  ["Copperdale", 23.5, 27], ["San Sequoia", 21, 48], ["Chestnut Ridge", 41, 68.5],
+  ["Tomarang", 81, 80], ["Ciudad Enamorada", 54, 78], ["Nordhaven", 11, 23],
+  ["Ravenwood", 61, 12.5], ["Innisgreen", 57, 66], ["Gibbi Point", 15.5, 37]
+];
+
+const SPOTS = [
+
+  { id: "atlas", titel: "Werbung ATLAS", marke: "Werbung",
+    ton: "clips/werbung-atlas.mp3",
+    // Schnitte sitzen auf den gemessenen Sprechpausen der Tonspur
+    schnitte: [
+      { ab:  0.00, bild: "bilder/w-atlas-karte.png", art: "ruhig", blitz: false,
+        stoerer: "Kartografisches Amt" },
+
+      // Echte Uebersichtskarten der Welten, ohne Namen, Zaehler laeuft bis 30
+      { ab:  5.19, bild: "", art: "zipbild", blitz: true, stoerer: "",
+        zip: { takt: 0.62, zaehler: true, zaehlerTakt: 0.17, zaehlerBis: 30,
+               welten: ["Willow Creek", "San Myshuno", "Windenburg", "Forgotten Hollow",
+                        "Sulani", "Brindleton Bay", "Del Sol Valley", "Oasis Springs"] } },
+
+      // Aufzaehlung: Grundstuecke, dann immer mehr Bewohner
+      { ab: 10.84, bild: "bilder/w-lots.png",    art: "punch", blitz: true, stoerer: "Grundstücke" },
+      { ab: 11.70, bild: "bilder/w-chars-1.png", art: "whip",  blitz: true, stoerer: "Bewohner" },
+      { ab: 12.40, bild: "bilder/w-chars-2.png", art: "whipL", blitz: true, stoerer: "" },
+      { ab: 13.30, bild: "bilder/w-chars-3.png", art: "kipp",  blitz: true, stoerer: "Verzeichnet" },
+
+      // Die Welten ausserhalb des Kartenblattes als Raster
+      { ab: 14.50, bild: "bilder/w-atlas-leer.png", art: "raster", blitz: true,
+        stoerer: "<em>11</em> nicht verzeichnet", raster: { takt: 0.12 } },
+
+      { ab: 18.73, bild: "bilder/w-atlas-karte.png", art: "fahrt", blitz: false, stoerer: "" },
+      { ab: 21.45, bild: "bilder/w-atlas-logo.png",  art: "punch", blitz: true,  stoerer: "" }
+    ],
+    klein: null
+  },
+
 ];
 
 /* =================================================================== */
 
 const el = (id) => document.getElementById(id);
-const feld   = el("feld");
-const blende = el("blende");
+const ton = el("ton");
+const szene = el("szene");
+const stoerer = el("stoerer");
+const klein = el("klein");
+const blitz = el("blitz");
 
-let rahmen = [];          // zwei Rahmen im Wechsel
-let vorn = 0;             // welcher gerade zu sehen ist
-let index = -1;           // laufender Block
-let uhr = null;
+let spot = SPOTS[0];
+let ebenen = [];
+let aktuell = -1;
 let leisteAn = true;
+let zeitenAn = false;
 
-/* ---------- Startbildschirm aufbauen ---------- */
-(function baueListe() {
-  const l = el("start-liste");
-  BLOECKE.forEach((b, i) => {
-    const a = document.createElement("a");
-    a.href = b.datei;
-    a.innerHTML = "<b>" + b.titel + "</b><span>Block " + b.nummer + " · " + laenge(b.dauer) + "</span>";
-    a.addEventListener("click", (e) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey) return;   // in neuem Tab öffnen zulassen
-      e.preventDefault();
-      el("start").classList.add("weg");
-      el("leiste").classList.toggle("zeig", leisteAn);
-      baueKette();
-      spiele(i);
-    });
-    l.appendChild(a);
+/* ---------- Auswahl ---------- */
+SPOTS.forEach(function (s, i) {
+  const o = document.createElement("option");
+  o.value = String(i); o.textContent = s.titel;
+  el("wahl").appendChild(o);
+});
+el("wahl").addEventListener("change", function () {
+  ladeSpot(SPOTS[+this.value]);
+});
+
+function ladeSpot(s) {
+  spot = s;
+  aktuell = -1;
+  ton.src = s.ton;
+  el("werbemarke").textContent = s.marke || "Werbung";
+  szene.innerHTML = "";
+  ebenen = s.schnitte.map(function (sch) {
+    const d = document.createElement("div");
+    d.className = "bild";
+    d.style.backgroundImage = 'url("' + sch.bild + '")';
+    szene.appendChild(d);
+    return d;
   });
-})();
-
-function laenge(s) {
-  const m = Math.floor(s / 60), r = Math.round(s % 60);
-  return m + ":" + String(r).padStart(2, "0");
+  stoerer.className = "stoerer";
+  stoerer.innerHTML = "";
+  klein.className = "klein";
+  klein.textContent = s.klein ? s.klein.text : "";
+  baueMarker();
+  if (zeitenAn) baueZeiten();
 }
 
-function baueKette() {
-  const k = el("kette");
-  k.innerHTML = "";
-  BLOECKE.forEach((b, i) => {
-    const s = document.createElement("span");
-    s.title = b.titel;
-    s.innerHTML = "<i></i>";
-    s.addEventListener("click", () => spiele(i));
-    k.appendChild(s);
+/* ---------- Schnitt setzen ---------- */
+function zeigeSchnitt(i) {
+  if (i === aktuell || i < 0) return;
+  aktuell = i;
+  const sch = spot.schnitte[i];
+
+  ebenen.forEach(function (e, n) {
+    if (n !== i) { e.className = "bild"; }
   });
-}
 
-/* ---------- Rahmen verwalten ---------- */
-function neuerRahmen() {
-  const f = document.createElement("iframe");
-  f.setAttribute("allow", "autoplay; fullscreen");
-  f.setAttribute("scrolling", "no");
-  feld.insertBefore(f, blende);
-  return f;
-}
+  const e = ebenen[i];
+  e.className = "bild";
+  e.style.backgroundSize = "cover";
+  e.style.backgroundPosition = "center";
+  void e.offsetWidth;
+  e.className = "bild an " + (sch.art || "punch");
 
-function ladeIn(rahmenNr, i) {
-  if (i < 0 || i >= BLOECKE.length) return null;
-  if (!rahmen[rahmenNr]) rahmen[rahmenNr] = neuerRahmen();
-  const f = rahmen[rahmenNr];
-  if (f.dataset.block !== String(i)) {
-    f.dataset.block = String(i);
-    f.dataset.bereit = "";
-    f.src = BLOECKE[i].datei;
+  stoppeZip();
+  stoppeRaster();
+  // Zaehler gehoert nur zum Durchzippen
+  if (sch.art !== "zip" && sch.art !== "zipbild") el("zipzaehler").classList.remove("an");
+
+  if (sch.art === "zip")           starteZip(e, sch);
+  else if (sch.art === "zipbild")  starteZipBild(e, sch);
+  else if (sch.art === "raster")   starteRaster(sch);
+
+  if (sch.blitz) {
+    blitz.className = "blitz";
+    void blitz.offsetWidth;
+    blitz.className = "blitz an";
   }
-  return f;
+
+  stoerer.className = "stoerer";
+  stoerer.innerHTML = sch.stoerer || "";
+  if (sch.stoerer) {
+    if (i % 2 === 1) stoerer.classList.add("rechts");
+    if (sch.oben) stoerer.classList.add("oben");
+    void stoerer.offsetWidth;
+    stoerer.classList.add("an");
+  }
 }
 
-/* ---------- Das Medium in einem Rahmen finden ---------- */
-function medium(f) {
-  try {
-    const d = f.contentDocument;
-    if (!d) return null;
-    const alle = Array.prototype.slice.call(d.querySelectorAll("video, audio"));
-    // das längste Medium ist das eigentliche Programm, nicht die Kennung
-    let best = null;
-    alle.forEach(m => {
-      if (!m.duration || !isFinite(m.duration)) return;
-      if (!best || m.duration > best.duration) best = m;
-    });
-    return best;
-  } catch (e) { return null; }
+/* ---------- Durchzippen ---------- */
+let zipUhr = null;
+let zaehlUhr = null;
+let zipIndex = 0;
+
+function starteZipBild(ebene, sch) {
+  stoppeZip();
+  const z = sch.zip || {};
+  const takt = (z.takt || 0.62) * 1000;
+  const zTakt = (z.zaehlerTakt || 0.17) * 1000;
+  const bis = z.zaehlerBis || 30;
+  const namen = (z.welten && z.welten.length) ? z.welten : Object.keys(WELTEN);
+
+  zipIndex = 0;
+  if (z.namen) el("zipname").classList.add("an");   // Namen nur auf Wunsch
+  if (z.zaehler) el("zipzaehler").classList.add("an");
+
+  function schritt() {
+    const n = namen[zipIndex % namen.length];
+    const u = WELTEN[n];
+    if (u) ebene.style.backgroundImage = 'url("' + u + '")';
+    el("zipname").textContent = z.namen ? n : "";
+    zipIndex++;
+    if (zipIndex >= namen.length) { stoppeZip(true); return; }
+    zipUhr = setTimeout(schritt, takt);
+  }
+  schritt();
+
+  if (z.zaehler) {
+    let n = 0;
+    (function zaehlen() {
+      n++;
+      el("zipzaehler").innerHTML = n + "<small>erfasst</small>";
+      if (n < bis) zaehlUhr = setTimeout(zaehlen, zTakt);
+    })();
+  }
 }
 
-function starte(f) {
-  try {
-    const d = f.contentDocument;
-    if (!d) return false;
-    const k = d.getElementById("start-knopf");
-    if (!k) return false;
-    k.click();
-    return true;
-  } catch (e) { return false; }
+/* ---------- Raster der anderen Welten ---------- */
+function starteRaster(sch) {
+  const r = el("raster");
+  r.innerHTML = "";
+  const takt = ((sch.raster && sch.raster.takt) || 0.12);
+  Object.keys(ANDERE_WELTEN).forEach(function (name, i) {
+    const k = document.createElement("div");
+    k.className = "kachel";
+    k.style.animationDelay = (i * takt) + "s";
+    const b = document.createElement("img");
+    b.src = ANDERE_WELTEN[name]; b.alt = "";
+    b.addEventListener("error", function () { k.style.background = "#0b1a2e"; });
+    const t = document.createElement("span");
+    t.textContent = name;
+    k.appendChild(b); k.appendChild(t);
+    r.appendChild(k);
+  });
+  r.classList.add("an");
+}
+function stoppeRaster() { el("raster").classList.remove("an"); }
+
+function starteZip(ebene, sch) {
+  stoppeZip();
+  const z = sch.zip || {};
+  const lupe = z.lupe || 300;
+  const takt = (z.takt || 0.55) * 1000;          // Zeit pro Ort
+  const zTakt = (z.zaehlerTakt || 0.16) * 1000;  // Zeit pro Zaehlerschritt
+  const bis = z.zaehlerBis || 30;
+  const liste = (z.orte && z.orte.length)
+    ? ORTE.filter(function (o) { return z.orte.indexOf(o[0]) >= 0; })
+    : ORTE;
+
+  ebene.style.backgroundSize = lupe + "% auto";
+  zipIndex = 0;
+  el("kreuz").classList.add("an");
+  el("zipname").classList.add("an");
+  if (z.zaehler) el("zipzaehler").classList.add("an");
+
+  const faktor = lupe / 100;
+  function mitte(anteil) { return ((anteil / 100) * faktor - 0.5) * 100 / (faktor - 1); }
+
+  // Bildwechsel
+  function schritt() {
+    const o = liste[zipIndex % liste.length];
+    ebene.style.backgroundPosition = mitte(o[1]).toFixed(2) + "% " + mitte(o[2]).toFixed(2) + "%";
+    el("zipname").textContent = o[0];
+    zipIndex++;
+    if (zipIndex >= liste.length) { stoppeZip(true); return; }
+    zipUhr = setTimeout(schritt, takt);
+  }
+  schritt();
+
+  // Zaehler laeuft unabhaengig weiter, damit die Zahl stimmt
+  if (z.zaehler) {
+    let n = 0;
+    function zaehlen() {
+      n++;
+      el("zipzaehler").innerHTML = n + "<small>erfasst</small>";
+      if (n < bis) zaehlUhr = setTimeout(zaehlen, zTakt);
+    }
+    zaehlen();
+  }
 }
 
-/* ---------- Abspielen ---------- */
-function spiele(i) {
-  if (i < 0) i = 0;
-  if (i >= BLOECKE.length) { fertig(); return; }
-  index = i;
-
-  clearInterval(uhr);
-  blende.classList.add("an");
-  zeigeLaden(i);
-
-  // Läuft der Block schon im hinteren Rahmen? Dann nur tauschen.
-  const hinten = 1 - vorn;
-  let f;
-  if (rahmen[hinten] && rahmen[hinten].dataset.block === String(i)) {
-    f = rahmen[hinten];
-    vorn = hinten;
+function stoppeZip(halten) {
+  clearTimeout(zipUhr); zipUhr = null;
+  // Der Zaehler laeuft weiter, wenn die Bilder nur zu Ende sind
+  if (!halten) { clearTimeout(zaehlUhr); zaehlUhr = null; }
+  if (!halten) {
+    el("kreuz").classList.remove("an");
+    el("zipname").classList.remove("an");
+    el("zipzaehler").classList.remove("an");
   } else {
-    f = ladeIn(vorn, i);
+    el("kreuz").classList.remove("an");
+    el("zipname").classList.remove("an");
   }
-  rahmen.forEach((r, n) => r && r.classList.toggle("vorn", n === vorn));
-
-  // Warten, bis die Seite im Rahmen bereit ist, dann starten
-  let versuche = 0;
-  const warte = setInterval(() => {
-    versuche++;
-    if (starte(f)) {
-      clearInterval(warte);
-      setTimeout(() => {
-        blende.classList.remove("an");
-        versteckeLaden();
-        ueberwache(f, i);
-        ladeVor(i + 1);
-      }, 350);
-    } else if (versuche > 160) {        // nach 16 Sekunden aufgeben
-      clearInterval(warte);
-      blende.classList.remove("an");
-      versteckeLaden();
-      ueberwache(f, i);
-      ladeVor(i + 1);
-    }
-  }, 100);
 }
 
-/* Den nächsten Block still im zweiten Rahmen laden */
-function ladeVor(i) {
-  if (i >= BLOECKE.length) return;
-  ladeIn(1 - vorn, i);
-}
+function takt() {
+  const t = ton.currentTime;
+  let treffer = -1;
+  for (let i = 0; i < spot.schnitte.length; i++) {
+    if (t >= spot.schnitte[i].ab) treffer = i;
+  }
+  zeigeSchnitt(treffer);
+  klein.classList.toggle("an", !!(spot.klein && t >= spot.klein.ab));
 
-/* Auf das Ende des Blocks warten */
-function ueberwache(f, i) {
-  clearInterval(uhr);
-  uhr = setInterval(() => {
-    const m = medium(f);
-    const s = el("kette").children[i];
-    if (!m) { zeigeStand(i, 0, BLOECKE[i].dauer); return; }
-    zeigeStand(i, m.currentTime, m.duration);
-    if (s) {
-      const b = s.querySelector("i");
-      if (b) b.style.width = (m.currentTime / m.duration * 100) + "%";
-    }
-    // Ende erreicht
-    if (m.duration && m.currentTime >= m.duration - 0.35) {
-      clearInterval(uhr);
-      if (s) { s.classList.remove("jetzt"); s.classList.add("fertig"); }
-      spiele(i + 1);
-    }
-  }, 200);
+  const d = ton.duration && isFinite(ton.duration) ? ton.duration : 0;
+  el("zeit").textContent = t.toFixed(1) + " / " + d.toFixed(1);
+  el("fuell").style.width = d ? (t / d * 100) + "%" : "0";
 
-  Array.prototype.forEach.call(el("kette").children, (s, n) => {
-    s.classList.toggle("jetzt", n === i);
-    if (n < i) s.classList.add("fertig");
-    if (n > i) { s.classList.remove("fertig"); const b = s.querySelector("i"); if (b) b.style.width = "0"; }
-  });
-}
-
-function zeigeStand(i, t, d) {
-  const b = BLOECKE[i];
-  el("stand").textContent = "Block " + b.nummer + " · " + b.titel +
-    "  " + t.toFixed(0) + "/" + (d || b.dauer).toFixed(0) + " s";
-}
-
-function zeigeLaden(i) {
-  el("laden-titel").textContent  = BLOECKE[i].titel;
-  el("laden-nummer").textContent = "Block " + BLOECKE[i].nummer;
-  el("laden").classList.add("an");
-}
-function versteckeLaden() { el("laden").classList.remove("an"); }
-
-function fertig() {
-  clearInterval(uhr);
-  blende.classList.add("an");
-  el("laden-titel").textContent  = "Ende der Sendung";
-  el("laden-nummer").textContent = "SimsWelt News";
-  el("laden").classList.add("an");
+  requestAnimationFrame(takt);
 }
 
 /* ---------- Bedienung ---------- */
-el("start-knopf").addEventListener("click", () => {
+function start() {
   el("start").classList.add("weg");
-  el("leiste").classList.toggle("zeig", leisteAn);
-  baueKette();
-  spiele(0);
+  if (leisteAn) el("leiste").classList.add("zeig");
+  ton.currentTime = 0;
+  ton.play().catch(function () {});
+  requestAnimationFrame(takt);
+}
+el("start-knopf").addEventListener("click", start);
+el("start").addEventListener("click", function (e) {
+  if (e.target.closest("label")) return;
+  start();
 });
-el("knopf-weiter").addEventListener("click", () => spiele(index + 1));
-el("knopf-zurueck").addEventListener("click", () => spiele(Math.max(0, index - 1)));
-el("knopf-neu").addEventListener("click", () => spiele(index));
+el("datei-ton").addEventListener("change", function (e) {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  ton.src = URL.createObjectURL(f);
+  ton.load();
+});
+el("knopf-ton").addEventListener("click", function () { el("datei-ton").click(); });
 
-document.addEventListener("keydown", (e) => {
-  if (e.key === "b" || e.key === "B") {
-    e.preventDefault(); leisteAn = !leisteAn;
-    el("leiste").classList.toggle("zeig", leisteAn); return;
-  }
-  if (e.code === "Space") {
+el("spur").addEventListener("click", function (e) {
+  if (!ton.duration || !isFinite(ton.duration)) return;
+  const r = el("spur").getBoundingClientRect();
+  ton.currentTime = ((e.clientX - r.left) / r.width) * ton.duration;
+  aktuell = -1;
+  if (ton.paused) ton.play().catch(function () {});
+});
+
+function baueMarker() {
+  const spur = el("spur");
+  spur.querySelectorAll(".marker").forEach(function (m) { m.remove(); });
+  if (!ton.duration || !isFinite(ton.duration)) return;
+  spot.schnitte.forEach(function (sch) {
+    const m = document.createElement("span");
+    m.className = "marker";
+    m.style.left = (sch.ab / ton.duration * 100) + "%";
+    spur.appendChild(m);
+  });
+}
+ton.addEventListener("loadedmetadata", baueMarker);
+
+/* ---------- Schnittpunkt-Editor ---------- */
+function sek(v) { return Math.round(v * 10) / 10; }
+
+function baueZeiten() {
+  const liste = el("zeiten-liste");
+  liste.innerHTML = "";
+  spot.schnitte.forEach(function (sch, i) {
+    const z = document.createElement("div");
+    z.className = "zeile"; z.dataset.i = String(i);
+    const name = sch.bild.split("/").pop().replace(".png", "");
+    z.innerHTML = '<span class="titel">' + name +
+      '<small>' + sch.art + ' · ab ' + sch.ab.toFixed(1) + ' s</small></span>';
+    const a = document.createElement("button"); a.textContent = "jetzt";
+    a.addEventListener("click", function () {
+      sch.ab = sek(ton.currentTime);
+      aktuell = -1; baueZeiten(); baueMarker(); schreibeAusgabe();
+    });
+    z.appendChild(a);
+    liste.appendChild(z);
+  });
+  schreibeAusgabe();
+}
+
+function schreibeAusgabe() {
+  const zeilen = spot.schnitte.map(function (s) {
+    return '      { ab: ' + s.ab + ', bild: "' + s.bild + '", art: "' + s.art +
+      '", blitz: ' + (s.blitz ? "true" : "false") +
+      ', stoerer: "' + (s.stoerer || "").replace(/"/g, "'") + '" },';
+  }).join("\n");
+  el("zeiten-text").value = "schnitte: [\n" + zeilen + "\n    ],";
+}
+
+el("zeiten-ausgabe").addEventListener("click", function () {
+  el("zeiten").classList.toggle("ausgabe");
+  schreibeAusgabe();
+  const f = el("zeiten-text");
+  if (el("zeiten").classList.contains("ausgabe")) { f.focus(); f.select(); }
+});
+
+setInterval(function () {
+  if (!zeitenAn) return;
+  el("zeiten").querySelectorAll(".zeile").forEach(function (z) {
+    z.classList.toggle("jetzt", +z.dataset.i === aktuell);
+  });
+}, 200);
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "z" || e.key === "Z") {
     e.preventDefault();
-    const m = medium(rahmen[vorn]);
-    if (m) m.paused ? m.play() : m.pause();
+    zeitenAn = !zeitenAn;
+    el("zeiten").classList.toggle("zeig", zeitenAn);
+    if (zeitenAn) baueZeiten();
     return;
   }
-  if (e.key === "ArrowRight" && e.shiftKey) { e.preventDefault(); spiele(index + 1); return; }
-  if (e.key === "ArrowLeft"  && e.shiftKey) { e.preventDefault(); spiele(Math.max(0, index - 1)); return; }
-  // einfache Pfeile an den laufenden Block weiterreichen
-  const m = medium(rahmen[vorn]);
-  if (!m) return;
-  const weite = 5;
-  if (e.key === "ArrowRight") { e.preventDefault(); m.currentTime = Math.min(m.duration, m.currentTime + weite); }
-  if (e.key === "ArrowLeft")  { e.preventDefault(); m.currentTime = Math.max(0, m.currentTime - weite); }
+  if (e.key === "t" || e.key === "T") {
+    e.preventDefault();
+    leisteAn = !leisteAn;
+    el("leiste").classList.toggle("zeig", leisteAn);
+    return;
+  }
+  if (e.code === "Space") { e.preventDefault(); ton.paused ? ton.play() : ton.pause(); }
+  const weite = e.shiftKey ? 0.5 : 2;
+  if (e.key === "ArrowRight") { e.preventDefault(); ton.currentTime += weite; aktuell = -1; }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); ton.currentTime = Math.max(0, ton.currentTime - weite); aktuell = -1; }
+  if (e.key === "r" || e.key === "R") {
+    ton.pause(); aktuell = -1; stoppeZip();
+    el("start").classList.remove("weg");
+    el("leiste").classList.remove("zeig");
+  }
 });
+
+/* ===================================================================
+   Bilder aus dem Netz vorladen. Der Startknopf bleibt gesperrt, bis
+   alles da ist — im Spot selbst soll nichts mehr nachladen.
+   =================================================================== */
+(function ladeVor() {
+  const knopf = el("start-knopf");
+  const alteBeschriftung = knopf.textContent;
+  const pfade = Object.keys(WELTEN).map(function (k) { return WELTEN[k]; })
+    .concat(Object.keys(ANDERE_WELTEN).map(function (k) { return ANDERE_WELTEN[k]; }));
+
+  let offen = pfade.length;
+  let fertig = false;
+
+  function nachsehen() {
+    offen--;
+    if (!fertig) knopf.textContent = "Lädt… " + (pfade.length - offen) + " / " + pfade.length;
+    if (offen <= 0) freigeben();
+  }
+  function freigeben() {
+    if (fertig) return;
+    fertig = true;
+    knopf.disabled = false;
+    knopf.textContent = alteBeschriftung;
+  }
+
+  knopf.disabled = true;
+  knopf.textContent = "Lädt… 0 / " + pfade.length;
+  pfade.forEach(function (u) {
+    const b = new Image();
+    b.addEventListener("load", nachsehen);
+    b.addEventListener("error", nachsehen);
+    b.src = u;
+  });
+  // Notbremse: nach 15 Sekunden geht es auch ohne
+  setTimeout(freigeben, 15000);
+})();
+
+ladeSpot(SPOTS[0]);
 </script>
 </body>
 </html>
