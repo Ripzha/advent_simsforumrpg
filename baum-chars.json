@@ -1,0 +1,414 @@
+{
+ "chars": [
+  {
+   "name": "Abeena Silva",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t706p6885n2_uAFLDeRp.png"
+  },
+  {
+   "name": "Adrian 'Chip' Töpfer",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51849t333p3261n2_wKVxUJiv.png"
+  },
+  {
+   "name": "Aidaria Mara",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t164p2346n2_aZtoIzBy.png"
+  },
+  {
+   "name": "Alma Garcia-Klein",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51849t96p1067n2_tiIKUZan.png"
+  },
+  {
+   "name": "Ambrosius Fassbinder",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t311p3222n2_JfghxsHD.png"
+  },
+  {
+   "name": "Anastasia Komarowa",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t313p3228n4_gMErKlRI.png"
+  },
+  {
+   "name": "Anouk 'Nouki' Jaspers",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51849t358p3355n12_WYTdnSEg.png"
+  },
+  {
+   "name": "Arnim Falck",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51850t500p4248n4_MCGPtpgY.png"
+  },
+  {
+   "name": "Artjom Komarow",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51849t266p3123n6_pONUjywg.png"
+  },
+  {
+   "name": "Aurelia Blutzahn",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51851t474p3820n2_NTAiPIXh.png"
+  },
+  {
+   "name": "Bea Greentail",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51849t117p1156n5_oNbBDXSp.png"
+  },
+  {
+   "name": "Bella Greentail",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t115p1131n2_XavgqyBw.png"
+  },
+  {
+   "name": "Ben Hawk",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51849t89p967n2_lvpCtjsX.png"
+  },
+  {
+   "name": "Bertram \"Bertl\" Töpfer",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t342p3286n2_VRUbBhOk.png"
+  },
+  {
+   "name": "Boom Boom",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t544p4677n2_XihRpGvk.png"
+  },
+  {
+   "name": "Chase Rodríguez",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51850t290p3169n3_IbFRUBpr.png"
+  },
+  {
+   "name": "David Janko",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t583p5177n2_vMxYpyem.png"
+  },
+  {
+   "name": "Delaila Mayr",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t457p3699n2_ZLnxsfBj.png"
+  },
+  {
+   "name": "Delsyn Fisher",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51850t280p3149n69_WyifUhNI.png"
+  },
+  {
+   "name": "Dennah Delany",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t530p4408n2_zyxOQAhS.png"
+  },
+  {
+   "name": "Dylan Sievers",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51851t569p5024n5_xudyBCFh.png"
+  },
+  {
+   "name": "Edward Cotter",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51850t376p3428n3_eSZcwauV.png"
+  },
+  {
+   "name": "Eliah Clark",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t636p5820n3_bstaRNwH.png"
+  },
+  {
+   "name": "Ellie Hawk",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51849t87p959n7_SCIdEpnv.png"
+  },
+  {
+   "name": "Emily Jaspers",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t405p3531n7_JFPtNqUl.png"
+  },
+  {
+   "name": "Eva Weidner",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t337p3278n2_jPULAoKX.png"
+  },
+  {
+   "name": "Eve Monahr",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51850t264p3121n14_NjhxCdYo.png"
+  },
+  {
+   "name": "Felix Janko",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t586p5183n2_VCOSJmAG.png"
+  },
+  {
+   "name": "Gerda Karlotta Simmer",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51849t647p5986n2_jzHYMEQP.jpg"
+  },
+  {
+   "name": "Gereon Castillo",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51850t529p4407n7_EOUgWLFc.png"
+  },
+  {
+   "name": "Gerhard 'Gary' Bärenklau",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t411p3573n2_huiwKoLS.png"
+  },
+  {
+   "name": "Hannah Garcia-Klein",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t98p1074n2_tMvSlnds.png"
+  },
+  {
+   "name": "Hepzibah",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t427p3624n2_vjuDqHrB.png"
+  },
+  {
+   "name": "Horst Klein",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t97p1073n2_mTUGuqOV.png"
+  },
+  {
+   "name": "Iona Hemsley",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51850t377p3429n4_sEhceJWF.png"
+  },
+  {
+   "name": "Irving Carter Blaisdell",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51850t262p3119n3_WSxHBrfU.png"
+  },
+  {
+   "name": "Jack Elliot",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t682p6595n6_FCvJRagV.png"
+  },
+  {
+   "name": "Jackson McEven",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51849t324p3245n9_RgIXNwAq.png"
+  },
+  {
+   "name": "Jacob Bresk",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t112p1110n2_EaoXOPHc.png"
+  },
+  {
+   "name": "Jarred Cunningham",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t535p4457n2_VtcFsIQX.png"
+  },
+  {
+   "name": "Jenna Grey",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t118p1255n5_wqoulpDK.png"
+  },
+  {
+   "name": "Jim Schmitt",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t177p2434n2_oiJpZcly.png"
+  },
+  {
+   "name": "José Garcia-Lopez",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t99p1075n2_MCfUyzYK.png"
+  },
+  {
+   "name": "Julius Vinkrath",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t101p1077n2_BhzmdElO.png"
+  },
+  {
+   "name": "Lilly Nebeljäger",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51849t84p832n10_sKjaghdk.png"
+  },
+  {
+   "name": "Logan",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51849t124p1455n2_nzmTtUAd.png"
+  },
+  {
+   "name": "Lucía Garcia-Lopez",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t110p1108n2_OgANpveK.png"
+  },
+  {
+   "name": "Margarethe \"Marga\" Töpfer",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t335p3267n2_cFDhmSkL.png"
+  },
+  {
+   "name": "Marina Winter",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t102p1078n2_uOAlIYpW.png"
+  },
+  {
+   "name": "Marley Carter",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t468p3796n2_VqNzWyku.png"
+  },
+  {
+   "name": "Maryama 'Asha' Loh-Se",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51849t308p3218n2_JPlYSvuT.png"
+  },
+  {
+   "name": "Mayve Odenthal",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51850t499p4246n2_tjTBLzaQ.png"
+  },
+  {
+   "name": "Melissa Palm",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51850t284p3160n2_EyTdtaWr.png"
+  },
+  {
+   "name": "Nael Garcia-Klein",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51849t94p1061n2_qVeMpZmF.png"
+  },
+  {
+   "name": "Nicole Bresk",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t113p1112n2_tBKrGZqc.png"
+  },
+  {
+   "name": "Ornella Appelbeck",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t571p5027n2_ftCNoiQG.png"
+  },
+  {
+   "name": "Phönix Bright",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t510p4276n2_TiIDFXbS.png"
+  },
+  {
+   "name": "Ragnar",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51850t422p3610n6_zkoiuNgH.png"
+  },
+  {
+   "name": "Raphael Funnell",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t472p3810n7_CPSrJMhz.png"
+  },
+  {
+   "name": "Raphael Jaspers",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t407p3533n2_EkSCQlHe.png"
+  },
+  {
+   "name": "Ravik",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51850t424p3613n6_eWPUKgDp.png"
+  },
+  {
+   "name": "Reese Wilk",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51850t614p5472n3_QFnfioUa.png"
+  },
+  {
+   "name": "Robinia Appelbeck",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t570p5026n2_spryFNGS.png"
+  },
+  {
+   "name": "Roman Walker",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51850t285p3162n2_PvNHfikK.png"
+  },
+  {
+   "name": "Ronja Thaler",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t615p5480n2_ScLiqEzs.png"
+  },
+  {
+   "name": "Sarah Bärenklau",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t312p3223n2_rMFAvYge.png"
+  },
+  {
+   "name": "Secco DeVir",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51850t493p4228n3_jAGXoWqf.png"
+  },
+  {
+   "name": "Serena Hummel",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t567p5022n2_lZUuKkxv.png"
+  },
+  {
+   "name": "Shane McEven",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51849t80p698n4_OtlcxEMF.png"
+  },
+  {
+   "name": "Sullivan 'Blaze' Blaisdell",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51849t78p696n45_MwAYiQDf.png"
+  },
+  {
+   "name": "Tabea Eichhorn",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t568p5023n2_DFJmcjIE.png"
+  },
+  {
+   "name": "Theo Greentail",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t116p1136n6_GOyjIJLo.png"
+  },
+  {
+   "name": "Tomasz Kowalski",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51850t526p4401n8_pBgzuEOh.png"
+  },
+  {
+   "name": "Vaas Del Toro",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x600/f51850t654p6083n3_BXKGgNPS.png"
+  },
+  {
+   "name": "Valentin Klein",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t106p1089n2_GTRyWHAc.png"
+  },
+  {
+   "name": "Veronika Blanch",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t230p2844n2_vLizlxnX.png"
+  },
+  {
+   "name": "Vex",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51850t456p3693n15_ATXfYktC.png"
+  },
+  {
+   "name": "Victor Borkowski",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51850t127p1495n2_RxMfHiNK.png"
+  },
+  {
+   "name": "Viktor Nebeljäger",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/f51849t85p853n2_MIwuXPBY.png"
+  },
+  {
+   "name": "Viola Nebeljäger",
+   "typ": "Hauptcharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51849t86p866n2_pbeQqWnX.png"
+  },
+  {
+   "name": "Yasmin Primrose",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/600x9999/f51850t418p3587n2_eKZEhVOj.png"
+  },
+  {
+   "name": "Yitzhak Hanan",
+   "typ": "Nebencharakter",
+   "portrait": "https://files.homepagemodules.de/b855163/resize/1920x1200/f51850t711p6949n2_dGveQXiM.png"
+  }
+ ]
+}
