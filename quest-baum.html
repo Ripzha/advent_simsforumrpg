@@ -223,6 +223,9 @@ const MAX_KANTE = 520;
 
 /* ================= Zustand ================= */
 const admin = new URLSearchParams(location.search).get('admin') || '';
+// Vorschau aufs Ratespiel vor dem 24. — gleiche Kennung wie die Admin-Ansicht:
+// quest-baum.html?vorschau=DEINPASSWORT
+const vorschau = new URLSearchParams(location.search).get('vorschau') || '';
 let chars = [], belegt = [], baumDaten = [], reveal = false;
 let gewaehlterChar = null, fertigesBild = null;
 let quelleCanvas = null, arbeitCanvas = null, radiererAn = false;
@@ -350,7 +353,8 @@ async function ladeAlles() {
 
 async function ladeBaum() {
   try {
-    const url = APPS_SCRIPT_URL + '?action=baum' + (admin ? '&bpw=' + encodeURIComponent(admin) : '');
+    const kennung = admin || vorschau;
+    const url = APPS_SCRIPT_URL + '?action=baum' + (kennung ? '&bpw=' + encodeURIComponent(kennung) : '');
     const daten = await holeJson(url);
     if (daten.ok === false) {
       toast(daten.grund === 'passwort' ? 'Admin-Passwort stimmt nicht.' : 'Fehler beim Laden.');
@@ -358,7 +362,7 @@ async function ladeBaum() {
     }
     baumDaten = daten.baum || [];
     belegt = daten.belegt || [];
-    reveal = !!daten.reveal;
+    reveal = !!daten.reveal || !!vorschau;
     zeichneBaum();
     if (reveal && !admin) starteRatespiel();
   } catch (err) {
@@ -823,9 +827,11 @@ function starteRatespiel() {
   el('hauptknoepfe').style.display = 'none';
   const bereich = el('ratebereich');
   bereich.style.display = 'block';
-  el('unterzeile').textContent = 'Der Baum ist fertig. Wer hat was aufgehängt?';
+  el('unterzeile').textContent = vorschau
+    ? 'Vorschau — so sieht es am 24. Dezember aus.'
+    : 'Der Baum ist fertig. Wer hat was aufgehängt?';
 
-  const schonGespielt = localStorage.getItem('baum_geraten');
+  const schonGespielt = vorschau ? null : localStorage.getItem('baum_geraten');
   const namen = baumDaten.map(g => g.charakter).filter(Boolean).sort();
 
   let html = '<h2 style="color:var(--gold);font-weight:normal;font-size:20px">Wer war das?</h2>';
@@ -856,7 +862,7 @@ function starteRatespiel() {
     });
     el('punkte').textContent = richtig + ' von ' + baumDaten.length + ' richtig';
     el('btnAuswerten').disabled = true;
-    localStorage.setItem('baum_geraten', String(richtig));
+    if (!vorschau) localStorage.setItem('baum_geraten', String(richtig));
   });
 
   if (schonGespielt !== null) {
