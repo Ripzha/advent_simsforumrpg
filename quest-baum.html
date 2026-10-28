@@ -713,7 +713,9 @@ el('btnSenden').addEventListener('click', async function () {
       if (grund === 'belegt') toast('Dieser Charakter hat schon etwas aufgehängt.');
       else if (grund === 'zu-gross') toast('Das Bild ist zu gross.');
       else if (grund === 'kein-ordner') toast('Im Apps Script fehlt die Ordner-ID.');
-      else toast('Das Aufhängen hat nicht geklappt. Versuch es nochmal.');
+      else if (grund === 'format') toast('Dieses Bildformat geht nicht.');
+      else toast('Fehler vom Server: ' + (grund || 'unbekannt'), 9000);
+      console.log('Antwort vom Apps Script:', antwort);
     }
   } catch (err) {
     toast('Keine Verbindung. Versuch es gleich nochmal.');
@@ -898,9 +900,14 @@ ladeAlles();
   document.addEventListener('touchmove', e => {
     if (e.touches.length > 1) e.preventDefault();
   }, { passive: false });
-  ['contextmenu','gesturestart','gesturechange','selectstart','dblclick'].forEach(name => {
+  ['gesturestart','gesturechange','selectstart','dblclick'].forEach(name => {
     document.addEventListener(name, e => e.preventDefault(), { passive: false });
   });
+  // Das Rechtsklick-Menue nur auf Geraeten mit Finger-Bedienung unterdruecken,
+  // damit es am Rechner weiter benutzbar bleibt
+  if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+    document.addEventListener('contextmenu', e => e.preventDefault(), { passive: false });
+  }
 })();
 </script>
 </body>
