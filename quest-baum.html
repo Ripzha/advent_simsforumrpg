@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gib dem Baum Charakter</title>
+<style>
+/* ===================================================================
+   EINSTELLUNGEN STEHEN IM SCRIPT GANZ UNTEN BEI "EINSTELLUNGEN"
+   =================================================================== */
+:root{
+  --gruen:#1d3b2a; --gruen-hell:#2c5440; --gold:#d9b25f; --creme:#f3ead7;
+  --rot:#8d2b2b; --schrift:'Georgia',serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--gruen);color:var(--creme);
+  font-family:var(--schrift);overscroll-behavior:none}
+body{touch-action:manipulation;-webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none}
+.wrap{max-width:1100px;margin:0 auto;padding:12px}
+h1{font-size:26px;margin:4px 0 2px;color:var(--gold);font-weight:normal;letter-spacing:.5px}
+.unter{font-size:14px;opacity:.75;margin:0 0 10px}
+
+/* --- Bühne mit dem Baum --- */
+.buehne{position:relative;width:100%;margin:0 auto;border-radius:10px;overflow:hidden;
+  background:#0d1f16;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.buehne img.baum{display:block;width:100%;height:auto}
+.stueck{position:absolute;transform-origin:center center;pointer-events:none;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+.stueck img{display:block;width:100%;height:auto;pointer-events:none}
+.stueck.klickbar{pointer-events:auto;cursor:pointer}
+.stueck.gewaehlt{outline:2px dashed var(--gold);outline-offset:3px}
+.stueck.ziehbar{pointer-events:auto;cursor:grab;touch-action:none}
+.nummer{position:absolute;top:-10px;left:-10px;background:var(--gold);color:#2a1d05;
+  width:22px;height:22px;border-radius:50%;font-size:13px;line-height:22px;text-align:center}
+
+/* --- Knöpfe --- */
+.reihe{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+button{font-family:var(--schrift);font-size:15px;padding:10px 18px;border-radius:8px;
+  border:1px solid var(--gold);background:var(--gold);color:#2a1d05;cursor:pointer}
+button.leer{background:transparent;color:var(--gold)}
+button:disabled{opacity:.4;cursor:default}
+button.klein{padding:6px 12px;font-size:13px}
+
+/* --- Dialog --- */
+.dialog{position:fixed;inset:0;background:rgba(5,14,10,.92);z-index:50;
+  display:none;overflow-y:auto;padding:16px}
+.dialog.auf{display:block}
+.karte{max-width:620px;margin:0 auto;background:var(--gruen-hell);border:1px solid rgba(217,178,95,.4);
+  border-radius:12px;padding:18px}
+.karte h2{margin:0 0 6px;font-size:20px;color:var(--gold);font-weight:normal}
+.karte p.hinweis{font-size:13px;opacity:.8;margin:0 0 14px;line-height:1.5}
+.schritt{display:none}
+.schritt.aktiv{display:block}
+
+/* --- Freistellen --- */
+.leinwand-feld{background:
+   linear-gradient(45deg,#2a3b31 25%,transparent 25%,transparent 75%,#2a3b31 75%),
+   linear-gradient(45deg,#2a3b31 25%,#35483c 25%,#35483c 75%,#2a3b31 75%);
+  background-size:18px 18px;background-position:0 0,9px 9px;
+  border-radius:8px;padding:8px;text-align:center}
+canvas.vorschau{max-width:100%;max-height:46vh;touch-action:none;cursor:crosshair}
+.regler{display:flex;align-items:center;gap:10px;font-size:13px;margin:10px 0}
+.regler input[type=range]{flex:1}
+
+/* --- Charakterwahl --- */
+input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(217,178,95,.4);
+  background:#162c20;color:var(--creme);font-family:var(--schrift);font-size:15px}
+.charliste{max-height:40vh;overflow-y:auto;margin-top:10px;border-radius:8px}
+.charzeile{display:flex;align-items:center;gap:10px;padding:7px 9px;cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.06)}
+.charzeile:hover{background:rgba(217,178,95,.12)}
+.charzeile.aus{opacity:.35;cursor:default}
+.charzeile.gewaehlt{background:rgba(217,178,95,.22)}
+.charzeile img{width:34px;height:34px;border-radius:50%;object-fit:cover;background:#162c20}
+.charzeile .nm{font-size:15px}
+.charzeile .tp{font-size:11px;opacity:.6}
+
+/* --- Meldungen --- */
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:90;
+  background:#162c20;border:1px solid var(--gold);color:var(--creme);
+  padding:11px 18px;border-radius:9px;font-size:14px;max-width:88vw;text-align:center;
+  opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.an{opacity:1}
+.laden{text-align:center;padding:30px;opacity:.7;font-size:14px}
+
+/* --- Ratespiel --- */
+.ratekarte{background:var(--gruen-hell);border:1px solid rgba(217,178,95,.3);border-radius:10px;
+  padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+.ratekarte img.obj{width:70px;height:70px;object-fit:contain}
+.ratekarte select{flex:1;padding:9px;border-radius:7px;background:#162c20;color:var(--creme);
+  border:1px solid rgba(217,178,95,.4);font-family:var(--schrift);font-size:14px}
+.ratekarte.richtig{border-color:#5f9e6b}
+.ratekarte.falsch{border-color:var(--rot)}
+.aufloesung{font-size:13px;margin-top:4px}
+.punkte{font-size:19px;color:var(--gold);text-align:center;margin:14px 0}
+
+/* --- Adminleiste --- */
+.adminleiste{background:#162c20;border:1px solid var(--rot);border-radius:9px;padding:10px;margin:10px 0}
+.adminleiste .titel{color:var(--gold);font-size:14px;margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1 id="kopf">Gib dem Baum Charakter</h1>
+  <p class="unter" id="unterzeile">Lasst uns zusammen den Baum schmücken.</p>
+
+  <div class="buehne" id="buehne">
+    <img class="baum" id="baumbild" alt="Weihnachtsbaum">
+  </div>
+
+  <div class="reihe" id="hauptknoepfe">
+    <button id="btnStart">Gegenstand aufhängen</button>
+    <span id="zaehler" style="font-size:13px;opacity:.7"></span>
+  </div>
+
+  <div class="adminleiste" id="adminleiste" style="display:none">
+    <div class="titel">Admin-Ansicht</div>
+    <div class="reihe">
+      <button class="klein leer" id="btnExport">Bild exportieren</button>
+      <button class="klein leer" id="btnLoeschen" disabled>Ausgewähltes löschen</button>
+      <span id="adminInfo" style="font-size:13px;opacity:.75"></span>
+    </div>
+    <div class="regler"><span>Grösse</span><input type="range" id="aGroesse" min="2" max="40" step="0.5" disabled></div>
+    <div class="regler"><span>Drehung</span><input type="range" id="aDrehung" min="-60" max="60" step="1" disabled></div>
+  </div>
+
+  <div id="ratebereich" style="display:none"></div>
+</div>
+
+<!-- ================= Dialog ================= -->
+<div class="dialog" id="dialog">
+  <div class="karte">
+
+    <!-- Schritt 1: Bild wählen -->
+    <div class="schritt aktiv" id="s1">
+      <h2>Was hängt dein Charakter auf?</h2>
+      <p class="hinweis">Such dir ein Bild von dem Gegenstand — gezeichnet, fotografiert, aus dem Netz
+      oder generiert, alles erlaubt. Der Hintergrund wird gleich automatisch entfernt.
+      Am besten klappt es mit Bildern, auf denen der Gegenstand frei vor einem einfarbigen Hintergrund steht.</p>
+      <input type="file" id="datei" accept="image/*">
+      <div class="reihe"><button class="leer" id="btnAbbruch1">Abbrechen</button></div>
+    </div>
+
+    <!-- Schritt 2: Freistellen -->
+    <div class="schritt" id="s2">
+      <h2>Freistellen</h2>
+      <p class="hinweis">Der Hintergrund ist entfernt. Passt es nicht, zieh am Regler.
+      Mit dem Radierer kannst du Reste wegwischen — Finger oder Maus über die Stelle ziehen.</p>
+      <div class="leinwand-feld"><canvas class="vorschau" id="leinwand"></canvas></div>
+      <div class="regler"><span>Stärke</span><input type="range" id="toleranz" min="5" max="120" value="32"></div>
+      <div class="reihe">
+        <button class="klein leer" id="btnRadierer">Radierer aus</button>
+        <button class="klein leer" id="btnKi">Schwieriges Bild</button>
+        <button class="klein leer" id="btnZurueck2">Von vorn</button>
+      </div>
+      <div class="reihe">
+        <button class="leer" id="btnAbbruch2">Abbrechen</button>
+        <button id="btnWeiter2">Weiter</button>
+      </div>
+    </div>
+
+    <!-- Schritt 3: Charakter -->
+    <div class="schritt" id="s3">
+      <h2>Wer hängt das auf?</h2>
+      <p class="hinweis">Jeder Charakter darf einen Gegenstand beisteuern. Wer schon dran war,
+      steht ausgegraut in der Liste. Der Name bleibt bis zum 24. Dezember geheim.</p>
+      <input type="text" id="suche" placeholder="Namen suchen">
+      <div class="charliste" id="charliste"></div>
+      <div class="reihe">
+        <button class="leer" id="btnAbbruch3">Abbrechen</button>
+        <button id="btnWeiter3" disabled>Weiter</button>
+      </div>
+    </div>
+
+    <!-- Schritt 4: Platzieren -->
+    <div class="schritt" id="s4">
+      <h2>Platz aussuchen</h2>
+      <p class="hinweis">Zieh deinen Gegenstand an die gewünschte Stelle am Baum.
+      Mit den Reglern stellst du Grösse und Drehung ein.</p>
+      <div class="regler"><span>Grösse</span><input type="range" id="pGroesse" min="3" max="28" step="0.5" value="10"></div>
+      <div class="regler"><span>Drehung</span><input type="range" id="pDrehung" min="-40" max="40" step="1" value="0"></div>
+      <div class="reihe">
+        <button class="leer" id="btnAbbruch4">Abbrechen</button>
+        <button id="btnSenden">Aufhängen</button>
+      </div>
+    </div>
+
+    <!-- Schritt 5: Fertig -->
+    <div class="schritt" id="s5">
+      <h2>Hängt</h2>
+      <p class="hinweis" id="fertigText">Dein Gegenstand hängt jetzt am Baum.
+      Am 24. Dezember wird aufgelöst, wer was aufgehängt hat.</p>
+      <div class="reihe"><button id="btnSchliessen">Schliessen</button></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================================================================
+   EINSTELLUNGEN
+   =================================================================== */
+
+// Die /exec-URL deines Apps Scripts
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxKRKsfh_2YFkS5a5kpDYWSQImA1lEq3ndnVJj4YpPqWcLrqmUinp-l4WA93e5U79MPA/exec';
+
+// Das Baumbild. Liegt es im Repo unter bilder/, reicht der relative Pfad.
+const BAUM_BILD_URL = 'bilder/baum.png';
+
+// Datei mit den Charakteren
+const CHARS_URL = 'baum-chars.json';
+
+// Bereich, in dem aufgehängt werden darf — Prozent vom Bild (links, oben, rechts, unten).
+// Verhindert, dass Gegenstände im Himmel oder im Schnee schweben.
+const ZONE = { x1: 6, y1: 8, x2: 62, y2: 88 };
+
+// Längste Kante des hochgeladenen Bildes nach dem Verkleinern
+const MAX_KANTE = 520;
+
+/* ================= Zustand ================= */
+const admin = new URLSearchParams(location.search).get('admin') || '';
+let chars = [], belegt = [], baumDaten = [], reveal = false;
+let gewaehlterChar = null, fertigesBild = null;
+let quelleCanvas = null, arbeitCanvas = null, radiererAn = false;
+let neuesStueck = null, adminGewaehlt = null;
+
+const el = id => document.getElementById(id);
+const buehne = el('buehne');
+
+/* ================= Helfer ================= */
+function toast(text, dauer) {
+  const t = el('toast');
+  t.textContent = text;
+  t.classList.add('an');
+  clearTimeout(t._z);
+  t._z = setTimeout(() => t.classList.remove('an'), dauer || 2600);
+}
+
+// Apps Script liefert gelegentlich eine Fehlerseite statt JSON — darum mehrere Versuche
+async function holeJson(url, versuche) {
+  versuche = versuche || 3;
+  for (let i = 0; i < versuche; i++) {
+    try {
+      const antwort = await fetch(url, { cache: 'no-store' });
+      const text = await antwort.text();
+      return JSON.parse(text);
+    } catch (err) {
+      if (i === versuche - 1) throw err;
+      await new Promise(r => setTimeout(r, 700 * (i + 1)));
+    }
+  }
+}
+
+async function sendeJson(daten, versuche) {
+  versuche = versuche || 3;
+  for (let i = 0; i < versuche; i++) {
+    try {
+      // Ohne eigenen Content-Type, sonst fragt der Browser vorher per OPTIONS nach
+      const antwort = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(daten) });
+      return JSON.parse(await antwort.text());
+    } catch (err) {
+      if (i === versuche - 1) throw err;
+      await new Promise(r => setTimeout(r, 900 * (i + 1)));
+    }
+  }
+}
+
+function zeigeSchritt(nr) {
+  ['s1','s2','s3','s4','s5'].forEach((s, i) => {
+    el(s).classList.toggle('aktiv', i === nr - 1);
+  });
+  el('dialog').classList.add('auf');
+  // Beim Platzieren muss der Baum sichtbar bleiben
+  el('dialog').style.background = (nr === 4) ? 'rgba(5,14,10,.55)' : 'rgba(5,14,10,.92)';
+  el('dialog').style.pointerEvents = (nr === 4) ? 'none' : 'auto';
+  document.querySelector('#dialog .karte').style.pointerEvents = 'auto';
+  if (nr === 4) {
+    const k = document.querySelector('#dialog .karte');
+    k.style.position = 'fixed';
+    k.style.left = '50%';
+    k.style.bottom = '10px';
+    k.style.top = 'auto';
+    k.style.transform = 'translateX(-50%)';
+    k.style.width = 'min(620px, 94vw)';
+  } else {
+    const k = document.querySelector('#dialog .karte');
+    k.style.position = '';
+    k.style.left = ''; k.style.bottom = ''; k.style.top = '';
+    k.style.transform = ''; k.style.width = '';
+  }
+}
+
+function schliesseDialog() {
+  el('dialog').classList.remove('auf');
+  el('dialog').style.pointerEvents = 'auto';
+  if (neuesStueck) { neuesStueck.remove(); neuesStueck = null; }
+}
+
+/* ================= Baum zeichnen ================= */
+function zeichneBaum() {
+  buehne.querySelectorAll('.stueck').forEach(s => s.remove());
+  baumDaten.forEach((g, index) => {
+    const d = document.createElement('div');
+    d.className = 'stueck' + (admin ? ' ziehbar' : '');
+    d.dataset.id = g.id;
+    d.style.left = g.x + '%';
+    d.style.top = g.y + '%';
+    d.style.width = g.breite + '%';
+    d.style.transform = 'translate(-50%,-50%) rotate(' + g.rotation + 'deg)';
+    const bild = document.createElement('img');
+    bild.src = g.bild_url;
+    bild.alt = '';
+    bild.onerror = function () {
+      // Zweiter Weg, falls die erste Drive-Adresse klemmt
+      if (!this._zweit && g.bild_url.indexOf('lh3.googleusercontent.com/d/') !== -1) {
+        this._zweit = true;
+        const id = g.bild_url.split('/d/')[1].split('=')[0];
+        this.src = 'https://drive.google.com/thumbnail?id=' + id + '&sz=w900';
+      }
+    };
+    d.appendChild(bild);
+    if (admin) {
+      const n = document.createElement('span');
+      n.className = 'nummer';
+      n.textContent = index + 1;
+      d.appendChild(n);
+      ziehbarMachen(d, g);
+    }
+    buehne.appendChild(d);
+  });
+  el('zaehler').textContent = baumDaten.length
+    ? baumDaten.length + ' Gegenstände hängen schon'
+    : 'Noch ist der Baum leer';
+}
+
+/* ================= Daten laden ================= */
+async function ladeAlles() {
+  try {
+    const antwort = await fetch(CHARS_URL, { cache: 'no-store' });
+    chars = (await antwort.json()).chars || [];
+  } catch (err) {
+    toast('Die Charakterliste konnte nicht geladen werden.');
+  }
+  await ladeBaum();
+}
+
+async function ladeBaum() {
+  try {
+    const url = APPS_SCRIPT_URL + '?action=baum' + (admin ? '&bpw=' + encodeURIComponent(admin) : '');
+    const daten = await holeJson(url);
+    if (daten.ok === false) {
+      toast(daten.grund === 'passwort' ? 'Admin-Passwort stimmt nicht.' : 'Fehler beim Laden.');
+      return;
+    }
+    baumDaten = daten.baum || [];
+    belegt = daten.belegt || [];
+    reveal = !!daten.reveal;
+    zeichneBaum();
+    if (reveal && !admin) starteRatespiel();
+  } catch (err) {
+    toast('Der Baum konnte nicht geladen werden. Lade die Seite neu.');
+  }
+}
+
+/* ================= Schritt 1: Datei ================= */
+el('datei').addEventListener('change', function () {
+  const datei = this.files && this.files[0];
+  if (!datei) return;
+  const leser = new FileReader();
+  leser.onload = e => {
+    const bild = new Image();
+    bild.onload = () => {
+      verkleinereInQuelle(bild);
+      zeigeSchritt(2);
+      freistellen(Number(el('toleranz').value));
+    };
+    bild.onerror = () => toast('Dieses Bild konnte nicht gelesen werden.');
+    bild.src = e.target.result;
+  };
+  leser.readAsDataURL(datei);
+});
+
+function verkleinereInQuelle(bild) {
+  const faktor = Math.min(1, MAX_KANTE / Math.max(bild.width, bild.height));
+  const b = Math.round(bild.width * faktor), h = Math.round(bild.height * faktor);
+  quelleCanvas = document.createElement('canvas');
+  quelleCanvas.width = b; quelleCanvas.height = h;
+  quelleCanvas.getContext('2d').drawImage(bild, 0, 0, b, h);
+}
+
+/* ================= Schritt 2: Freistellen ================= */
+// Flutfüllung von allen vier Ecken aus. Alles, was von aussen zusammenhängend
+// ähnlich gefärbt ist, gilt als Hintergrund.
+function freistellen(toleranz) {
+  if (!quelleCanvas) return;
+  const b = quelleCanvas.width, h = quelleCanvas.height;
+  arbeitCanvas = document.createElement('canvas');
+  arbeitCanvas.width = b; arbeitCanvas.height = h;
+  const ctx = arbeitCanvas.getContext('2d');
+  ctx.drawImage(quelleCanvas, 0, 0);
+  const bild = ctx.getImageData(0, 0, b, h);
+  const px = bild.data;
+  const besucht = new Uint8Array(b * h);
+  const stapel = [];
+
+  function start(x, y) {
+    const i = y * b + x;
+    if (!besucht[i]) { besucht[i] = 1; stapel.push(i); }
+  }
+  for (let x = 0; x < b; x++) { start(x, 0); start(x, h - 1); }
+  for (let y = 0; y < h; y++) { start(0, y); start(b - 1, y); }
+
+  // Referenzfarbe ist der Mittelwert der vier Ecken
+  let rS = 0, gS = 0, bS = 0;
+  const ecken = [0, (b - 1) * 4, (h - 1) * b * 4, ((h - 1) * b + b - 1) * 4];
+  ecken.forEach(p => { rS += px[p]; gS += px[p + 1]; bS += px[p + 2]; });
+  const rR = rS / 4, gR = gS / 4, bR = bS / 4;
+  const grenze = toleranz * toleranz * 3;
+
+  while (stapel.length) {
+    const i = stapel.pop();
+    const p = i * 4;
+    const dr = px[p] - rR, dg = px[p + 1] - gR, db = px[p + 2] - bR;
+    if (dr * dr + dg * dg + db * db > grenze) continue;
+    px[p + 3] = 0;
+    const x = i % b, y = (i - x) / b;
+    if (x > 0 && !besucht[i - 1]) { besucht[i - 1] = 1; stapel.push(i - 1); }
+    if (x < b - 1 && !besucht[i + 1]) { besucht[i + 1] = 1; stapel.push(i + 1); }
+    if (y > 0 && !besucht[i - b]) { besucht[i - b] = 1; stapel.push(i - b); }
+    if (y < h - 1 && !besucht[i + b]) { besucht[i + b] = 1; stapel.push(i + b); }
+  }
+
+  ctx.putImageData(bild, 0, 0);
+  weicheKanten(ctx, b, h);
+  zeigeVorschau();
+}
+
+// Kanten leicht glätten, damit keine harte Treppe stehen bleibt
+function weicheKanten(ctx, b, h) {
+  const bild = ctx.getImageData(0, 0, b, h);
+  const px = bild.data;
+  const alt = new Uint8ClampedArray(b * h);
+  for (let i = 0; i < b * h; i++) alt[i] = px[i * 4 + 3];
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < b - 1; x++) {
+      const i = y * b + x;
+      if (alt[i] === 0) continue;
+      let summe = 0;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) summe += alt[i + dy * b + dx];
+      const mittel = summe / 9;
+      if (mittel < 255) px[i * 4 + 3] = Math.round(mittel);
+    }
+  }
+  ctx.putImageData(bild, 0, 0);
+}
+
+function zeigeVorschau() {
+  const leinwand = el('leinwand');
+  leinwand.width = arbeitCanvas.width;
+  leinwand.height = arbeitCanvas.height;
+  const ctx = leinwand.getContext('2d');
+  ctx.clearRect(0, 0, leinwand.width, leinwand.height);
+  ctx.drawImage(arbeitCanvas, 0, 0);
+}
+
+el('toleranz').addEventListener('input', function () {
+  radiererAn = false;
+  el('btnRadierer').textContent = 'Radierer aus';
+  freistellen(Number(this.value));
+});
+
+el('btnZurueck2').addEventListener('click', () => {
+  el('toleranz').value = 32;
+  freistellen(32);
+});
+
+el('btnRadierer').addEventListener('click', function () {
+  radiererAn = !radiererAn;
+  this.textContent = radiererAn ? 'Radierer an' : 'Radierer aus';
+});
+
+// Radierer
+(function () {
+  const leinwand = el('leinwand');
+  let malt = false;
+  function radiere(ev) {
+    if (!radiererAn || !arbeitCanvas) return;
+    const feld = leinwand.getBoundingClientRect();
+    const x = (ev.clientX - feld.left) / feld.width * arbeitCanvas.width;
+    const y = (ev.clientY - feld.top) / feld.height * arbeitCanvas.height;
+    const ctx = arbeitCanvas.getContext('2d');
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(8, arbeitCanvas.width * 0.035), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    zeigeVorschau();
+  }
+  leinwand.addEventListener('pointerdown', e => { malt = true; radiere(e); });
+  leinwand.addEventListener('pointermove', e => { if (malt) radiere(e); });
+  window.addEventListener('pointerup', () => { malt = false; });
+})();
+
+// Freistellen per Modell, wenn die Flutfüllung nicht reicht
+el('btnKi').addEventListener('click', async function () {
+  if (!quelleCanvas) return;
+  const knopf = this;
+  knopf.disabled = true;
+  knopf.textContent = 'Lädt …';
+  toast('Beim ersten Mal dauert das eine Weile, das Modell wird geladen.', 5000);
+  try {
+    const modul = await import('https://esm.sh/@imgly/background-removal@1.7.0');
+    const entferne = modul.removeBackground || modul.default;
+    const rohBlob = await new Promise(r => quelleCanvas.toBlob(r, 'image/png'));
+    const ergebnis = await entferne(rohBlob);
+    const bild = new Image();
+    bild.onload = () => {
+      arbeitCanvas = document.createElement('canvas');
+      arbeitCanvas.width = bild.width;
+      arbeitCanvas.height = bild.height;
+      arbeitCanvas.getContext('2d').drawImage(bild, 0, 0);
+      zeigeVorschau();
+      knopf.disabled = false;
+      knopf.textContent = 'Schwieriges Bild';
+      URL.revokeObjectURL(bild.src);
+    };
+    bild.src = URL.createObjectURL(ergebnis);
+  } catch (err) {
+    knopf.disabled = false;
+    knopf.textContent = 'Schwieriges Bild';
+    toast('Das hat nicht geklappt. Nimm den Regler und den Radierer.', 4000);
+  }
+});
+
+// Auf den sichtbaren Teil zuschneiden
+function zuschneiden(canvas) {
+  const b = canvas.width, h = canvas.height;
+  const px = canvas.getContext('2d').getImageData(0, 0, b, h).data;
+  let x1 = b, y1 = h, x2 = -1, y2 = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < b; x++) {
+      if (px[(y * b + x) * 4 + 3] > 12) {
+        if (x < x1) x1 = x;
+        if (x > x2) x2 = x;
+        if (y < y1) y1 = y;
+        if (y > y2) y2 = y;
+      }
+    }
+  }
+  if (x2 < 0) return null;
+  const neu = document.createElement('canvas');
+  neu.width = x2 - x1 + 1;
+  neu.height = y2 - y1 + 1;
+  neu.getContext('2d').drawImage(canvas, x1, y1, neu.width, neu.height, 0, 0, neu.width, neu.height);
+  return neu;
+}
+
+el('btnWeiter2').addEventListener('click', () => {
+  const zu = zuschneiden(arbeitCanvas);
+  if (!zu) { toast('Da ist nichts mehr übrig. Nimm den Regler zurück.'); return; }
+  fertigesBild = zu.toDataURL('image/png');
+  if (fertigesBild.length > 1300000) {
+    toast('Das Bild ist zu gross. Nimm ein kleineres.');
+    return;
+  }
+  baueCharliste();
+  zeigeSchritt(3);
+});
+
+/* ================= Schritt 3: Charakter ================= */
+function baueCharliste() {
+  const suche = el('suche').value.trim().toLowerCase();
+  const liste = el('charliste');
+  liste.innerHTML = '';
+  const belegtKlein = belegt.map(n => String(n).toLowerCase().trim());
+  let gezeigt = 0;
+  chars.forEach(c => {
+    if (suche && c.name.toLowerCase().indexOf(suche) === -1) return;
+    gezeigt++;
+    const istBelegt = belegtKlein.indexOf(c.name.toLowerCase().trim()) !== -1;
+    const zeile = document.createElement('div');
+    zeile.className = 'charzeile' + (istBelegt ? ' aus' : '');
+    zeile.innerHTML =
+      '<img src="' + (c.portrait || '') + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+      '<div><div class="nm">' + c.name + '</div>' +
+      '<div class="tp">' + (istBelegt ? 'hat schon etwas aufgehängt' : c.typ) + '</div></div>';
+    if (!istBelegt) {
+      zeile.addEventListener('click', () => {
+        liste.querySelectorAll('.charzeile').forEach(z => z.classList.remove('gewaehlt'));
+        zeile.classList.add('gewaehlt');
+        gewaehlterChar = c.name;
+        el('btnWeiter3').disabled = false;
+      });
+    }
+    liste.appendChild(zeile);
+  });
+  if (!gezeigt) liste.innerHTML = '<div class="laden">Kein Charakter mit diesem Namen.</div>';
+}
+el('suche').addEventListener('input', baueCharliste);
+
+el('btnWeiter3').addEventListener('click', () => {
+  if (!gewaehlterChar) return;
+  zeigeSchritt(4);
+  setzeNeuesStueck();
+});
+
+/* ================= Schritt 4: Platzieren ================= */
+function setzeNeuesStueck() {
+  if (neuesStueck) neuesStueck.remove();
+  neuesStueck = document.createElement('div');
+  neuesStueck.className = 'stueck ziehbar gewaehlt';
+  neuesStueck.style.left = ((ZONE.x1 + ZONE.x2) / 2) + '%';
+  neuesStueck.style.top = ((ZONE.y1 + ZONE.y2) / 2) + '%';
+  neuesStueck.style.width = el('pGroesse').value + '%';
+  neuesStueck.style.transform = 'translate(-50%,-50%) rotate(0deg)';
+  const bild = document.createElement('img');
+  bild.src = fertigesBild;
+  neuesStueck.appendChild(bild);
+  buehne.appendChild(neuesStueck);
+  ziehbarMachen(neuesStueck, null);
+  buehne.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function ziehbarMachen(element, datensatz) {
+  let zieht = false, startX = 0, startY = 0, startL = 0, startT = 0;
+  element.addEventListener('pointerdown', ev => {
+    if (admin && datensatz) waehleAdminStueck(datensatz, element);
+    zieht = true;
+    element.setPointerCapture(ev.pointerId);
+    startX = ev.clientX; startY = ev.clientY;
+    startL = parseFloat(element.style.left);
+    startT = parseFloat(element.style.top);
+    ev.preventDefault();
+  });
+  element.addEventListener('pointermove', ev => {
+    if (!zieht) return;
+    const feld = buehne.getBoundingClientRect();
+    let neuL = startL + (ev.clientX - startX) / feld.width * 100;
+    let neuT = startT + (ev.clientY - startY) / feld.height * 100;
+    if (!admin) {
+      neuL = Math.min(ZONE.x2, Math.max(ZONE.x1, neuL));
+      neuT = Math.min(ZONE.y2, Math.max(ZONE.y1, neuT));
+    } else {
+      neuL = Math.min(100, Math.max(0, neuL));
+      neuT = Math.min(100, Math.max(0, neuT));
+    }
+    element.style.left = neuL + '%';
+    element.style.top = neuT + '%';
+  });
+  element.addEventListener('pointerup', async ev => {
+    if (!zieht) return;
+    zieht = false;
+    if (admin && datensatz) {
+      datensatz.x = parseFloat(element.style.left);
+      datensatz.y = parseFloat(element.style.top);
+      await speichereAdmin(datensatz);
+    }
+  });
+}
+
+el('pGroesse').addEventListener('input', function () {
+  if (neuesStueck) neuesStueck.style.width = this.value + '%';
+});
+el('pDrehung').addEventListener('input', function () {
+  if (neuesStueck) neuesStueck.style.transform = 'translate(-50%,-50%) rotate(' + this.value + 'deg)';
+});
+
+// Etwas zur Seite rücken, falls der Platz schon besetzt ist
+function weicheAus(x, y, breite) {
+  for (let versuch = 0; versuch < 24; versuch++) {
+    let frei = true;
+    for (let i = 0; i < baumDaten.length; i++) {
+      const g = baumDaten[i];
+      const abstand = Math.hypot(x - g.x, (y - g.y) * 0.7);
+      if (abstand < (breite + g.breite) * 0.35) { frei = false; break; }
+    }
+    if (frei) return { x: x, y: y };
+    const winkel = versuch * 1.9;
+    x = Math.min(ZONE.x2, Math.max(ZONE.x1, x + Math.cos(winkel) * (2 + versuch * 0.7)));
+    y = Math.min(ZONE.y2, Math.max(ZONE.y1, y + Math.sin(winkel) * (2 + versuch * 0.7)));
+  }
+  return { x: x, y: y };
+}
+
+el('btnSenden').addEventListener('click', async function () {
+  if (!neuesStueck || !fertigesBild || !gewaehlterChar) return;
+  this.disabled = true;
+  this.textContent = 'Wird aufgehängt …';
+  const breite = parseFloat(neuesStueck.style.width);
+  const platz = weicheAus(parseFloat(neuesStueck.style.left), parseFloat(neuesStueck.style.top), breite);
+  try {
+    const antwort = await sendeJson({
+      action: 'baum_save',
+      charakter: gewaehlterChar,
+      bild: fertigesBild,
+      x: platz.x, y: platz.y,
+      breite: breite,
+      rotation: Number(el('pDrehung').value)
+    });
+    if (antwort && antwort.ok) {
+      neuesStueck.remove();
+      neuesStueck = null;
+      await ladeBaum();
+      zeigeSchritt(5);
+    } else {
+      const grund = antwort && antwort.grund;
+      if (grund === 'belegt') toast('Dieser Charakter hat schon etwas aufgehängt.');
+      else if (grund === 'zu-gross') toast('Das Bild ist zu gross.');
+      else if (grund === 'kein-ordner') toast('Im Apps Script fehlt die Ordner-ID.');
+      else toast('Das Aufhängen hat nicht geklappt. Versuch es nochmal.');
+    }
+  } catch (err) {
+    toast('Keine Verbindung. Versuch es gleich nochmal.');
+  }
+  this.disabled = false;
+  this.textContent = 'Aufhängen';
+});
+
+/* ================= Admin ================= */
+function waehleAdminStueck(datensatz, element) {
+  adminGewaehlt = { daten: datensatz, element: element };
+  buehne.querySelectorAll('.stueck').forEach(s => s.classList.remove('gewaehlt'));
+  element.classList.add('gewaehlt');
+  el('aGroesse').disabled = false;
+  el('aDrehung').disabled = false;
+  el('btnLoeschen').disabled = false;
+  el('aGroesse').value = datensatz.breite;
+  el('aDrehung').value = datensatz.rotation;
+  el('adminInfo').textContent = datensatz.charakter || '';
+}
+
+async function speichereAdmin(datensatz) {
+  const antwort = await sendeJson({
+    action: 'baum_admin', bpw: admin, op: 'move', id: datensatz.id,
+    x: datensatz.x, y: datensatz.y, breite: datensatz.breite, rotation: datensatz.rotation
+  });
+  if (!antwort || !antwort.ok) toast('Nicht gespeichert.');
+}
+
+el('aGroesse').addEventListener('input', function () {
+  if (!adminGewaehlt) return;
+  adminGewaehlt.daten.breite = Number(this.value);
+  adminGewaehlt.element.style.width = this.value + '%';
+});
+el('aDrehung').addEventListener('input', function () {
+  if (!adminGewaehlt) return;
+  adminGewaehlt.daten.rotation = Number(this.value);
+  adminGewaehlt.element.style.transform = 'translate(-50%,-50%) rotate(' + this.value + 'deg)';
+});
+el('aGroesse').addEventListener('change', () => adminGewaehlt && speichereAdmin(adminGewaehlt.daten));
+el('aDrehung').addEventListener('change', () => adminGewaehlt && speichereAdmin(adminGewaehlt.daten));
+
+el('btnLoeschen').addEventListener('click', async () => {
+  if (!adminGewaehlt) return;
+  if (!confirm('Gegenstand von ' + adminGewaehlt.daten.charakter + ' entfernen?')) return;
+  const antwort = await sendeJson({ action: 'baum_admin', bpw: admin, op: 'delete', id: adminGewaehlt.daten.id });
+  if (antwort && antwort.ok) {
+    adminGewaehlt = null;
+    el('btnLoeschen').disabled = true;
+    await ladeBaum();
+    toast('Entfernt.');
+  } else {
+    toast('Hat nicht geklappt.');
+  }
+});
+
+// Fertiges Bild zusammensetzen. Die Gegenstände kommen als base64 über das Skript,
+// sonst sperrt der Browser die Leinwand und der Export schlägt fehl.
+el('btnExport').addEventListener('click', async function () {
+  this.disabled = true;
+  this.textContent = 'Sammelt …';
+  try {
+    const baum = el('baumbild');
+    const leinwand = document.createElement('canvas');
+    leinwand.width = baum.naturalWidth || 1200;
+    leinwand.height = baum.naturalHeight || 1600;
+    const ctx = leinwand.getContext('2d');
+    ctx.drawImage(baum, 0, 0, leinwand.width, leinwand.height);
+
+    for (let i = 0; i < baumDaten.length; i++) {
+      const g = baumDaten[i];
+      const antwort = await holeJson(APPS_SCRIPT_URL + '?action=baum_bild&id=' +
+        encodeURIComponent(g.id) + '&bpw=' + encodeURIComponent(admin));
+      if (!antwort || !antwort.ok) continue;
+      const bild = await new Promise((loesen, fehler) => {
+        const b = new Image();
+        b.onload = () => loesen(b);
+        b.onerror = fehler;
+        b.src = antwort.daten;
+      });
+      const breitePx = leinwand.width * g.breite / 100;
+      const hoehePx = breitePx * bild.height / bild.width;
+      ctx.save();
+      ctx.translate(leinwand.width * g.x / 100, leinwand.height * g.y / 100);
+      ctx.rotate(g.rotation * Math.PI / 180);
+      ctx.drawImage(bild, -breitePx / 2, -hoehePx / 2, breitePx, hoehePx);
+      ctx.restore();
+      this.textContent = 'Sammelt … ' + (i + 1) + '/' + baumDaten.length;
+    }
+
+    const link = document.createElement('a');
+    link.download = 'weihnachtsbaum.png';
+    link.href = leinwand.toDataURL('image/png');
+    link.click();
+    toast('Bild gespeichert.');
+  } catch (err) {
+    toast('Export fehlgeschlagen.');
+  }
+  this.disabled = false;
+  this.textContent = 'Bild exportieren';
+});
+
+/* ================= Ratespiel ab dem 24. ================= */
+function starteRatespiel() {
+  el('hauptknoepfe').style.display = 'none';
+  const bereich = el('ratebereich');
+  bereich.style.display = 'block';
+  el('unterzeile').textContent = 'Der Baum ist fertig. Wer hat was aufgehängt?';
+
+  const schonGespielt = localStorage.getItem('baum_geraten');
+  const namen = baumDaten.map(g => g.charakter).filter(Boolean).sort();
+
+  let html = '<h2 style="color:var(--gold);font-weight:normal;font-size:20px">Wer war das?</h2>';
+  baumDaten.forEach((g, i) => {
+    html += '<div class="ratekarte" data-i="' + i + '">' +
+      '<img class="obj" src="' + g.bild_url + '" alt="">' +
+      '<select data-i="' + i + '"><option value="">Charakter wählen</option>' +
+      namen.map(n => '<option value="' + n + '">' + n + '</option>').join('') +
+      '</select></div>';
+  });
+  html += '<div class="reihe"><button id="btnAuswerten">Auswerten</button></div>' +
+          '<div class="punkte" id="punkte"></div>';
+  bereich.innerHTML = html;
+
+  el('btnAuswerten').addEventListener('click', () => {
+    let richtig = 0;
+    bereich.querySelectorAll('select').forEach(auswahl => {
+      const i = Number(auswahl.dataset.i);
+      const karte = auswahl.closest('.ratekarte');
+      const stimmt = auswahl.value === baumDaten[i].charakter;
+      if (stimmt) richtig++;
+      karte.classList.add(stimmt ? 'richtig' : 'falsch');
+      auswahl.disabled = true;
+      const loesung = document.createElement('div');
+      loesung.className = 'aufloesung';
+      loesung.textContent = stimmt ? 'Richtig' : 'Das war ' + baumDaten[i].charakter;
+      karte.appendChild(loesung);
+    });
+    el('punkte').textContent = richtig + ' von ' + baumDaten.length + ' richtig';
+    el('btnAuswerten').disabled = true;
+    localStorage.setItem('baum_geraten', String(richtig));
+  });
+
+  if (schonGespielt !== null) {
+    el('punkte').textContent = 'Beim letzten Mal hattest du ' + schonGespielt + ' richtig.';
+  }
+}
+
+/* ================= Knöpfe ================= */
+el('btnStart').addEventListener('click', () => {
+  if (reveal) { toast('Der Baum ist fertig geschmückt.'); return; }
+  gewaehlterChar = null;
+  fertigesBild = null;
+  el('datei').value = '';
+  el('btnWeiter3').disabled = true;
+  zeigeSchritt(1);
+});
+['btnAbbruch1','btnAbbruch2','btnAbbruch3','btnAbbruch4','btnSchliessen']
+  .forEach(id => el(id).addEventListener('click', schliesseDialog));
+
+/* ================= Start ================= */
+el('baumbild').src = BAUM_BILD_URL;
+el('baumbild').onerror = function () {
+  this.style.display = 'none';
+  buehne.style.minHeight = '60vh';
+  toast('Das Baumbild fehlt noch. Trag es oben bei BAUM_BILD_URL ein.', 5000);
+};
+if (admin) {
+  el('adminleiste').style.display = 'block';
+  el('hauptknoepfe').style.display = 'none';
+}
+ladeAlles();
+
+/* ================= Touch-Härtung fürs Handy ================= */
+(function () {
+  let letzterTipp = 0;
+  document.addEventListener('touchend', e => {
+    const jetzt = Date.now();
+    if (jetzt - letzterTipp < 350) e.preventDefault();
+    letzterTipp = jetzt;
+  }, { passive: false });
+  document.addEventListener('touchmove', e => {
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  ['contextmenu','gesturestart','gesturechange','selectstart','dblclick'].forEach(name => {
+    document.addEventListener(name, e => e.preventDefault(), { passive: false });
+  });
+})();
+</script>
+</body>
+</html>
