@@ -209,14 +209,31 @@ input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxKRKsfh_2YFkS5a5kpDYWSQImA1lEq3ndnVJj4YpPqWcLrqmUinp-l4WA93e5U79MPA/exec';
 
 // Das Baumbild. Liegt es im Repo unter bilder/, reicht der relative Pfad.
-const BAUM_BILD_URL = 'bilder/baum.png';
+const BAUM_BILD_URL = 'bilder/baum.jpg';
 
 // Datei mit den Charakteren
 const CHARS_URL = 'baum-chars.json';
 
-// Bereich, in dem aufgehängt werden darf — Prozent vom Bild (links, oben, rechts, unten).
-// Verhindert, dass Gegenstände im Himmel oder im Schnee schweben.
-const ZONE = { x1: 6, y1: 8, x2: 62, y2: 88 };
+// Bereich, in dem aufgehängt werden darf — als Dreieck, das der Baumform folgt.
+// Alle Werte in Prozent vom Bild. spitzeX/spitzeY ist die Baumspitze,
+// linksX/rechtsX die beiden unteren Ecken auf Höhe untenY.
+const ZONE = { spitzeX: 37, spitzeY: 7, linksX: 17, rechtsX: 58, untenY: 87 };
+
+// Liefert den erlaubten waagrechten Bereich auf einer bestimmten Höhe
+function zoneBreite(y) {
+  const anteil = Math.min(1, Math.max(0, (y - ZONE.spitzeY) / (ZONE.untenY - ZONE.spitzeY)));
+  return {
+    links: ZONE.spitzeX + (ZONE.linksX - ZONE.spitzeX) * anteil,
+    rechts: ZONE.spitzeX + (ZONE.rechtsX - ZONE.spitzeX) * anteil
+  };
+}
+
+// Haelt einen Punkt innerhalb des Dreiecks
+function inDieZone(x, y) {
+  const neuY = Math.min(ZONE.untenY, Math.max(ZONE.spitzeY, y));
+  const bereich = zoneBreite(neuY);
+  return { x: Math.min(bereich.rechts, Math.max(bereich.links, x)), y: neuY };
+}
 
 // Längste Kante des hochgeladenen Bildes nach dem Verkleinern
 const MAX_KANTE = 520;
@@ -619,8 +636,8 @@ function setzeNeuesStueck() {
   if (neuesStueck) neuesStueck.remove();
   neuesStueck = document.createElement('div');
   neuesStueck.className = 'stueck ziehbar gewaehlt';
-  neuesStueck.style.left = ((ZONE.x1 + ZONE.x2) / 2) + '%';
-  neuesStueck.style.top = ((ZONE.y1 + ZONE.y2) / 2) + '%';
+  neuesStueck.style.left = ZONE.spitzeX + '%';
+  neuesStueck.style.top = ((ZONE.spitzeY + ZONE.untenY) / 2) + '%';
   neuesStueck.style.width = el('pGroesse').value + '%';
   neuesStueck.style.transform = 'translate(-50%,-50%) rotate(0deg)';
   const bild = document.createElement('img');
@@ -648,8 +665,9 @@ function ziehbarMachen(element, datensatz) {
     let neuL = startL + (ev.clientX - startX) / feld.width * 100;
     let neuT = startT + (ev.clientY - startY) / feld.height * 100;
     if (!admin) {
-      neuL = Math.min(ZONE.x2, Math.max(ZONE.x1, neuL));
-      neuT = Math.min(ZONE.y2, Math.max(ZONE.y1, neuT));
+      const gehalten = inDieZone(neuL, neuT);
+      neuL = gehalten.x;
+      neuT = gehalten.y;
     } else {
       neuL = Math.min(100, Math.max(0, neuL));
       neuT = Math.min(100, Math.max(0, neuT));
@@ -686,8 +704,12 @@ function weicheAus(x, y, breite) {
     }
     if (frei) return { x: x, y: y };
     const winkel = versuch * 1.9;
-    x = Math.min(ZONE.x2, Math.max(ZONE.x1, x + Math.cos(winkel) * (2 + versuch * 0.7)));
-    y = Math.min(ZONE.y2, Math.max(ZONE.y1, y + Math.sin(winkel) * (2 + versuch * 0.7)));
+    const gehalten = inDieZone(
+      x + Math.cos(winkel) * (2 + versuch * 0.7),
+      y + Math.sin(winkel) * (2 + versuch * 0.7)
+    );
+    x = gehalten.x;
+    y = gehalten.y;
   }
   return { x: x, y: y };
 }
