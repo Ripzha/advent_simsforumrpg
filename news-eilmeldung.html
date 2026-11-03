@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimsWelt News — Eilmeldung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   SIMSWELT NEWS — Eilmeldung
+   Drei Dinge lassen sich hier einstellen:
+     Sprünge      Abschnitte, die beim Abspielen übersprungen werden
+     Vollbild     Einblendungen, die das Video ganz verdecken
+     Kasten       Standbild neben der Moderatorin
+   Alles über die Spur (V) oder die Liste (Z).
+   =================================================================== */
+
+:root {
+  --nacht:       #040a14;
+  --navy:        #08192e;
+  --silber:      #c9d6e4;
+  --weiss:       #ffffff;
+  --messing:     #c9992f;
+  --messing-hell:#e8c877;
+  --rot:         #c0182b;
+
+  --kasten-rechts:  4.5%;
+  --kasten-oben:   15.0%;
+  --kasten-breite: 31.0%;
+
+  --binde-links:  4.5%;
+  --binde-unten: 15.0%;
+
+  --marke: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --eng:   "Barlow Condensed", "Arial Narrow", sans-serif;
+  --text:  "Barlow", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: #02060c; font-family: var(--text); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.bühne {
+  position: relative; aspect-ratio: 16 / 9;
+  width: min(100vw, calc(100vh * 16 / 9)); height: auto;
+  background: #000; overflow: hidden; container-type: size;
+}
+
+#clip, .vollbild video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; background: var(--nacht);
+}
+#clip { z-index: 2; }
+
+/* ---------- Vollbild-Einblendungen ---------- */
+.vollbild {
+  position: absolute; inset: 0; z-index: 8; opacity: 0;
+  transition: opacity 0.35s ease; pointer-events: none;
+}
+.vollbild.an { opacity: 1; }
+.vollbild .zeile {
+  position: absolute; left: 4.5%; bottom: 14%;
+  background: rgba(6,16,30,0.94); border-left: 5px solid var(--messing);
+  padding: 0.5em 1.2em 0.55em 0.9em;
+}
+.vollbild .zeile b {
+  display: block; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(12px, 1.7vw, 29px); color: var(--weiss); line-height: 1.05;
+}
+.vollbild .zeile span {
+  display: block; margin-top: 0.2em; font-family: var(--eng); font-weight: 600;
+  font-size: clamp(9px, 1vw, 17px); letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--messing-hell);
+}
+
+/* ---------- Raute und Senderkennung ---------- */
+.raute { display: inline-block; position: relative; width: .30em; height: .62em; margin: 0 .085em; }
+.raute::before { content: ""; position: absolute; inset: 0;   background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.raute::after  { content: ""; position: absolute; inset: 22%; background: var(--nacht);   clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+
+.kennung {
+  position: absolute; top: 4.2%; right: 3.2%; z-index: 22;
+  display: flex; align-items: baseline; gap: 0.7em;
+  font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.5vw, 25px); letter-spacing: -0.012em;
+  color: var(--weiss); text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.kennung.sichtbar { opacity: 1; }
+.kennung .news { color: var(--messing-hell); }
+.kennung .uhr {
+  font-family: var(--eng); font-weight: 600; font-size: 0.66em;
+  letter-spacing: 0.22em; color: var(--silber);
+  padding-left: 0.75em; border-left: 1px solid rgba(201,214,228,0.35);
+}
+
+/* ---------- Eilmeldungsbalken ---------- */
+.eilmarke {
+  position: absolute; left: 3.2%; top: 4.4%; z-index: 23;
+  display: flex; align-items: center; gap: 0.5em;
+  background: var(--rot); color: var(--weiss);
+  font-family: var(--eng); font-weight: 700;
+  font-size: clamp(10px, 1.25vw, 21px); letter-spacing: 0.22em;
+  padding: 0.3em 0.9em 0.34em;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  opacity: 0; transform: translateY(-6px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.eilmarke.sichtbar { opacity: 1; transform: translateY(0); }
+.eilmarke i { width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--weiss);
+  animation: pulsen 1.6s ease-in-out infinite; }
+@keyframes pulsen { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* ---------- Kasten neben der Moderatorin ---------- */
+.kasten {
+  position: absolute; right: var(--kasten-rechts); top: var(--kasten-oben);
+  width: var(--kasten-breite); z-index: 15;
+  opacity: 0; transform: translateX(16px);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2,0.8,0.3,1);
+}
+.kasten.sichtbar { opacity: 1; transform: none; }
+.kasten .rahmen {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  border: 2px solid var(--messing); overflow: hidden; background: var(--nacht);
+  box-shadow: 0 12px 38px rgba(0,0,0,0.65);
+}
+.kasten .rahmen img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; opacity: 0; transition: opacity 0.5s ease;
+}
+.kasten .rahmen img.an { opacity: 1; }
+.kasten .zeile {
+  margin-top: 6px; background: rgba(6,16,30,0.94);
+  border-left: 4px solid var(--messing); padding: 0.5em 0.9em 0.55em;
+}
+.kasten .zeile b { display: block; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.55vw, 26px); line-height: 1.06; color: var(--weiss); }
+.kasten .zeile span { display: block; margin-top: 0.2em; font-family: var(--eng); font-weight: 600;
+  font-size: clamp(9px, 0.98vw, 16px); letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--messing-hell); }
+
+/* ---------- Bauchbinde ---------- */
+.binde {
+  position: absolute; left: var(--binde-links); bottom: var(--binde-unten);
+  z-index: 18; display: flex; align-items: stretch;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.binde.sichtbar { opacity: 1; transform: translateY(0); }
+.binde .flagge { background: var(--messing); color: #0a1220;
+  font-family: var(--eng); font-weight: 700; font-size: clamp(9px, 1.05vw, 18px);
+  letter-spacing: 0.18em; display: flex; align-items: center; padding: 0 0.9em; }
+.binde .inhalt { background: rgba(6,16,30,0.94); border-left: 1px solid rgba(201,214,228,0.22);
+  padding: 0.55em 2em 0.6em 1.05em; }
+.binde .name { font-family: var(--marke); font-weight: 800; font-size: clamp(12px, 1.65vw, 28px);
+  line-height: 1.06; color: var(--weiss); }
+.binde .rolle { font-family: var(--eng); font-weight: 600; font-size: clamp(9px, 1vw, 17px);
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--messing-hell); }
+
+/* ---------- Zeitleiste ---------- */
+.leiste {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 88;
+  display: none; align-items: center; gap: 0.9em; padding: 0.5em 1em 0.6em;
+  background: linear-gradient(0deg, rgba(4,10,20,0.95), rgba(4,10,20,0.6));
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; color: var(--messing-hell);
+}
+.leiste.zeig { display: flex; }
+.leiste .zeit { flex: 0 0 auto; min-width: 13em; }
+.leiste .spur2 { position: relative; flex: 1 1 auto; height: 16px; background: rgba(201,214,228,0.14); cursor: pointer; }
+.leiste .füll { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing); }
+.leiste .sprung { position: absolute; top: 0; bottom: 0; background: rgba(192,24,43,0.55); }
+.leiste button { flex: 0 0 auto; font-family: inherit; font-size: 11px; letter-spacing: 0.06em;
+  color: var(--nacht); background: var(--messing-hell); border: none; padding: 0.45em 0.9em; cursor: pointer; }
+.leiste button:hover { background: var(--weiss); }
+.leiste .hinweis { flex: 0 0 auto; color: var(--silber); font-size: 11px; }
+
+/* ---------- Spur zum Ziehen ---------- */
+.spuren {
+  position: absolute; left: 2%; right: 2%; bottom: 10%; z-index: 93;
+  display: none; flex-direction: column; gap: 4px;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  padding: 0.6em 0.8em 0.7em; font-family: var(--text); font-size: 12px; color: var(--weiss);
+}
+.spuren.zeig { display: flex; }
+.spur-kopf { display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--eng); font-weight: 600; font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--silber); }
+.spur-zeit { color: var(--messing-hell); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.spur-zeile { display: flex; align-items: center; gap: 0.7em; }
+.spur-zeile b { flex: 0 0 5.4em; font-family: var(--eng); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--messing-hell); }
+.spur-feld { position: relative; flex: 1 1 auto; height: 28px;
+  background: rgba(201,214,228,0.1); overflow: hidden; }
+.spur-feld .kopf { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--weiss); z-index: 5; }
+.spur-feld .block {
+  position: absolute; top: 3px; bottom: 3px; background: var(--messing); color: var(--nacht);
+  font-family: var(--eng); font-weight: 700; font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; display: flex; align-items: center; padding: 0 0.5em;
+  overflow: hidden; white-space: nowrap; cursor: grab; user-select: none;
+}
+.spur-feld .block.sprungblock { background: var(--rot); color: var(--weiss); }
+.spur-feld .block:hover { filter: brightness(1.2); }
+.spur-feld .block .rand { position: absolute; right: 0; top: 0; bottom: 0; width: 7px;
+  background: rgba(4,10,20,0.45); cursor: ew-resize; }
+#spur-rest { color: var(--silber); }
+#spur-rest button { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px;
+  border: 1px solid rgba(232,200,119,0.5); background: transparent; color: var(--messing-hell);
+  padding: 0.2em 0.45em; margin-left: 0.35em; cursor: pointer; }
+#spur-rest button:hover { background: var(--messing); color: var(--nacht); }
+
+/* ---------- Liste ---------- */
+.zeiten {
+  position: absolute; left: 1.5%; top: 2%; bottom: 12%; width: 31%; min-width: 330px;
+  z-index: 92; display: none; flex-direction: column;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  font-family: var(--text); font-size: 12px; color: var(--weiss);
+}
+.zeiten.zeig { display: flex; }
+.zeiten.rechts { left: auto; right: 1.5%; }
+.zeiten h3 { margin: 0; padding: 0.7em 0.9em; font-size: 12px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--nacht); background: var(--messing-hell); }
+.zeiten .liste { flex: 1 1 auto; overflow-y: auto; padding: 0.4em 0.6em; }
+.zeiten .zeile { display: grid; grid-template-columns: 1fr auto auto auto; gap: 0.35em;
+  align-items: center; padding: 0.4em 0.3em; border-bottom: 1px solid rgba(201,214,228,0.14); }
+.zeiten .zeile.jetzt { background: rgba(201,153,47,0.22); }
+.zeiten .titel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zeiten .titel small { display: block; color: var(--silber); font-size: 10px; }
+.zeiten button { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+  border: 1px solid rgba(232,200,119,0.5); background: transparent; color: var(--messing-hell);
+  padding: 0.28em 0.5em; cursor: pointer; }
+.zeiten button:hover { background: var(--messing); color: var(--nacht); }
+.zeiten .fuss { padding: 0.55em 0.7em; border-top: 1px solid rgba(201,214,228,0.2); }
+.zeiten textarea { display: none; width: 100%; height: 180px; margin-top: 0.5em;
+  background: #071322; color: var(--messing-hell); border: 1px solid rgba(232,200,119,0.4);
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; padding: 0.4em; }
+.zeiten.ausgabe textarea { display: block; }
+
+/* ---------- Startbildschirm ---------- */
+.start {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.1rem;
+  background: radial-gradient(ellipse at 50% 44%, #16314f 0%, #0a1c33 44%, #040a14 100%);
+  cursor: pointer; transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.start.weg { opacity: 0; visibility: hidden; }
+.start h1 { margin: 0; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(26px, 5vw, 84px); letter-spacing: -0.012em; color: var(--weiss);
+  display: flex; align-items: baseline; }
+.start h1 .news { color: var(--messing-hell); }
+.start .linie { width: 42%; height: 2px; background: var(--messing); }
+.start p { margin: 0; font-family: var(--eng); font-weight: 600; font-size: clamp(11px,1.3vw,21px);
+  letter-spacing: 0.42em; text-indent: 0.42em; text-transform: uppercase; color: rgba(201,214,228,0.82); }
+.start button { margin-top: 0.3rem; font-family: var(--eng); font-weight: 700;
+  font-size: clamp(13px,1.4vw,22px); letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--nacht); background: var(--messing); border: none; padding: 0.8em 2.6em; cursor: pointer; }
+.start button:hover { background: var(--messing-hell); }
+.start small { font-family: var(--text); font-size: clamp(10px,0.95vw,14px); color: rgba(201,214,228,0.5);
+  text-align: center; max-width: 46em; }
+
+.fehlt {
+  position: absolute; inset: 0; z-index: 12; display: none;
+  align-items: center; justify-content: center;
+  background: repeating-linear-gradient(45deg, #0b1a2e 0 22px, #071322 22px 44px);
+  color: var(--messing-hell); font-family: var(--eng); font-weight: 600;
+  font-size: clamp(12px, 1.5vw, 22px); letter-spacing: 0.08em; text-align: center; padding: 2em;
+}
+.fehlt.zeig { display: flex; }
+</style>
+</head>
+<body>
+
+<div class="bühne" id="bühne">
+
+  <video id="clip" playsinline preload="auto"></video>
+  <div class="fehlt" id="clip-fehlt">Video nicht gefunden — Pfad in KONFIG.clip prüfen</div>
+
+  <div class="vollbild" id="vollbild">
+    <video id="voll-video" playsinline muted loop preload="auto"></video>
+    <div class="zeile"><b id="voll-titel"></b><span id="voll-ort"></span></div>
+  </div>
+
+  <div class="eilmarke" id="eilmarke"><i></i>EILMELDUNG</div>
+
+  <div class="kennung" id="kennung">
+    <span>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></span>
+    <span class="uhr" id="uhr">21:52</span>
+  </div>
+
+  <div class="kasten" id="kasten">
+    <div class="rahmen" id="rahmen"></div>
+    <div class="zeile"><b id="kasten-titel"></b><span id="kasten-ort"></span></div>
+  </div>
+
+  <div class="binde" id="binde">
+    <div class="flagge" id="binde-flagge">LIVE</div>
+    <div class="inhalt">
+      <div class="name" id="binde-name"></div>
+      <div class="rolle" id="binde-rolle"></div>
+    </div>
+  </div>
+
+  <div class="spuren" id="spuren">
+    <div class="spur-kopf">
+      <span>Ziehen verschiebt · rechter Rand setzt das Ende · Doppelklick legt still</span>
+      <span class="spur-zeit" id="spur-zeit">0.0 s</span>
+    </div>
+    <div class="spur-zeile"><b>Sprünge</b><div class="spur-feld" id="spur-sprung"></div></div>
+    <div class="spur-zeile"><b>Vollbild</b><div class="spur-feld" id="spur-voll"></div></div>
+    <div class="spur-zeile"><b>Kasten</b><div class="spur-feld" id="spur-kasten"></div></div>
+    <div class="spur-kopf"><span id="spur-rest"></span></div>
+  </div>
+
+  <div class="zeiten" id="zeiten">
+    <h3>Zeiten · X wechselt die Seite · Z schliesst</h3>
+    <div class="liste" id="zeiten-liste"></div>
+    <div class="fuss">
+      <button id="zeiten-ausgabe">Werte zum Kopieren</button>
+      <textarea id="zeiten-text" readonly></textarea>
+    </div>
+  </div>
+
+  <div class="leiste" id="leiste">
+    <span class="zeit" id="leiste-zeit">0.0 / 0.0</span>
+    <span class="spur2" id="leiste-spur"><span class="füll" id="leiste-füll"></span></span>
+    <button id="knopf-sprung">Sprung ab hier</button>
+    <span class="hinweis">V Spur · Z Liste · S Sprung · T ausblenden</span>
+  </div>
+
+  <div class="start" id="start">
+    <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
+    <div class="linie"></div>
+    <p>Eilmeldung</p>
+    <button id="start-knopf">Abspielen</button>
+    <small>V öffnet die Spur zum Ziehen · Z die Liste · S setzt einen Sprung ab der
+           laufenden Sekunde · Leertaste pausiert · Pfeile springen · R startet neu</small>
+  </div>
+
+</div>
+
+<script>
+/* ===================================================================
+   KONFIG
+   sprünge:  { von, bis }  wird beim Abspielen übersprungen
+   vollbild: { ab, bis, datei, titel, ort }  verdeckt das Video ganz
+   kasten:   { ab, bis, bild, titel, ort }   Standbild neben der Moderatorin
+   =================================================================== */
+const KONFIG = {
+
+  fassung: "v1 · Eilmeldung",
+
+  clip: "clips/eilmeldung-video.mp4",
+  uhrzeit: "21:52",
+
+  /* Abschnitte, die beim Abspielen übersprungen werden.
+     Mit S in der laufenden Wiedergabe setzen, in der Spur ziehen.      */
+  spruenge: [],
+
+  /* Einblendungen über das ganze Bild */
+  vollbild: [
+    { ab: 18.0, bis: 22.0, datei: "clips/e-verteilerkasten.mp4",
+      titel: "Nicht genehmigter Anschluss", ort: "Verteilerkasten der Stadtwerke" },
+    { ab: 34.0, bis: 38.0, datei: "clips/e-baum-fahrt.mp4",
+      titel: "Sechs Meter", ort: "Vierundsechzig Geräte" },
+    { ab: 40.0, bis: 44.0, datei: "clips/e-rauch.mp4",
+      titel: "Es qualmt", ort: "Zweite Reihe" },
+    { ab: 44.0, bis: 47.5, datei: "clips/e-feuerwehr.mp4",
+      titel: "Löschtrupp davor", ort: "Feuerwehr vor Ort" },
+    { ab: 47.5, bis: 50.5, datei: "clips/e-kabel.mp4",
+      titel: "Kabel über die Fahrbahn", ort: "Bis zum Verteilerkasten" },
+    { ab: 50.5, bis: 54.0, datei: "clips/e-anwohner.mp4",
+      titel: "Dreihundertzwölf Haushalte", ort: "Im Dunkeln" }
+  ],
+
+  /* Kasten rechts neben Konstanze, nur im Studio am Anfang */
+  kasten: [
+    { ab: 12.0, bis: 25.5, bild: "bilder/e-ripzha-steht.png",
+      titel: "Ripzha", ort: "Live · San Sequoia" }
+  ],
+
+  /* Bauchbinden */
+  binden: [
+    { ab:  3.0, bis: 10.0, flagge: "EIL",  name: "Konstanze Immalaut", rolle: "Moderatorin" },
+    { ab: 30.0, bis: 37.0, flagge: "LIVE", name: "Ripzha",             rolle: "Herausgeber · San Sequoia" },
+    { ab: 60.0, bis: 67.0, flagge: "LIVE", name: "Vaas Del Toro",      rolle: "Der Erbauer" }
+  ],
+
+  /* Roter Eilmeldungsbalken oben links */
+  eilmarke: { ab: 0.5, bis: 160.0 }
+};
+
+/* =================================================================== */
+
+const el = (id) => document.getElementById(id);
+const clip = el("clip");
+const vollVideo = el("voll-video");
+let leisteAn = true, zeitenAn = false, spurAn = false;
+
+clip.src = KONFIG.clip;
+clip.addEventListener("error", () => el("clip-fehlt").classList.add("zeig"));
+el("uhr").textContent = KONFIG.uhrzeit;
+
+/* ---------- Bilder in den Kasten legen ---------- */
+KONFIG.kasten.forEach(e => {
+  const img = document.createElement("img");
+  img.src = e.bild; img.alt = "";
+  e.fehlt = false;
+  img.addEventListener("error", () => { e.fehlt = true; });
+  el("rahmen").appendChild(img);
+  e.el = img;
+});
+
+/* ---------- Takt ---------- */
+let letzterVoll = -2, letzterKasten = -2;
+
+function takt() {
+  const t = clip.currentTime;
+
+  // Sprünge: beim Hineinlaufen ans Ende springen
+  for (const s of KONFIG.spruenge) {
+    if (t >= s.von && t < s.bis - 0.05) {
+      clip.currentTime = s.bis;
+      letzterVoll = -2; letzterKasten = -2;
+      break;
+    }
+  }
+
+  // Vollbild
+  let v = -1;
+  for (let i = 0; i < KONFIG.vollbild.length; i++) {
+    const e = KONFIG.vollbild[i];
+    if (!e.aus && t >= e.ab && t < e.bis) v = i;
+  }
+  if (v !== letzterVoll) {
+    letzterVoll = v;
+    const kasten = el("vollbild");
+    if (v < 0) { kasten.classList.remove("an"); vollVideo.pause(); }
+    else {
+      const e = KONFIG.vollbild[v];
+      if (vollVideo.getAttribute("src") !== e.datei) vollVideo.src = e.datei;
+      vollVideo.currentTime = 0;
+      vollVideo.play().catch(() => {});
+      el("voll-titel").textContent = e.titel || "";
+      el("voll-ort").textContent   = e.ort || "";
+      kasten.classList.add("an");
+    }
+  }
+
+  // Kasten
+  let k = -1;
+  for (let i = 0; i < KONFIG.kasten.length; i++) {
+    const e = KONFIG.kasten[i];
+    if (!e.aus && !e.fehlt && t >= e.ab && t < e.bis) k = i;
+  }
+  if (k !== letzterKasten) {
+    letzterKasten = k;
+    KONFIG.kasten.forEach((e, i) => { if (e.el) e.el.classList.toggle("an", i === k); });
+    el("kasten").classList.toggle("sichtbar", k >= 0);
+    if (k >= 0) {
+      el("kasten-titel").textContent = KONFIG.kasten[k].titel;
+      el("kasten-ort").textContent   = KONFIG.kasten[k].ort;
+    }
+  }
+
+  // Bauchbinde
+  let b = -1;
+  for (let i = 0; i < KONFIG.binden.length; i++) {
+    if (t >= KONFIG.binden[i].ab && t < KONFIG.binden[i].bis) b = i;
+  }
+  el("binde").classList.toggle("sichtbar", b >= 0 && v < 0);
+  if (b >= 0) {
+    el("binde-flagge").textContent = KONFIG.binden[b].flagge;
+    el("binde-name").textContent   = KONFIG.binden[b].name;
+    el("binde-rolle").textContent  = KONFIG.binden[b].rolle;
+  }
+
+  const em = KONFIG.eilmarke;
+  el("eilmarke").classList.toggle("sichtbar", t >= em.ab && t < em.bis);
+
+  const d = clip.duration && isFinite(clip.duration) ? clip.duration : 0;
+  const rest = d - KONFIG.spruenge.reduce((s, x) => s + (x.bis - x.von), 0);
+  el("leiste-zeit").textContent = t.toFixed(1) + " / " + d.toFixed(1) + "  (" + rest.toFixed(1) + ")";
+  el("leiste-füll").style.width = d ? (t / d * 100) + "%" : "0";
+
+  requestAnimationFrame(takt);
+}
+
+/* ---------- Ablauf ---------- */
+function start() {
+  el("start").classList.add("weg");
+  el("kennung").classList.add("sichtbar");
+  if (leisteAn) el("leiste").classList.add("zeig");
+  letzterVoll = -2; letzterKasten = -2;
+  clip.currentTime = 0;
+  clip.play().catch(() => {});
+  baueSprungmarken();
+  requestAnimationFrame(takt);
+}
+el("start-knopf").addEventListener("click", start);
+el("start").addEventListener("click", start);
+
+function springe(sek) {
+  clip.currentTime = Math.max(0, Math.min(sek, clip.duration || sek));
+  letzterVoll = -2; letzterKasten = -2;
+  if (clip.paused) clip.play().catch(() => {});
+}
+
+/* ---------- Zeitleiste ---------- */
+const spur = el("leiste-spur");
+function baueSprungmarken() {
+  spur.querySelectorAll(".sprung").forEach(m => m.remove());
+  if (!clip.duration || !isFinite(clip.duration)) return;
+  KONFIG.spruenge.forEach(s => {
+    const k = document.createElement("span");
+    k.className = "sprung";
+    k.style.left  = (s.von / clip.duration * 100) + "%";
+    k.style.width = ((s.bis - s.von) / clip.duration * 100) + "%";
+    spur.appendChild(k);
+  });
+}
+clip.addEventListener("loadedmetadata", baueSprungmarken);
+spur.addEventListener("click", (e) => {
+  if (!clip.duration || !isFinite(clip.duration)) return;
+  const r = spur.getBoundingClientRect();
+  springe(((e.clientX - r.left) / r.width) * clip.duration);
+});
+
+/* ---------- Sprung setzen ---------- */
+let sprungStart = null;
+function sprungTaste() {
+  const t = Math.round(clip.currentTime * 10) / 10;
+  if (sprungStart === null) {
+    sprungStart = t;
+    el("knopf-sprung").textContent = "Sprung bis hier";
+  } else {
+    const von = Math.min(sprungStart, t), bis = Math.max(sprungStart, t);
+    sprungStart = null;
+    el("knopf-sprung").textContent = "Sprung ab hier";
+    if (bis - von < 0.2) return;
+    KONFIG.spruenge.push({ von, bis });
+    KONFIG.spruenge.sort((a, b) => a.von - b.von);
+    baueSprungmarken(); baueSpuren();
+    if (zeitenAn) baueZeiten();
+  }
+}
+el("knopf-sprung").addEventListener("click", sprungTaste);
+
+/* ---------- Liste ---------- */
+function sek(v) { return Math.round(v * 10) / 10; }
+
+function baueZeiten() {
+  const liste = el("zeiten-liste");
+  liste.innerHTML = "";
+
+  const zeile = (art, i, text, unter, setzAb, setzBis, weg) => {
+    const z = document.createElement("div");
+    z.className = "zeile"; z.dataset.art = art; z.dataset.i = String(i);
+    z.innerHTML = '<span class="titel">' + text + '<small>' + unter + '</small></span>';
+    const a = document.createElement("button"); a.textContent = "ein";
+    a.addEventListener("click", () => { setzAb(sek(clip.currentTime)); aktualisiere(); });
+    const b = document.createElement("button"); b.textContent = "aus";
+    b.addEventListener("click", () => { setzBis(sek(clip.currentTime)); aktualisiere(); });
+    const c = document.createElement("button"); c.textContent = "weg";
+    c.addEventListener("click", () => { weg(); aktualisiere(); });
+    z.appendChild(a); z.appendChild(b); z.appendChild(c);
+    liste.appendChild(z);
+  };
+
+  KONFIG.spruenge.forEach((s, i) => {
+    zeile("sprung", i, "Sprung", s.von.toFixed(1) + " bis " + s.bis.toFixed(1) + " s",
+      v => s.von = v, v => s.bis = v, () => KONFIG.spruenge.splice(i, 1));
+  });
+  KONFIG.vollbild.forEach((e, i) => {
+    const n = e.datei.split("/").pop().replace(".mp4", "");
+    zeile("voll", i, "Vollbild: " + e.titel,
+      n + " · " + (e.aus ? "nicht gesetzt" : e.ab.toFixed(1) + " bis " + e.bis.toFixed(1) + " s"),
+      v => { e.ab = v; e.aus = false; }, v => { e.bis = v; e.aus = false; },
+      () => { e.aus = true; });
+  });
+  KONFIG.kasten.forEach((e, i) => {
+    zeile("kasten", i, "Kasten: " + e.titel,
+      (e.aus ? "nicht gesetzt" : e.ab.toFixed(1) + " bis " + e.bis.toFixed(1) + " s"),
+      v => { e.ab = v; e.aus = false; }, v => { e.bis = v; e.aus = false; },
+      () => { e.aus = true; });
+  });
+  KONFIG.binden.forEach((b, i) => {
+    zeile("binde", i, "Binde: " + b.name, b.ab.toFixed(1) + " bis " + b.bis.toFixed(1) + " s",
+      v => b.ab = v, v => b.bis = v, () => KONFIG.binden.splice(i, 1));
+  });
+  schreibeAusgabe();
+}
+
+function aktualisiere() {
+  KONFIG.spruenge.sort((a, b) => a.von - b.von);
+  baueZeiten(); baueSpuren(); baueSprungmarken();
+  letzterVoll = -2; letzterKasten = -2;
+}
+
+function schreibeAusgabe() {
+  const s = KONFIG.spruenge.map(x => '    { von: ' + x.von + ', bis: ' + x.bis + ' },').join("\n");
+  const v = KONFIG.vollbild.map(x => '    { ' + (x.aus ? 'aus: true, ' : '') + 'ab: ' + x.ab +
+      ', bis: ' + x.bis + ', datei: "' + x.datei + '",\n      titel: "' + x.titel +
+      '", ort: "' + x.ort + '" },').join("\n");
+  const k = KONFIG.kasten.map(x => '    { ' + (x.aus ? 'aus: true, ' : '') + 'ab: ' + x.ab +
+      ', bis: ' + x.bis + ', bild: "' + x.bild + '",\n      titel: "' + x.titel +
+      '", ort: "' + x.ort + '" },').join("\n");
+  const b = KONFIG.binden.map(x => '    { ab: ' + x.ab + ', bis: ' + x.bis + ', flagge: "' +
+      x.flagge + '", name: "' + x.name + '", rolle: "' + x.rolle + '" },').join("\n");
+  el("zeiten-text").value =
+    "spruenge: [\n" + s + "\n  ],\n\n  vollbild: [\n" + v + "\n  ],\n\n  kasten: [\n" + k +
+    "\n  ],\n\n  binden: [\n" + b + "\n  ]";
+}
+
+el("zeiten-ausgabe").addEventListener("click", () => {
+  el("zeiten").classList.toggle("ausgabe");
+  schreibeAusgabe();
+  const f = el("zeiten-text");
+  if (el("zeiten").classList.contains("ausgabe")) { f.focus(); f.select(); }
+});
+
+setInterval(() => {
+  if (!zeitenAn) return;
+  const t = clip.currentTime;
+  el("zeiten").querySelectorAll(".zeile").forEach(z => {
+    const i = +z.dataset.i, a = z.dataset.art;
+    let an = false;
+    if (a === "sprung") an = t >= KONFIG.spruenge[i].von && t < KONFIG.spruenge[i].bis;
+    if (a === "voll")   an = i === letzterVoll;
+    if (a === "kasten") an = i === letzterKasten;
+    if (a === "binde")  an = t >= KONFIG.binden[i].ab && t < KONFIG.binden[i].bis;
+    z.classList.toggle("jetzt", an);
+  });
+}, 200);
+
+/* ===================================================================
+   Spur zum Ziehen
+   =================================================================== */
+function spurDauer() { return (clip.duration && isFinite(clip.duration)) ? clip.duration : 164; }
+
+function baueSpuren() {
+  const gruppen = [
+    ["sprung", KONFIG.spruenge, el("spur-sprung")],
+    ["voll",   KONFIG.vollbild,  el("spur-voll")],
+    ["kasten", KONFIG.kasten,    el("spur-kasten")]
+  ];
+  gruppen.forEach(([art, liste, feld]) => {
+    feld.innerHTML = "";
+    const d = spurDauer();
+    const kopf = document.createElement("span");
+    kopf.className = "kopf"; kopf.id = "kopf-" + art;
+    feld.appendChild(kopf);
+    liste.forEach((e, i) => {
+      if (e.aus) return;
+      const von = (art === "sprung") ? e.von : e.ab;
+      const bis = e.bis;
+      const b = document.createElement("div");
+      b.className = "block" + (art === "sprung" ? " sprungblock" : "");
+      b.dataset.art = art; b.dataset.i = String(i);
+      b.style.left  = (von / d * 100) + "%";
+      b.style.width = Math.max(1.0, (bis - von) / d * 100) + "%";
+      b.textContent = (art === "sprung") ? "Sprung" : e.titel;
+      b.title = b.textContent + "  " + von.toFixed(1) + " bis " + bis.toFixed(1) + " s";
+      const r = document.createElement("span");
+      r.className = "rand";
+      b.appendChild(r);
+      feld.appendChild(b);
+    });
+  });
+  zeigeRest();
+}
+
+function zeigeRest() {
+  const r = el("spur-rest");
+  r.innerHTML = "";
+  const offen = KONFIG.vollbild.map((e, i) => [e, i]).filter(([e]) => e.aus)
+    .concat(KONFIG.kasten.map((e, i) => [e, i]).filter(([e]) => e.aus));
+  if (!offen.length) { r.textContent = "Alle Einblendungen sind gesetzt."; return; }
+  r.appendChild(document.createTextNode("Noch frei:"));
+  offen.forEach(([e]) => {
+    const k = document.createElement("button");
+    k.textContent = e.titel;
+    k.addEventListener("click", () => {
+      const jetzt = sek(clip.currentTime);
+      e.ab = jetzt; e.bis = jetzt + 3.5; e.aus = false;
+      aktualisiere();
+    });
+    r.appendChild(k);
+  });
+}
+
+let spurZieht = null;
+function spurPos(ev, feld) {
+  const r = feld.getBoundingClientRect();
+  return Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * spurDauer();
+}
+
+document.addEventListener("pointerdown", (ev) => {
+  if (!spurAn) return;
+  const rand = ev.target.closest(".rand");
+  const block = ev.target.closest(".block");
+  if (!block) return;
+  const art = block.dataset.art;
+  const liste = art === "sprung" ? KONFIG.spruenge : art === "voll" ? KONFIG.vollbild : KONFIG.kasten;
+  const e = liste[+block.dataset.i];
+  spurZieht = { art, e, feld: block.parentElement, modus: rand ? "ende" : "schieben",
+                griff: spurPos(ev, block.parentElement),
+                von: (art === "sprung") ? e.von : e.ab, bis: e.bis };
+  ev.preventDefault();
+});
+
+document.addEventListener("pointermove", (ev) => {
+  if (!spurZieht) return;
+  const z = spurZieht;
+  const jetzt = spurPos(ev, z.feld);
+  if (z.modus === "schieben") {
+    const d = jetzt - z.griff;
+    const laenge = z.bis - z.von;
+    let neu = Math.max(0, Math.min(spurDauer() - laenge, z.von + d));
+    neu = Math.round(neu * 10) / 10;
+    if (z.art === "sprung") { z.e.von = neu; z.e.bis = Math.round((neu + laenge) * 10) / 10; }
+    else { z.e.ab = neu; z.e.bis = Math.round((neu + laenge) * 10) / 10; }
+  } else {
+    const anfang = (z.art === "sprung") ? z.e.von : z.e.ab;
+    z.e.bis = Math.round(Math.max(anfang + 0.4, Math.min(spurDauer(), jetzt)) * 10) / 10;
+  }
+  baueSpuren();
+});
+
+document.addEventListener("pointerup", () => {
+  if (!spurZieht) return;
+  spurZieht = null;
+  baueSprungmarken();
+  if (zeitenAn) baueZeiten();
+  letzterVoll = -2; letzterKasten = -2;
+});
+
+document.addEventListener("dblclick", (ev) => {
+  if (!spurAn) return;
+  const block = ev.target.closest(".block");
+  if (!block) return;
+  const art = block.dataset.art, i = +block.dataset.i;
+  if (art === "sprung") KONFIG.spruenge.splice(i, 1);
+  else if (art === "voll") KONFIG.vollbild[i].aus = true;
+  else KONFIG.kasten[i].aus = true;
+  aktualisiere();
+});
+
+setInterval(() => {
+  if (!spurAn) return;
+  const d = spurDauer(), p = (clip.currentTime / d * 100) + "%";
+  ["sprung", "voll", "kasten"].forEach(a => {
+    const k = el("kopf-" + a);
+    if (k) k.style.left = p;
+  });
+  el("spur-zeit").textContent = clip.currentTime.toFixed(1) + " s";
+}, 120);
+
+/* ---------- Tasten ---------- */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "v" || e.key === "V") {
+    e.preventDefault(); spurAn = !spurAn;
+    el("spuren").classList.toggle("zeig", spurAn);
+    if (spurAn) { clip.pause(); baueSpuren(); }
+    return;
+  }
+  if (e.key === "z" || e.key === "Z") {
+    e.preventDefault(); zeitenAn = !zeitenAn;
+    el("zeiten").classList.toggle("zeig", zeitenAn);
+    if (zeitenAn) baueZeiten();
+    return;
+  }
+  if ((e.key === "x" || e.key === "X") && zeitenAn) {
+    e.preventDefault(); el("zeiten").classList.toggle("rechts"); return;
+  }
+  if (e.key === "s" || e.key === "S") { e.preventDefault(); sprungTaste(); return; }
+  if (e.key === "t" || e.key === "T") {
+    e.preventDefault(); leisteAn = !leisteAn;
+    el("leiste").classList.toggle("zeig", leisteAn); return;
+  }
+  if (e.code === "Space") { e.preventDefault(); clip.paused ? clip.play() : clip.pause(); }
+  const weite = e.shiftKey ? 1 : 5;
+  if (e.key === "ArrowRight") { e.preventDefault(); springe(clip.currentTime + weite); }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); springe(clip.currentTime - weite); }
+  if (e.key === "r" || e.key === "R") {
+    clip.pause(); letzterVoll = -2; letzterKasten = -2;
+    el("vollbild").classList.remove("an");
+    el("kasten").classList.remove("sichtbar");
+    el("binde").classList.remove("sichtbar");
+    el("eilmarke").classList.remove("sichtbar");
+    el("kennung").classList.remove("sichtbar");
+    el("start").classList.remove("weg");
+  }
+});
+</script>
+</body>
+</html>
