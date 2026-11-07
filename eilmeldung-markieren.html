@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eilmeldung markieren</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --nacht: #040a14; --navy: #08192e; --silber: #c9d6e4;
+  --messing: #c9992f; --messing-hell: #e8c877; --weiss: #fff;
+  --rot: #c0182b; --gruen: #35d6a0;
+  --text: "Barlow", system-ui, sans-serif;
+  --eng: "Barlow Condensed", sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 1.4rem; min-height: 100vh;
+  background: radial-gradient(ellipse at 50% 0%, #0d2240 0%, #050d1a 60%, #02060c 100%);
+  color: var(--weiss); font-family: var(--text);
+}
+h1 { font-family: var(--eng); font-weight: 700; font-size: 1.5rem; letter-spacing: 0.18em;
+  text-transform: uppercase; margin: 0 0 0.3rem; }
+h1 span { color: var(--messing-hell); }
+.hinweis { color: var(--silber); font-size: 0.92rem; margin-bottom: 1.1rem;
+  max-width: 74em; line-height: 1.6; }
+.hinweis b { color: var(--messing-hell); font-weight: 600; }
+
+.oben { display: grid; grid-template-columns: minmax(380px, 1.4fr) minmax(300px, 1fr);
+  gap: 1.1rem; align-items: start; }
+@media (max-width: 900px) { .oben { grid-template-columns: 1fr; } }
+
+.tafel { background: rgba(8,25,46,0.75); border: 1px solid rgba(201,153,47,0.4);
+  padding: 0.9rem 1rem; }
+
+video { width: 100%; display: block; background: #000; }
+
+.knoepfe { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.7rem; }
+button {
+  font-family: var(--eng); font-weight: 700; font-size: 0.88rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--nacht); background: var(--messing);
+  border: none; padding: 0.5em 1em; cursor: pointer;
+}
+button:hover { background: var(--messing-hell); }
+button.still { background: transparent; color: var(--messing-hell); border: 1px solid rgba(232,200,119,0.5); }
+button.still:hover { background: var(--messing); color: var(--nacht); }
+button.laeuft { background: var(--gruen); color: var(--nacht); }
+
+.zeit { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1.3rem;
+  color: var(--messing-hell); min-width: 6em; display: inline-block; }
+
+.spur { position: relative; height: 46px; background: rgba(201,214,228,0.1);
+  margin: 0.7rem 0 0.3rem; cursor: pointer; overflow: hidden; }
+.spur .block { position: absolute; top: 2px; bottom: 2px; opacity: 0.85;
+  font-family: var(--eng); font-size: 10px; color: var(--nacht);
+  display: flex; align-items: center; padding: 0 3px; overflow: hidden; white-space: nowrap; }
+.spur .block.schnitt { background: var(--rot); color: var(--weiss); }
+.spur .block.bild    { background: var(--messing); }
+.spur .block.kasten  { background: var(--gruen); }
+.spur .kopf { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--weiss); z-index: 3; }
+.skala { display: flex; justify-content: space-between;
+  font-family: ui-monospace, monospace; font-size: 0.7rem; color: var(--silber); }
+
+.marken { display: grid; grid-template-columns: 1fr; gap: 0.35rem; }
+.marke { display: grid; grid-template-columns: 2.1em 1fr auto; gap: 0.5rem; align-items: center;
+  padding: 0.4em 0.5em; border: 1px solid rgba(201,214,228,0.18); }
+.marke.an { background: rgba(53,214,160,0.18); border-color: var(--gruen); }
+.marke kbd { font-family: ui-monospace, monospace; font-size: 0.8rem; text-align: center;
+  background: rgba(232,200,119,0.2); color: var(--messing-hell); padding: 0.25em 0; }
+.marke .name { font-size: 0.88rem; }
+.marke .name small { display: block; color: var(--silber); font-size: 0.72rem; }
+.marke .punkt { width: 12px; height: 12px; }
+.marke .punkt.bild   { background: var(--messing); }
+.marke .punkt.kasten { background: var(--gruen); }
+.marke .punkt.schnitt{ background: var(--rot); }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; }
+th { text-align: left; font-family: var(--eng); font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; font-size: 0.7rem; color: var(--messing-hell);
+  padding: 0.35em 0.5em; border-bottom: 1px solid rgba(201,153,47,0.4); }
+td { padding: 0.3em 0.5em; border-bottom: 1px solid rgba(201,214,228,0.12);
+  font-family: ui-monospace, Menlo, Consolas, monospace; }
+td.art { font-family: var(--text); }
+tr button { padding: 0.15em 0.5em; font-size: 0.65rem; }
+
+textarea { width: 100%; height: 170px; margin-top: 0.6rem; background: #071322;
+  color: var(--messing-hell); border: 1px solid rgba(232,200,119,0.4);
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; padding: 0.5em; }
+</style>
+</head>
+<body>
+
+<h1>Eilmeldung <span>markieren</span></h1>
+<p class="hinweis">
+  Video abspielen. Eine <b>Zifferntaste</b> startet eine Markierung, dieselbe Taste
+  beendet sie. <b>S</b> markiert einen Abschnitt, der herausgeschnitten werden soll.
+  <b>Leertaste</b> pausiert, <b>Pfeile</b> springen zwei Sekunden, mit <b>Umschalt</b>
+  eine halbe. Fehlgriffe in der Liste unten mit <b>weg</b> löschen.
+  Zum Schluss auf <b>Werte erzeugen</b> und den Kasten schicken.
+</p>
+
+<div class="oben">
+
+  <div class="tafel">
+    <video id="vid" preload="auto" playsinline></video>
+    <div class="knoepfe">
+      <button id="k-start">Abspielen</button>
+      <button class="still" id="k-zurueck">◀ 2 s</button>
+      <button class="still" id="k-vor">2 s ▶</button>
+      <button class="still" id="k-langsam">Tempo 0,5×</button>
+      <span class="zeit" id="zeit">0.00 s</span>
+    </div>
+    <div class="spur" id="spur"><div class="kopf" id="kopf"></div></div>
+    <div class="skala"><span>0 s</span><span id="mitte">—</span><span id="ende">—</span></div>
+  </div>
+
+  <div class="tafel">
+    <div class="marken" id="marken"></div>
+  </div>
+
+</div>
+
+<div class="tafel" style="margin-top:1.1rem">
+  <table>
+    <thead><tr><th>Von</th><th>Bis</th><th>Was</th><th></th></tr></thead>
+    <tbody id="liste"></tbody>
+  </table>
+  <textarea id="ausgabe" readonly placeholder="Hier erscheinen die Werte zum Kopieren"></textarea>
+  <div class="knoepfe">
+    <button id="k-werte">Werte erzeugen</button>
+    <button class="still" id="k-leeren">Alles löschen</button>
+  </div>
+</div>
+
+<script>
+/* ===================================================================
+   Markieren, wo geschnitten und wo etwas eingeblendet wird.
+   Jede Marke hat eine Taste. Einmal drücken startet, nochmal beendet.
+   =================================================================== */
+const DATEI = "clips/eilmeldung-video.mp4";   // liegt im Repo daneben
+
+const MARKEN = [
+  { taste: "s", art: "schnitt", name: "Schnitt",            unter: "wird herausgeschnitten" },
+  { taste: "1", art: "kasten",  name: "Kasten rechts",      unter: "e-verteilerkasten" },
+  { taste: "2", art: "kasten",  name: "Kasten rechts",      unter: "e-ripzha-steht" },
+  { taste: "3", art: "bild",    name: "Vollbild Baum",      unter: "e-baum-fahrt" },
+  { taste: "4", art: "bild",    name: "Vollbild Rauch",     unter: "e-rauch" },
+  { taste: "5", art: "bild",    name: "Vollbild Feuerwehr", unter: "e-feuerwehr" },
+  { taste: "6", art: "bild",    name: "Vollbild Kabel",     unter: "e-kabel" },
+  { taste: "7", art: "bild",    name: "Vollbild Anwohner",  unter: "e-anwohner" },
+  { taste: "8", art: "bild",    name: "Vollbild Kasten",    unter: "e-verteilerkasten" }
+];
+
+const el = (id) => document.getElementById(id);
+const vid = el("vid");
+vid.src = DATEI;
+
+let bereiche = [];
+let offen = {};          // taste -> Startsekunde
+
+/* ---------- Markenliste ---------- */
+MARKEN.forEach(m => {
+  const d = document.createElement("div");
+  d.className = "marke"; d.dataset.taste = m.taste;
+  d.innerHTML = '<kbd>' + m.taste.toUpperCase() + '</kbd>' +
+                '<span class="name">' + m.name + '<small>' + m.unter + '</small></span>' +
+                '<span class="punkt ' + m.art + '"></span>';
+  d.addEventListener("click", () => schalte(m.taste));
+  el("marken").appendChild(d);
+});
+
+vid.addEventListener("loadedmetadata", () => {
+  el("ende").textContent  = vid.duration.toFixed(1) + " s";
+  el("mitte").textContent = (vid.duration / 2).toFixed(1) + " s";
+  zeichne();
+});
+
+/* ---------- Bedienung ---------- */
+el("k-start").addEventListener("click", () => {
+  if (vid.paused) { vid.play(); el("k-start").textContent = "Pause"; }
+  else { vid.pause(); el("k-start").textContent = "Abspielen"; }
+});
+el("k-zurueck").addEventListener("click", () => vid.currentTime = Math.max(0, vid.currentTime - 2));
+el("k-vor").addEventListener("click", () => vid.currentTime = Math.min(vid.duration, vid.currentTime + 2));
+el("k-langsam").addEventListener("click", (e) => {
+  vid.playbackRate = vid.playbackRate === 1 ? 0.5 : 1;
+  e.target.textContent = vid.playbackRate === 1 ? "Tempo 0,5×" : "Tempo 1×";
+});
+el("spur").addEventListener("click", (e) => {
+  if (!vid.duration) return;
+  const r = el("spur").getBoundingClientRect();
+  vid.currentTime = (e.clientX - r.left) / r.width * vid.duration;
+});
+
+/* ---------- Markieren ---------- */
+function schalte(taste) {
+  const m = MARKEN.find(x => x.taste === taste);
+  if (!m) return;
+  const t = Math.round(vid.currentTime * 100) / 100;
+  const feld = document.querySelector('.marke[data-taste="' + taste + '"]');
+  if (offen[taste] === undefined) {
+    offen[taste] = t;
+    if (feld) feld.classList.add("an");
+  } else {
+    const von = Math.min(offen[taste], t), bis = Math.max(offen[taste], t);
+    delete offen[taste];
+    if (feld) feld.classList.remove("an");
+    if (bis - von < 0.15) return;
+    bereiche.push({ von, bis, art: m.art, name: m.art === "schnitt" ? "" : m.unter });
+    bereiche.sort((a, b) => a.von - b.von);
+    zeichne(); baueListe();
+  }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.repeat) return;
+  if (e.target.tagName === "TEXTAREA") return;
+  if (e.code === "Space") { e.preventDefault(); el("k-start").click(); return; }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); vid.currentTime = Math.max(0, vid.currentTime - (e.shiftKey ? 0.5 : 2)); return; }
+  if (e.key === "ArrowRight") { e.preventDefault(); vid.currentTime = Math.min(vid.duration, vid.currentTime + (e.shiftKey ? 0.5 : 2)); return; }
+  const k = e.key.toLowerCase();
+  if (MARKEN.some(m => m.taste === k)) { e.preventDefault(); schalte(k); }
+});
+
+/* ---------- Anzeige ---------- */
+function zeichne() {
+  const s = el("spur");
+  s.querySelectorAll(".block").forEach(b => b.remove());
+  if (!vid.duration) return;
+  bereiche.forEach(b => {
+    const d = document.createElement("div");
+    d.className = "block " + b.art;
+    d.style.left  = (b.von / vid.duration * 100) + "%";
+    d.style.width = Math.max(0.4, (b.bis - b.von) / vid.duration * 100) + "%";
+    d.textContent = b.art === "schnitt" ? "raus" : b.name;
+    d.title = b.name + "  " + b.von.toFixed(2) + " bis " + b.bis.toFixed(2);
+    s.insertBefore(d, el("kopf"));
+  });
+}
+
+function baueListe() {
+  const t = el("liste");
+  t.innerHTML = "";
+  bereiche.forEach((b, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td>' + b.von.toFixed(2) + '</td><td>' + b.bis.toFixed(2) +
+                   '</td><td class="art">' + (b.art === "schnitt" ? "Schnitt heraus"
+                     : b.art === "kasten" ? "Kasten: " + b.name : "Vollbild: " + b.name) + '</td>';
+    const td = document.createElement("td");
+    const k = document.createElement("button");
+    k.className = "still"; k.textContent = "weg";
+    k.addEventListener("click", () => { bereiche.splice(i, 1); zeichne(); baueListe(); });
+    td.appendChild(k); tr.appendChild(td);
+    t.appendChild(tr);
+  });
+}
+
+el("k-werte").addEventListener("click", () => {
+  const f = el("ausgabe");
+  f.value = bereiche.map(b => b.von.toFixed(2) + "  " + b.bis.toFixed(2) + "  " +
+    b.art + (b.name ? "  " + b.name : "")).join("\n");
+  f.focus(); f.select();
+});
+el("k-leeren").addEventListener("click", () => {
+  if (!confirm("Wirklich alle Markierungen löschen?")) return;
+  bereiche = []; offen = {};
+  document.querySelectorAll(".marke").forEach(m => m.classList.remove("an"));
+  zeichne(); baueListe(); el("ausgabe").value = "";
+});
+
+setInterval(() => {
+  if (!vid.duration) return;
+  el("zeit").textContent = vid.currentTime.toFixed(2) + " s";
+  el("kopf").style.left = (vid.currentTime / vid.duration * 100) + "%";
+}, 80);
+</script>
+</body>
+</html>
