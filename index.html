@@ -830,15 +830,24 @@
     liste.innerHTML = '';
     const bis = modalState.today || 0;
     let gefunden = 0;
+    let verpasst = 0;
     for (let t = 1; t <= bis; t++) {
       if (!sprueche[t]) continue;
-      gefunden++;
+      const gehoert = globalGehoert && globalGehoert.has(t);
       const zeile = document.createElement('div');
       zeile.className = 'ak-notiz';
       const nr = document.createElement('b');
       nr.textContent = t + '.';
       const txt = document.createElement('span');
-      txt.textContent = sprueche[t];
+      if (gehoert) {
+        gefunden++;
+        txt.textContent = sprueche[t];
+      } else {
+        verpasst++;
+        zeile.style.opacity = '0.45';
+        txt.textContent = '— an diesem Tag nicht angesprochen —';
+        txt.style.fontStyle = 'italic';
+      }
       zeile.appendChild(nr); zeile.appendChild(txt);
       liste.appendChild(zeile);
     }
@@ -847,6 +856,13 @@
       leer.className = 'ak-modal-text';
       leer.textContent = 'Noch hat er nichts erzählt. Klick ihn an, wenn er unten vorbeigeht.';
       liste.appendChild(leer);
+    } else if (verpasst) {
+      const hinweis = document.createElement('p');
+      hinweis.className = 'ak-modal-text';
+      hinweis.style.marginTop = '10px';
+      hinweis.style.opacity = '0.7';
+      hinweis.textContent = `${verpasst} Tage hat er dir nichts erzählt, weil du ihn nicht gefragt hast. Nachholen geht nicht.`;
+      liste.appendChild(hinweis);
     }
     m.classList.add('show');
     m.setAttribute('aria-hidden', 'false');
@@ -1216,6 +1232,7 @@
   // --- Globaler Zustand ---
   let doorElemente = {};
   let globalOpened = null, globalPuenktlich = null, globalJahr = null, globalConfig = {};
+  let globalGehoert = null; // Tage, an denen der Wanderer wirklich angeklickt wurde
   let modalState = { tag: null, tueren: [], today: 0 };
 
   function navigierbareTage() {
@@ -1418,6 +1435,11 @@
     const rect = walkerEl.getBoundingClientRect();
     walkerEl.style.animationPlayState = 'paused';
     const spruch = sprueche[modalState.today] || fallbackSprueche[(modalState.today || 1) % fallbackSprueche.length];
+    // Nur was man wirklich angeklickt hat, landet spaeter im Notizbuch
+    if (globalGehoert && modalState.today && sprueche[modalState.today] && !globalGehoert.has(modalState.today)) {
+      globalGehoert.add(modalState.today);
+      saveSet(`adventskalender_${globalJahr}_gehoert`, globalGehoert);
+    }
     blase.textContent = spruch;
     blase.classList.add('show');
     blase.style.left = Math.max(8, Math.min(rect.left - wrapRect.left - 40, wrapRect.width - 260)) + 'px';
@@ -1436,6 +1458,7 @@
     doorElemente = {};
     globalOpened = getSet(`adventskalender_${jahr}_opened`);
     globalPuenktlich = getSet(`adventskalender_${jahr}_puenktlich`);
+    globalGehoert = getSet(`adventskalender_${jahr}_gehoert`);
     globalJahr = jahr;
     modalState.tueren = tueren;
     modalState.today = today;
