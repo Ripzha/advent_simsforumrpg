@@ -9,7 +9,7 @@
 :root {
   --nacht: #040a14; --navy: #08192e; --silber: #c9d6e4;
   --messing: #c9992f; --messing-hell: #e8c877; --weiss: #fff;
-  --rot: #c0182b; --gruen: #35d6a0;
+  --rot: #c0182b; --gruen: #35d6a0; --violett: #8a6bd6; --tuerkis: #2fb9c9;
   --text: "Barlow", system-ui, sans-serif;
   --eng: "Barlow Condensed", sans-serif;
 }
@@ -57,6 +57,8 @@ button.laeuft { background: var(--gruen); color: var(--nacht); }
 .spur .block.schnitt { background: var(--rot); color: var(--weiss); }
 .spur .block.bild    { background: var(--messing); }
 .spur .block.kasten  { background: var(--gruen); }
+.spur .block.wackeln { background: var(--violett); color: var(--weiss); }
+.spur .block.schwenk { background: var(--tuerkis); color: var(--nacht); }
 .spur .kopf { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--weiss); z-index: 3; }
 .skala { display: flex; justify-content: space-between;
   font-family: ui-monospace, monospace; font-size: 0.7rem; color: var(--silber); }
@@ -73,6 +75,8 @@ button.laeuft { background: var(--gruen); color: var(--nacht); }
 .marke .punkt.bild   { background: var(--messing); }
 .marke .punkt.kasten { background: var(--gruen); }
 .marke .punkt.schnitt{ background: var(--rot); }
+.marke .punkt.wackeln{ background: var(--violett); }
+.marke .punkt.schwenk{ background: var(--tuerkis); }
 
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.5rem; }
 th { text-align: left; font-family: var(--eng); font-weight: 600; letter-spacing: 0.12em;
@@ -93,7 +97,9 @@ textarea { width: 100%; height: 170px; margin-top: 0.6rem; background: #071322;
 <h1>Eilmeldung <span>markieren</span></h1>
 <p class="hinweis">
   Video abspielen. Eine <b>Zifferntaste</b> startet eine Markierung, dieselbe Taste
-  beendet sie. <b>S</b> markiert einen Abschnitt, der herausgeschnitten werden soll.
+  beendet sie. <b>S</b> markiert einen Abschnitt, der herausgeschnitten werden soll,
+  <b>A</b> einen, an dem die Handkamera unruhiger werden soll,
+  <b>D</b> die Strecke, ueber die der schnelle Schwenk laufen soll.
   <b>Leertaste</b> pausiert, <b>Pfeile</b> springen zwei Sekunden, mit <b>Umschalt</b>
   eine halbe. Fehlgriffe in der Liste unten mit <b>weg</b> löschen.
   Zum Schluss auf <b>Werte erzeugen</b> und den Kasten schicken.
@@ -154,7 +160,8 @@ const MARKEN = [
   { taste: "q", art: "bild",    name: "Vollbild Absperrung",unter: "e-absperrung" },
   { taste: "w", art: "bild",    name: "Kein Signal",        unter: "e-kein-signal" },
   { taste: "e", art: "bild",    name: "Rauschen",           unter: "e-rauschen" },
-  { taste: "a", art: "schnitt", name: "Stärker wackeln",    unter: "hier unruhiger" }
+  { taste: "a", art: "wackeln", name: "Stärker wackeln",    unter: "hier unruhiger" },
+  { taste: "d", art: "schwenk", name: "Schwenk zu Vaas",    unter: "schnell, von hier bis hier" }
 ];
 
 const el = (id) => document.getElementById(id);
@@ -212,7 +219,8 @@ function schalte(taste) {
     delete offen[taste];
     if (feld) feld.classList.remove("an");
     if (bis - von < 0.15) return;
-    bereiche.push({ von, bis, art: m.art, name: m.art === "schnitt" ? "" : m.unter });
+    const ohneDatei = (m.art === "schnitt" || m.art === "wackeln" || m.art === "schwenk");
+    bereiche.push({ von, bis, art: m.art, name: ohneDatei ? "" : m.unter });
     bereiche.sort((a, b) => a.von - b.von);
     zeichne(); baueListe();
   }
@@ -238,8 +246,10 @@ function zeichne() {
     d.className = "block " + b.art;
     d.style.left  = (b.von / vid.duration * 100) + "%";
     d.style.width = Math.max(0.4, (b.bis - b.von) / vid.duration * 100) + "%";
-    d.textContent = b.art === "schnitt" ? "raus" : b.name;
-    d.title = b.name + "  " + b.von.toFixed(2) + " bis " + b.bis.toFixed(2);
+    d.textContent = b.art === "schnitt" ? "raus"
+                  : b.art === "wackeln" ? "wackeln"
+                  : b.art === "schwenk" ? "Schwenk" : b.name;
+    d.title = (b.name || b.art) + "  " + b.von.toFixed(2) + " bis " + b.bis.toFixed(2);
     s.insertBefore(d, el("kopf"));
   });
 }
@@ -251,7 +261,10 @@ function baueListe() {
     const tr = document.createElement("tr");
     tr.innerHTML = '<td>' + b.von.toFixed(2) + '</td><td>' + b.bis.toFixed(2) +
                    '</td><td class="art">' + (b.art === "schnitt" ? "Schnitt heraus"
-                     : b.art === "kasten" ? "Kasten: " + b.name : "Vollbild: " + b.name) + '</td>';
+                     : b.art === "wackeln" ? "Stärker wackeln"
+                     : b.art === "schwenk" ? "Schwenk zu Vaas"
+                     : b.art === "kasten" ? "Kasten: " + b.name
+                     : "Vollbild: " + b.name) + '</td>';
     const td = document.createElement("td");
     const k = document.createElement("button");
     k.className = "still"; k.textContent = "weg";
