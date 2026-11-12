@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Werbung Magazin · Rückkehr</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --nacht: #040a14; --silber: #c9d6e4; --messing: #c9992f;
+  --messing-hell: #e8c877; --weiss: #fff;
+  --text: "Barlow", system-ui, sans-serif;
+  --eng: "Barlow Condensed", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: #000; color: var(--weiss);
+  font-family: var(--text); overflow: hidden;
+}
+.bühne {
+  position: relative; width: 100vw; height: 100vh;
+  background: #000; display: flex; align-items: center; justify-content: center;
+}
+video {
+  width: 100%; height: 100%; object-fit: contain; background: #000;
+  display: none;
+}
+video.an { display: block; }
+
+.fehlt {
+  position: absolute; inset: 0; display: none;
+  align-items: center; justify-content: center; text-align: center;
+  color: var(--messing-hell); font-family: var(--eng); font-size: 1.1rem;
+  letter-spacing: 0.08em; text-transform: uppercase; padding: 2rem;
+}
+.fehlt.an { display: flex; }
+
+.start {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.9rem;
+  background: radial-gradient(ellipse at 50% 40%, #0d2240 0%, #050d1a 60%, #02060c 100%);
+}
+.start.weg { display: none; }
+.start h1 {
+  font-family: var(--eng); font-weight: 700; font-size: 1.6rem;
+  letter-spacing: 0.2em; text-transform: uppercase; margin: 0;
+}
+.start h1 span { color: var(--messing-hell); }
+.start p { color: var(--silber); font-size: 0.9rem; margin: 0; }
+button {
+  font-family: var(--eng); font-weight: 700; font-size: 0.95rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--nacht); background: var(--messing);
+  border: none; padding: 0.6em 1.6em; cursor: pointer;
+}
+button:hover { background: var(--messing-hell); }
+
+.leiste {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.5rem 0.9rem; background: rgba(4,10,20,0.72);
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem;
+  color: var(--silber);
+}
+.leiste.weg { display: none; }
+.leiste .spur {
+  flex: 1; height: 4px; background: rgba(201,214,228,0.2); position: relative;
+}
+.leiste .spur i {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+  background: var(--messing); display: block;
+}
+.leiste .marke { font-family: var(--eng); letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--messing-hell); }
+</style>
+</head>
+<body>
+
+<div class="bühne" id="bühne">
+
+  <video id="spot" playsinline preload="auto"></video>
+  <video id="kennung" playsinline preload="auto"></video>
+
+  <div class="fehlt" id="fehlt">Datei nicht gefunden — Pfade in KONFIG prüfen</div>
+
+  <div class="start" id="start">
+    <h1>Werbung <span>Magazin</span></h1>
+    <p>Werbeblock und Rückkehrkennung, Blöcke 14 und 15</p>
+    <button id="start-knopf">Abspielen</button>
+    <p style="font-size:0.78rem">T blendet die Leiste aus · R startet neu</p>
+  </div>
+
+  <div class="leiste" id="leiste">
+    <span class="marke" id="marke">Werbung</span>
+    <span id="zeit">0.0 / 0.0</span>
+    <span class="spur"><i id="füll"></i></span>
+  </div>
+
+</div>
+
+<script>
+/* ===================================================================
+   KONFIG — zwei Abschnitte, die nacheinander laufen.
+   14  Werbespot fürs Magazin, fertiges Video mit Stimme und Musik
+   15  Rückkehrkennung, führt zurück in die Sendung
+   =================================================================== */
+const KONFIG = {
+
+  fassung: "v1 · Werbung Magazin",
+
+  abschnitte: [
+    { id: "spot",    marke: "Werbung",  datei: "clips/werbung-magazin.mp4" },
+    { id: "kennung", marke: "Rückkehr", datei: "clips/simswelt-news-rueckkehr.mp4" }
+  ]
+};
+
+/* =================================================================== */
+
+const el = (id) => document.getElementById(id);
+let nr = 0;
+let leisteAn = true;
+
+KONFIG.abschnitte.forEach(function (a) {
+  const v = el(a.id);
+  v.src = a.datei;
+  v.addEventListener("error", function () { el("fehlt").classList.add("an"); });
+});
+
+function zeige(i) {
+  KONFIG.abschnitte.forEach(function (a, k) {
+    el(a.id).classList.toggle("an", k === i);
+  });
+  el("marke").textContent = KONFIG.abschnitte[i].marke;
+}
+
+function spiele(i) {
+  if (i >= KONFIG.abschnitte.length) { fertig(); return; }
+  nr = i;
+  zeige(i);
+  const v = el(KONFIG.abschnitte[i].id);
+  v.currentTime = 0;
+  const p = v.play();
+  if (p && p.catch) p.catch(function () {});
+}
+
+function fertig() {
+  const letzte = KONFIG.abschnitte[KONFIG.abschnitte.length - 1];
+  el(letzte.id).classList.add("an");
+  el("marke").textContent = "Ende";
+}
+
+KONFIG.abschnitte.forEach(function (a, k) {
+  el(a.id).addEventListener("ended", function () { spiele(k + 1); });
+});
+
+el("start-knopf").addEventListener("click", function () {
+  el("start").classList.add("weg");
+  spiele(0);
+});
+
+document.addEventListener("keydown", function (e) {
+  const k = e.key.toLowerCase();
+  if (k === "t") {
+    leisteAn = !leisteAn;
+    el("leiste").classList.toggle("weg", !leisteAn);
+  }
+  if (k === "r") {
+    KONFIG.abschnitte.forEach(function (a) {
+      const v = el(a.id); v.pause(); v.currentTime = 0;
+    });
+    el("start").classList.remove("weg");
+    zeige(0);
+  }
+});
+
+setInterval(function () {
+  const v = el(KONFIG.abschnitte[nr].id);
+  if (!v.duration || !isFinite(v.duration)) return;
+  el("zeit").textContent = v.currentTime.toFixed(1) + " / " + v.duration.toFixed(1);
+  el("füll").style.width = (v.currentTime / v.duration * 100) + "%";
+}, 100);
+
+zeige(0);
+</script>
+</body>
+</html>

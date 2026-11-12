@@ -350,7 +350,7 @@ html, body {
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v1 · Eilmeldung",
+  fassung: "v2 · Eilmeldung",
 
   clip: "clips/eilmeldung-video.mp4",
   uhrzeit: "21:52",
@@ -359,27 +359,13 @@ const KONFIG = {
      Mit S in der laufenden Wiedergabe setzen, in der Spur ziehen.      */
   spruenge: [],
 
-  /* Einblendungen über das ganze Bild */
-  vollbild: [
-    { ab: 18.0, bis: 22.0, datei: "clips/e-verteilerkasten.mp4",
-      titel: "Nicht genehmigter Anschluss", ort: "Verteilerkasten der Stadtwerke" },
-    { ab: 34.0, bis: 38.0, datei: "clips/e-baum-fahrt.mp4",
-      titel: "Sechs Meter", ort: "Vierundsechzig Geräte" },
-    { ab: 40.0, bis: 44.0, datei: "clips/e-rauch.mp4",
-      titel: "Es qualmt", ort: "Zweite Reihe" },
-    { ab: 44.0, bis: 47.5, datei: "clips/e-feuerwehr.mp4",
-      titel: "Löschtrupp davor", ort: "Feuerwehr vor Ort" },
-    { ab: 47.5, bis: 50.5, datei: "clips/e-kabel.mp4",
-      titel: "Kabel über die Fahrbahn", ort: "Bis zum Verteilerkasten" },
-    { ab: 50.5, bis: 54.0, datei: "clips/e-anwohner.mp4",
-      titel: "Dreihundertzwölf Haushalte", ort: "Im Dunkeln" }
-  ],
+  /* Einblendungen über das ganze Bild.
+     Leer, weil die sechs Einblendungen bereits ins Video gerechnet sind. */
+  vollbild: [],
 
-  /* Kasten rechts neben Konstanze, nur im Studio am Anfang */
-  kasten: [
-    { ab: 12.0, bis: 25.5, bild: "bilder/e-ripzha-steht.png",
-      titel: "Ripzha", ort: "Live · San Sequoia" }
-  ],
+  /* Kasten rechts neben Konstanze.
+     Leer, weil Feuerwehrbild und Ripzhas Standbild bereits im Video stecken. */
+  kasten: [],
 
   /* Bauchbinden */
   binden: [
