@@ -1,13 +1,13 @@
-/* Musik zum Bild. Fassung 5.
-   Türchen mit Bild und Lied: unter dem Bild steht der Player im Papierrahmen
-   des Kalenders, darüber eine Zeile mit dem Namen des Liedes.
-   Aktiv wird das, sobald in der Türchen-Zeile die Spalte musik_url gefüllt ist.
-   video_url bleibt unberührt und zeigt weiterhin das Video (Hymne).
+/* Musik zum Bild. Fassung 6.
+   Türchen mit Bild und Lied: unter dem Bild steht eine schmale Leiste.
+   Links darin sitzt ein kleines Fenster, das genau den roten Play-Knopf
+   von YouTube zeigt. Der Player selbst ist in voller Grösse vorhanden,
+   nur eben abgeschnitten. Dadurch drückt man YouTubes eigenen Knopf,
+   und das ist der einzige Weg, auf dem der Ton zuverlässig startet.
+   Ein zweiter Druck auf dasselbe Fenster hält die Musik wieder an.
 
-   Warum so und nicht unsichtbar mit eigenem Knopf:
-   Browser lassen Ton nicht von allein starten, und einen fremden Player
-   von aussen zu steuern verweigern sie ebenfalls. YouTubes eigener
-   Play-Knopf ist der einzige Weg, der immer funktioniert. */
+   Aktiv wird die Leiste, sobald in der Türchen-Zeile die Spalte musik_url
+   gefüllt ist. video_url bleibt unberührt und zeigt weiterhin das Video. */
 (function () {
   var bildRahmen = document.getElementById('ak-modal-image-rahmen');
   if (!bildRahmen || typeof showModal !== 'function') {
@@ -15,39 +15,46 @@
     return;
   }
 
+  // Masse des Ausschnitts und des dahinterliegenden Players
+  var FENSTER_B = 92, FENSTER_H = 58;
+  var PLAYER_B = 480, PLAYER_H = 270;
+
   /* ---------- Aussehen ---------- */
   var stil = document.createElement('style');
   stil.textContent = [
-    '.ak-musik-zeile { display: none; align-items: baseline; gap: 7px; margin: -6px 0 7px;',
-    '  font-family: var(--serif); font-size: 13.5px; font-style: italic; color: var(--tinte-hell); }',
-    '.ak-musik-zeile.an { display: flex; }',
-    '.ak-musik-note { font-style: normal; flex: none; }',
-    '.ak-musik-titel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
-    '.ak-musik-rahmen { display: none; border: 1px solid var(--cream-tief); border-radius: 8px;',
-    '  padding: 5px; background: #fff8ea; margin-bottom: 16px; }',
-    '.ak-musik-rahmen.an { display: block; }',
-    '.ak-musik-box { position: relative; width: 100%; padding-top: 56.25%;',
-    '  border-radius: 5px; overflow: hidden; background: #0a1220; }',
-    '.ak-musik-box iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }'
+    '.ak-musik { display: none; align-items: center; gap: 13px; margin: -4px 0 16px; padding: 9px 13px;',
+    '  border: 1px solid var(--cream-tief); border-radius: 9px; background: rgba(216, 200, 154, 0.26); }',
+    '.ak-musik.an { display: flex; }',
+    /* Das Guckloch auf den Play-Knopf */
+    '.ak-musik-luke { flex: none; position: relative; overflow: hidden; border-radius: 7px;',
+    '  width: ' + FENSTER_B + 'px; height: ' + FENSTER_H + 'px; background: #0a1220;',
+    '  border: 1px solid var(--cream-tief); }',
+    '.ak-musik-luke iframe { position: absolute; border: 0; display: block;',
+    '  width: ' + PLAYER_B + 'px; height: ' + PLAYER_H + 'px;',
+    '  left: ' + Math.round((FENSTER_B - PLAYER_B) / 2) + 'px;',
+    '  top: ' + Math.round((FENSTER_H - PLAYER_H) / 2) + 'px; }',
+    '.ak-musik-text { flex: 1; min-width: 0; }',
+    '.ak-musik-titel { display: block; font-family: var(--serif); font-style: italic;',
+    '  font-size: 14.5px; color: var(--tinte-mittel);',
+    '  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
+    '.ak-musik-hinweis { display: block; font-size: 11.5px; color: var(--tinte-hell); margin-top: 2px; }',
+    '@media (max-width: 420px) { .ak-musik-hinweis { display: none; } }'
   ].join('\n');
   document.head.appendChild(stil);
 
   /* ---------- Bausteine ---------- */
-  var zeile = document.createElement('p');
-  zeile.className = 'ak-musik-zeile';
-  zeile.id = 'ak-musik-zeile';
-  zeile.innerHTML = '<span class="ak-musik-note" aria-hidden="true">♪</span>'
-    + '<span class="ak-musik-titel" id="ak-musik-titel"></span>';
+  var leiste = document.createElement('div');
+  leiste.className = 'ak-musik';
+  leiste.id = 'ak-musik';
+  leiste.innerHTML =
+    '<div class="ak-musik-luke" id="ak-musik-luke"></div>' +
+    '<span class="ak-musik-text">' +
+      '<span class="ak-musik-titel" id="ak-musik-titel"></span>' +
+      '<span class="ak-musik-hinweis">Auf den Knopf drücken, dann läuft die Musik zum Bild.</span>' +
+    '</span>';
+  bildRahmen.insertAdjacentElement('afterend', leiste);
 
-  var rahmen = document.createElement('div');
-  rahmen.className = 'ak-musik-rahmen';
-  rahmen.id = 'ak-musik-rahmen';
-  rahmen.innerHTML = '<div class="ak-musik-box" id="ak-musik-box"></div>';
-
-  bildRahmen.insertAdjacentElement('afterend', rahmen);
-  bildRahmen.insertAdjacentElement('afterend', zeile);
-
-  var box = document.getElementById('ak-musik-box');
+  var luke = document.getElementById('ak-musik-luke');
   var titel = document.getElementById('ak-musik-titel');
 
   /* ---------- Hilfen ---------- */
@@ -62,19 +69,19 @@
   }
 
   function aus() {
-    box.innerHTML = '';          // leeren hält den Ton an
-    rahmen.classList.remove('an');
-    zeile.classList.remove('an');
+    luke.innerHTML = '';           // leeren hält den Ton an
+    leiste.classList.remove('an');
   }
 
   function an(id, name) {
     titel.textContent = name;
-    zeile.classList.add('an');
-    box.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id
-      + '?rel=0&modestbranding=1&playsinline=1" title="Musik zum Bild" loading="lazy" '
-      + 'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" '
-      + 'allowfullscreen></iframe>';
-    rahmen.classList.add('an');
+    // controls=0 blendet die Bedienleiste aus, damit im Ausschnitt nur der Knopf steht
+    luke.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id
+      + '?rel=0&modestbranding=1&playsinline=1&controls=0&disablekb=1" '
+      + 'title="Musik zum Bild" loading="lazy" '
+      + 'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">'
+      + '</iframe>';
+    leiste.classList.add('an');
   }
 
   /* ---------- Einklinken in Modal auf und zu ---------- */
