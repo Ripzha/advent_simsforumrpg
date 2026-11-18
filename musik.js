@@ -1,12 +1,19 @@
-/* Musik-Leiste für Türchen mit Bild und Lied.
+/* Musik-Leiste für Türchen mit Bild und Lied. Fassung 2.
    Das Bild bleibt gross, der YouTube-Ton läuft über eine schmale Leiste darunter.
    Aktiv wird die Leiste, sobald in der Türchen-Zeile die Spalte musik_url gefüllt ist.
    Das bestehende Verhalten bleibt unangetastet:
-   video_url zeigt weiterhin das Video (Hymne), musik_url zeigt Bild plus Ton. */
+   video_url zeigt weiterhin das Video (Hymne), musik_url zeigt Bild plus Ton.
+   Gegenüber Fassung 1 geändert:
+   - Ein Klick vor dem Laden geht nicht mehr verloren, er wird nachgeholt.
+   - Der Player hat jetzt echte Masse und sitzt nur unsichtbar in der Ecke.
+   - Jeder Fehler steht in der Leiste und zusätzlich in der Browser-Konsole. */
 (function () {
   var karte = document.querySelector('#ak-modal .ak-modal-card');
   var bildRahmen = document.getElementById('ak-modal-image-rahmen');
-  if (!karte || !bildRahmen || typeof showModal !== 'function') return;
+  if (!karte || !bildRahmen || typeof showModal !== 'function') {
+    console.warn('[musik] Einstieg nicht gefunden, Leiste bleibt aus.');
+    return;
+  }
 
   /* ---------- Aussehen ---------- */
   var stil = document.createElement('style');
@@ -30,8 +37,9 @@
     '.ak-musik.spielt .ak-musik-wellen i:nth-child(3) { animation-delay: 0.36s; }',
     '.ak-musik.spielt .ak-musik-wellen i:nth-child(4) { animation-delay: 0.54s; }',
     '@keyframes ak-welle { 0%, 100% { height: 4px; } 50% { height: 15px; } }',
-    '.ak-musik-player { position: fixed; left: -9999px; top: 0; width: 1px; height: 1px;',
-    '  overflow: hidden; opacity: 0; pointer-events: none; }',
+    /* Echte Masse, damit der Browser die Wiedergabe nicht verweigert, aber unsichtbar */
+    '.ak-musik-player { position: fixed; right: 0; bottom: 0; width: 200px; height: 120px;',
+    '  opacity: 0.01; pointer-events: none; z-index: -1; }',
     '@media (prefers-reduced-motion: reduce) {',
     '  .ak-musik.spielt .ak-musik-wellen i { animation: none; height: 10px; } }'
   ].join('\n');
@@ -72,52 +80,75 @@
   playerHalter.innerHTML = '<div id="ak-musik-ziel"></div>';
   document.body.appendChild(playerHalter);
 
-  /* ---------- YouTube-Player ---------- */
+  /* ---------- Zustand ---------- */
   var player = null;
-  var playerBereit = false;
-  var wartendeId = null;   // Lied, das gesetzt wurde, bevor der Player bereit war
+  var bereit = false;
+  var apiLaeuft = false;
+  var wunschId = null;      // Lied, das gespielt werden soll, sobald der Player kann
+  var wunschStart = false;  // Soll es von selbst losgehen?
   var aktuelleId = null;
+  var titelText = '';
 
+  function setzeText(t) { text.textContent = t; }
+  function zeigePlay() { knopf.innerHTML = IKON_PLAY; knopf.setAttribute('aria-label', 'Musik abspielen'); }
+  function zeigePause() { knopf.innerHTML = IKON_PAUSE; knopf.setAttribute('aria-label', 'Musik anhalten'); }
+
+  /* ---------- YouTube-Player ---------- */
   function ladeApi() {
     if (window.YT && window.YT.Player) { bauePlayer(); return; }
-    if (document.getElementById('ak-musik-api')) return;
-    var s = document.createElement('script');
-    s.id = 'ak-musik-api';
-    s.src = 'https://www.youtube.com/iframe_api';
+    if (apiLaeuft) return;
+    apiLaeuft = true;
     var vorher = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = function () {
-      if (typeof vorher === 'function') vorher();
+      if (typeof vorher === 'function') { try { vorher(); } catch (e) {} }
       bauePlayer();
     };
+    var s = document.createElement('script');
+    s.src = 'https://www.youtube.com/iframe_api';
+    s.onerror = function () {
+      console.warn('[musik] YouTube-Schnittstelle konnte nicht geladen werden.');
+      setzeText('Musik konnte nicht geladen werden.');
+    };
     document.head.appendChild(s);
+    // Wenn nach acht Sekunden nichts kommt, sagt es die Leiste statt still zu bleiben
+    setTimeout(function () {
+      if (!bereit && leiste.classList.contains('an')) {
+        console.warn('[musik] Player wurde nicht bereit. YT vorhanden:', !!window.YT);
+        setzeText('Musik konnte nicht geladen werden.');
+      }
+    }, 8000);
   }
 
   function bauePlayer() {
     if (player) return;
-    player = new YT.Player('ak-musik-ziel', {
-      height: '1',
-      width: '1',
-      host: 'https://www.youtube-nocookie.com',
-      playerVars: { playsinline: 1, rel: 0 },
-      events: {
-        onReady: function () {
-          playerBereit = true;
-          if (wartendeId) { var id = wartendeId; wartendeId = null; spieleId(id, true); }
-        },
-        onStateChange: function (e) {
-          var spielt = (e.data === YT.PlayerState.PLAYING);
-          leiste.classList.toggle('spielt', spielt);
-          knopf.innerHTML = spielt ? IKON_PAUSE : IKON_PLAY;
-          knopf.setAttribute('aria-label', spielt ? 'Musik anhalten' : 'Musik abspielen');
-        },
-        onError: function () {
-          // Lied gesperrt oder nicht einbettbar: Leiste sagt es, statt still zu bleiben
-          text.textContent = 'Dieses Lied lässt sich hier nicht abspielen.';
-          leiste.classList.remove('spielt');
-          knopf.innerHTML = IKON_PLAY;
+    try {
+      player = new YT.Player('ak-musik-ziel', {
+        height: '120',
+        width: '200',
+        // Kein eigener host: sonst gehen die Steuerbefehle an die falsche Gegenstelle
+        playerVars: { playsinline: 1, rel: 0, origin: location.origin },
+        events: {
+          onReady: function () {
+            bereit = true;
+            if (wunschId) spieleId(wunschId, wunschStart);
+          },
+          onStateChange: function (e) {
+            var spielt = (e.data === YT.PlayerState.PLAYING);
+            leiste.classList.toggle('spielt', spielt);
+            if (spielt) { zeigePause(); setzeText(titelText); } else { zeigePlay(); }
+          },
+          onError: function (e) {
+            console.warn('[musik] YouTube meldet Fehler', e && e.data);
+            setzeText('Dieses Lied lässt sich hier nicht abspielen.');
+            leiste.classList.remove('spielt');
+            zeigePlay();
+          }
         }
-      }
-    });
+      });
+    } catch (err) {
+      console.warn('[musik] Player liess sich nicht bauen:', err);
+      setzeText('Musik konnte nicht geladen werden.');
+    }
   }
 
   /* ---------- Hilfen ---------- */
@@ -127,34 +158,46 @@
     var m = u.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
     if (m) return m[1];
     if (/^[A-Za-z0-9_-]{11}$/.test(u)) return u;
+    console.warn('[musik] Aus diesem Link liess sich keine Video-Kennung lesen:', u);
     return '';
   }
 
-  function spieleId(id, sofort) {
-    if (!playerBereit) { wartendeId = id; ladeApi(); return; }
+  function spieleId(id, starten) {
+    wunschId = id;
+    wunschStart = !!starten;
+    if (!bereit) { ladeApi(); return; }
     if (id !== aktuelleId) {
       aktuelleId = id;
-      player.loadVideoById(id);   // startet von selbst, wo der Browser es zulässt
-    } else if (sofort) {
+      if (starten) player.loadVideoById(id);   // lädt und startet
+      else player.cueVideoById(id);            // lädt und wartet
+    } else if (starten) {
       player.playVideo();
     }
   }
 
   function haltAn() {
     leiste.classList.remove('spielt');
-    knopf.innerHTML = IKON_PLAY;
-    knopf.setAttribute('aria-label', 'Musik abspielen');
-    if (player && playerBereit) { try { player.stopVideo(); } catch (e) {} }
+    zeigePlay();
+    if (player && bereit) { try { player.stopVideo(); } catch (e) {} }
     aktuelleId = null;
-    wartendeId = null;
+    wunschId = null;
+    wunschStart = false;
   }
 
   knopf.addEventListener('click', function (e) {
     e.stopPropagation();
-    if (!player || !playerBereit) { ladeApi(); return; }
-    var zustand = player.getPlayerState();
+    // Vor dem Laden geht der Klick nicht verloren: er wird als Wunsch gemerkt
+    if (!player || !bereit) {
+      wunschStart = true;
+      setzeText('Musik wird geladen …');
+      ladeApi();
+      return;
+    }
+    var zustand = -1;
+    try { zustand = player.getPlayerState(); } catch (err) { console.warn('[musik]', err); }
     if (zustand === YT.PlayerState.PLAYING) player.pauseVideo();
-    else player.playVideo();
+    else if (aktuelleId) player.playVideo();
+    else if (wunschId) spieleId(wunschId, true);
   });
 
   /* ---------- Einklinken in Modal auf und zu ---------- */
@@ -162,14 +205,18 @@
   showModal = function (tag) {
     zeigeOriginal(tag);
     var daten = getTuerData(tag, modalState.tueren) || {};
-    var id = musikId(daten.musik_url || daten.musik || daten.lied_url);
+    var roh = daten.musik_url || daten.musik || daten.lied_url || '';
+    var id = musikId(roh);
     var bildSichtbar = bildRahmen.style.display !== 'none';
     if (id && bildSichtbar) {
-      text.textContent = daten.musik_titel || daten.lied || 'Musik zum Bild';
+      titelText = daten.musik_titel || daten.lied || 'Musik zum Bild';
+      setzeText(titelText);
       leiste.classList.add('an');
+      zeigePlay();
       ladeApi();
       spieleId(id, true);
     } else {
+      if (roh && !bildSichtbar) console.warn('[musik] Musik vorhanden, aber kein Bild sichtbar — video_url gesetzt?');
       leiste.classList.remove('an');
       haltAn();
     }
