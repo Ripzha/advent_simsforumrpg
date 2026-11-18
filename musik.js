@@ -1,12 +1,13 @@
-/* Musik-Leiste für Türchen mit Bild und Lied. Fassung 2.
+/* Musik-Leiste für Türchen mit Bild und Lied. Fassung 3.
    Das Bild bleibt gross, der YouTube-Ton läuft über eine schmale Leiste darunter.
    Aktiv wird die Leiste, sobald in der Türchen-Zeile die Spalte musik_url gefüllt ist.
    Das bestehende Verhalten bleibt unangetastet:
    video_url zeigt weiterhin das Video (Hymne), musik_url zeigt Bild plus Ton.
-   Gegenüber Fassung 1 geändert:
-   - Ein Klick vor dem Laden geht nicht mehr verloren, er wird nachgeholt.
-   - Der Player hat jetzt echte Masse und sitzt nur unsichtbar in der Ecke.
-   - Jeder Fehler steht in der Leiste und zusätzlich in der Browser-Konsole. */
+
+   Gegenüber Fassung 2 vollständig umgebaut:
+   Kein iframe_api und kein www-widgetapi mehr. Der Player ist ein gewöhnliches
+   Einbettungs-Fenster, gesteuert über Nachrichten an das Fenster selbst.
+   Damit entfallen die Herkunfts-Fehler beim postMessage. */
 (function () {
   var karte = document.querySelector('#ak-modal .ak-modal-card');
   var bildRahmen = document.getElementById('ak-modal-image-rahmen');
@@ -14,6 +15,8 @@
     console.warn('[musik] Einstieg nicht gefunden, Leiste bleibt aus.');
     return;
   }
+
+  var YT_ORIGIN = 'https://www.youtube.com';
 
   /* ---------- Aussehen ---------- */
   var stil = document.createElement('style');
@@ -39,7 +42,7 @@
     '@keyframes ak-welle { 0%, 100% { height: 4px; } 50% { height: 15px; } }',
     /* Echte Masse, damit der Browser die Wiedergabe nicht verweigert, aber unsichtbar */
     '.ak-musik-player { position: fixed; right: 0; bottom: 0; width: 200px; height: 120px;',
-    '  opacity: 0.01; pointer-events: none; z-index: -1; }',
+    '  opacity: 0.01; pointer-events: none; z-index: -1; border: 0; }',
     '@media (prefers-reduced-motion: reduce) {',
     '  .ak-musik.spielt .ak-musik-wellen i { animation: none; height: 10px; } }'
   ].join('\n');
@@ -74,82 +77,90 @@
   leiste.appendChild(wellen);
   bildRahmen.insertAdjacentElement('afterend', leiste);
 
-  // Der Player hängt ausserhalb der Karte, damit ihn kein Klick auf das Modal trifft
-  var playerHalter = document.createElement('div');
-  playerHalter.className = 'ak-musik-player';
-  playerHalter.innerHTML = '<div id="ak-musik-ziel"></div>';
-  document.body.appendChild(playerHalter);
-
   /* ---------- Zustand ---------- */
-  var player = null;
-  var bereit = false;
-  var apiLaeuft = false;
-  var wunschId = null;      // Lied, das gespielt werden soll, sobald der Player kann
-  var wunschStart = false;  // Soll es von selbst losgehen?
+  var rahmen = null;        // das Einbettungs-Fenster
   var aktuelleId = null;
+  var spielt = false;
   var titelText = '';
 
   function setzeText(t) { text.textContent = t; }
-  function zeigePlay() { knopf.innerHTML = IKON_PLAY; knopf.setAttribute('aria-label', 'Musik abspielen'); }
-  function zeigePause() { knopf.innerHTML = IKON_PAUSE; knopf.setAttribute('aria-label', 'Musik anhalten'); }
-
-  /* ---------- YouTube-Player ---------- */
-  function ladeApi() {
-    if (window.YT && window.YT.Player) { bauePlayer(); return; }
-    if (apiLaeuft) return;
-    apiLaeuft = true;
-    var vorher = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = function () {
-      if (typeof vorher === 'function') { try { vorher(); } catch (e) {} }
-      bauePlayer();
-    };
-    var s = document.createElement('script');
-    s.src = 'https://www.youtube.com/iframe_api';
-    s.onerror = function () {
-      console.warn('[musik] YouTube-Schnittstelle konnte nicht geladen werden.');
-      setzeText('Musik konnte nicht geladen werden.');
-    };
-    document.head.appendChild(s);
-    // Wenn nach acht Sekunden nichts kommt, sagt es die Leiste statt still zu bleiben
-    setTimeout(function () {
-      if (!bereit && leiste.classList.contains('an')) {
-        console.warn('[musik] Player wurde nicht bereit. YT vorhanden:', !!window.YT);
-        setzeText('Musik konnte nicht geladen werden.');
-      }
-    }, 8000);
+  function zeigePlay() {
+    knopf.innerHTML = IKON_PLAY;
+    knopf.setAttribute('aria-label', 'Musik abspielen');
+    leiste.classList.remove('spielt');
+    spielt = false;
+  }
+  function zeigePause() {
+    knopf.innerHTML = IKON_PAUSE;
+    knopf.setAttribute('aria-label', 'Musik anhalten');
+    leiste.classList.add('spielt');
+    spielt = true;
   }
 
-  function bauePlayer() {
-    if (player) return;
+  /* ---------- Player ---------- */
+  function baueRahmen(id, startenSofort) {
+    entferneRahmen();
+    rahmen = document.createElement('iframe');
+    rahmen.className = 'ak-musik-player';
+    rahmen.id = 'ak-musik-rahmen';
+    rahmen.allow = 'autoplay; encrypted-media';
+    rahmen.setAttribute('title', 'Musik');
+    rahmen.src = YT_ORIGIN + '/embed/' + id +
+      '?enablejsapi=1&playsinline=1&rel=0&modestbranding=1' +
+      '&autoplay=' + (startenSofort ? '1' : '0') +
+      '&origin=' + encodeURIComponent(location.origin);
+    document.body.appendChild(rahmen);
+    aktuelleId = id;
+    if (startenSofort) zeigePause(); else zeigePlay();
+  }
+
+  function entferneRahmen() {
+    if (rahmen && rahmen.parentNode) rahmen.parentNode.removeChild(rahmen);
+    rahmen = null;
+    aktuelleId = null;
+    zeigePlay();
+  }
+
+  // Befehl ans Einbettungs-Fenster schicken
+  function befehl(name) {
+    if (!rahmen || !rahmen.contentWindow) return false;
     try {
-      player = new YT.Player('ak-musik-ziel', {
-        height: '120',
-        width: '200',
-        // Kein eigener host: sonst gehen die Steuerbefehle an die falsche Gegenstelle
-        playerVars: { playsinline: 1, rel: 0, origin: location.origin },
-        events: {
-          onReady: function () {
-            bereit = true;
-            if (wunschId) spieleId(wunschId, wunschStart);
-          },
-          onStateChange: function (e) {
-            var spielt = (e.data === YT.PlayerState.PLAYING);
-            leiste.classList.toggle('spielt', spielt);
-            if (spielt) { zeigePause(); setzeText(titelText); } else { zeigePlay(); }
-          },
-          onError: function (e) {
-            console.warn('[musik] YouTube meldet Fehler', e && e.data);
-            setzeText('Dieses Lied lässt sich hier nicht abspielen.');
-            leiste.classList.remove('spielt');
-            zeigePlay();
-          }
-        }
-      });
+      rahmen.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func: name, args: [] }),
+        YT_ORIGIN
+      );
+      return true;
     } catch (err) {
-      console.warn('[musik] Player liess sich nicht bauen:', err);
-      setzeText('Musik konnte nicht geladen werden.');
+      console.warn('[musik] Befehl', name, 'fehlgeschlagen:', err);
+      return false;
     }
   }
+
+  // YouTube meldet seinen Zustand zurück, sobald wir zuhören
+  window.addEventListener('message', function (e) {
+    if (!rahmen || e.source !== rahmen.contentWindow) return;
+    if (String(e.origin).indexOf('youtube.com') === -1) return;
+    var daten = null;
+    try { daten = JSON.parse(e.data); } catch (err) { return; }
+    if (!daten) return;
+    if (daten.event === 'onReady') {
+      // Zuhören anmelden, damit Zustandsmeldungen kommen
+      try {
+        rahmen.contentWindow.postMessage(
+          JSON.stringify({ event: 'listening', id: 'ak-musik' }), YT_ORIGIN
+        );
+      } catch (err) {}
+    }
+    var zustand = daten.info && typeof daten.info.playerState === 'number'
+      ? daten.info.playerState : null;
+    if (zustand === 1) { zeigePause(); setzeText(titelText); }
+    else if (zustand === 2 || zustand === 0 || zustand === 5) { zeigePlay(); }
+    if (daten.info && daten.info.errorCode) {
+      console.warn('[musik] YouTube meldet Fehler', daten.info.errorCode);
+      setzeText('Dieses Lied lässt sich hier nicht abspielen.');
+      zeigePlay();
+    }
+  });
 
   /* ---------- Hilfen ---------- */
   function musikId(url) {
@@ -162,42 +173,24 @@
     return '';
   }
 
-  function spieleId(id, starten) {
-    wunschId = id;
-    wunschStart = !!starten;
-    if (!bereit) { ladeApi(); return; }
-    if (id !== aktuelleId) {
-      aktuelleId = id;
-      if (starten) player.loadVideoById(id);   // lädt und startet
-      else player.cueVideoById(id);            // lädt und wartet
-    } else if (starten) {
-      player.playVideo();
-    }
-  }
-
-  function haltAn() {
-    leiste.classList.remove('spielt');
-    zeigePlay();
-    if (player && bereit) { try { player.stopVideo(); } catch (e) {} }
-    aktuelleId = null;
-    wunschId = null;
-    wunschStart = false;
-  }
-
   knopf.addEventListener('click', function (e) {
     e.stopPropagation();
-    // Vor dem Laden geht der Klick nicht verloren: er wird als Wunsch gemerkt
-    if (!player || !bereit) {
-      wunschStart = true;
-      setzeText('Musik wird geladen …');
-      ladeApi();
+    var id = knopf.dataset.id || aktuelleId;
+    if (!id) return;
+    if (!rahmen || aktuelleId !== id) {
+      // Erster Druck oder anderes Lied: Fenster neu bauen, diesmal mit Start
+      baueRahmen(id, true);
+      setzeText(titelText);
       return;
     }
-    var zustand = -1;
-    try { zustand = player.getPlayerState(); } catch (err) { console.warn('[musik]', err); }
-    if (zustand === YT.PlayerState.PLAYING) player.pauseVideo();
-    else if (aktuelleId) player.playVideo();
-    else if (wunschId) spieleId(wunschId, true);
+    if (spielt) {
+      if (!befehl('pauseVideo')) baueRahmen(id, false);
+      zeigePlay();
+    } else {
+      // Klappt der Befehl nicht, hilft Neubauen mit Startvorgabe immer
+      if (!befehl('playVideo')) baueRahmen(id, true);
+      zeigePause();
+    }
   });
 
   /* ---------- Einklinken in Modal auf und zu ---------- */
@@ -211,14 +204,15 @@
     if (id && bildSichtbar) {
       titelText = daten.musik_titel || daten.lied || 'Musik zum Bild';
       setzeText(titelText);
+      knopf.dataset.id = id;
       leiste.classList.add('an');
-      zeigePlay();
-      ladeApi();
-      spieleId(id, true);
+      // Versuch, gleich loszulegen. Verweigert der Browser das, bleibt der Knopf auf Play
+      baueRahmen(id, true);
     } else {
       if (roh && !bildSichtbar) console.warn('[musik] Musik vorhanden, aber kein Bild sichtbar — video_url gesetzt?');
       leiste.classList.remove('an');
-      haltAn();
+      knopf.dataset.id = '';
+      entferneRahmen();
     }
   };
 
@@ -226,6 +220,6 @@
   closeModal = function () {
     schliesseOriginal();
     leiste.classList.remove('an');
-    haltAn();
+    entferneRahmen();
   };
 })();
