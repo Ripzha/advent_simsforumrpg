@@ -1,13 +1,13 @@
-/* Musik-Leiste für Türchen mit Bild und Lied. Fassung 3.
+/* Musik-Leiste für Türchen mit Bild und Lied. Fassung 4.
    Das Bild bleibt gross, der YouTube-Ton läuft über eine schmale Leiste darunter.
    Aktiv wird die Leiste, sobald in der Türchen-Zeile die Spalte musik_url gefüllt ist.
-   Das bestehende Verhalten bleibt unangetastet:
    video_url zeigt weiterhin das Video (Hymne), musik_url zeigt Bild plus Ton.
 
-   Gegenüber Fassung 2 vollständig umgebaut:
-   Kein iframe_api und kein www-widgetapi mehr. Der Player ist ein gewöhnliches
-   Einbettungs-Fenster, gesteuert über Nachrichten an das Fenster selbst.
-   Damit entfallen die Herkunfts-Fehler beim postMessage. */
+   Gegenüber Fassung 3 geändert:
+   - Es wird nichts mehr behauptet: "spielt" zeigt die Leiste erst, wenn YouTube es meldet.
+   - Klappt die unsichtbare Wiedergabe nicht, erscheint der Player sichtbar unter dem Bild.
+     Das passiert, wenn die Seite in einem fremden Fenster steckt, das Ton nicht weitergibt.
+   - Jeder Schritt meldet sich in der Konsole mit [musik]. */
 (function () {
   var karte = document.querySelector('#ak-modal .ak-modal-card');
   var bildRahmen = document.getElementById('ak-modal-image-rahmen');
@@ -17,6 +17,7 @@
   }
 
   var YT_ORIGIN = 'https://www.youtube.com';
+  var WARTEN_BIS_SICHTBAR = 2600;   // ms, bis der Player sichtbar nachgereicht wird
 
   /* ---------- Aussehen ---------- */
   var stil = document.createElement('style');
@@ -40,9 +41,14 @@
     '.ak-musik.spielt .ak-musik-wellen i:nth-child(3) { animation-delay: 0.36s; }',
     '.ak-musik.spielt .ak-musik-wellen i:nth-child(4) { animation-delay: 0.54s; }',
     '@keyframes ak-welle { 0%, 100% { height: 4px; } 50% { height: 15px; } }',
-    /* Echte Masse, damit der Browser die Wiedergabe nicht verweigert, aber unsichtbar */
-    '.ak-musik-player { position: fixed; right: 0; bottom: 0; width: 200px; height: 120px;',
-    '  opacity: 0.01; pointer-events: none; z-index: -1; border: 0; }',
+    /* Versteckter Player: echte Masse, nur unsichtbar in der Ecke */
+    '.ak-musik-buehne { position: fixed; right: 0; bottom: 0; width: 200px; height: 120px;',
+    '  opacity: 0.01; pointer-events: none; z-index: -1; overflow: hidden; }',
+    '.ak-musik-buehne iframe { width: 100%; height: 100%; border: 0; display: block; }',
+    /* Sichtbarer Ausweg: sitzt als normaler Player unter dem Bild */
+    '.ak-musik-buehne.sichtbar { position: relative; right: auto; bottom: auto; width: 100%;',
+    '  height: auto; aspect-ratio: 16 / 9; opacity: 1; pointer-events: auto; z-index: auto;',
+    '  margin: 0 0 16px; border: 1px solid var(--cream-tief); border-radius: 8px; }',
     '@media (prefers-reduced-motion: reduce) {',
     '  .ak-musik.spielt .ak-musik-wellen i { animation: none; height: 10px; } }'
   ].join('\n');
@@ -51,7 +57,7 @@
   var IKON_PLAY = '<svg viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1 L11 7 L1 13 Z" fill="currentColor"/></svg>';
   var IKON_PAUSE = '<svg viewBox="0 0 12 14" aria-hidden="true"><rect x="1.5" y="1" width="3.4" height="12" fill="currentColor"/><rect x="7.1" y="1" width="3.4" height="12" fill="currentColor"/></svg>';
 
-  /* ---------- Leiste bauen ---------- */
+  /* ---------- Leiste und Bühne bauen ---------- */
   var leiste = document.createElement('div');
   leiste.className = 'ak-musik';
   leiste.id = 'ak-musik';
@@ -77,11 +83,19 @@
   leiste.appendChild(wellen);
   bildRahmen.insertAdjacentElement('afterend', leiste);
 
+  // Die Bühne steht in der Karte, kann also bei Bedarf einfach sichtbar werden
+  var buehne = document.createElement('div');
+  buehne.className = 'ak-musik-buehne';
+  buehne.id = 'ak-musik-buehne';
+  leiste.insertAdjacentElement('afterend', buehne);
+
   /* ---------- Zustand ---------- */
-  var rahmen = null;        // das Einbettungs-Fenster
+  var rahmen = null;
   var aktuelleId = null;
   var spielt = false;
   var titelText = '';
+  var sichtbarTimer = null;
+  var hatJeGespielt = false;
 
   function setzeText(t) { text.textContent = t; }
   function zeigePlay() {
@@ -99,36 +113,35 @@
 
   /* ---------- Player ---------- */
   function baueRahmen(id, startenSofort) {
-    entferneRahmen();
+    buehne.innerHTML = '';
     rahmen = document.createElement('iframe');
-    rahmen.className = 'ak-musik-player';
-    rahmen.id = 'ak-musik-rahmen';
     rahmen.allow = 'autoplay; encrypted-media';
+    rahmen.setAttribute('allowfullscreen', '');
     rahmen.setAttribute('title', 'Musik');
     rahmen.src = YT_ORIGIN + '/embed/' + id +
       '?enablejsapi=1&playsinline=1&rel=0&modestbranding=1' +
       '&autoplay=' + (startenSofort ? '1' : '0') +
       '&origin=' + encodeURIComponent(location.origin);
-    document.body.appendChild(rahmen);
+    buehne.appendChild(rahmen);
     aktuelleId = id;
-    if (startenSofort) zeigePause(); else zeigePlay();
+    zeigePlay();   // Erst melden, wenn YouTube wirklich spielt
   }
 
   function entferneRahmen() {
-    if (rahmen && rahmen.parentNode) rahmen.parentNode.removeChild(rahmen);
+    buehne.innerHTML = '';
+    buehne.classList.remove('sichtbar');
     rahmen = null;
     aktuelleId = null;
+    hatJeGespielt = false;
+    if (sichtbarTimer) { clearTimeout(sichtbarTimer); sichtbarTimer = null; }
     zeigePlay();
   }
 
-  // Befehl ans Einbettungs-Fenster schicken
   function befehl(name) {
     if (!rahmen || !rahmen.contentWindow) return false;
     try {
       rahmen.contentWindow.postMessage(
-        JSON.stringify({ event: 'command', func: name, args: [] }),
-        YT_ORIGIN
-      );
+        JSON.stringify({ event: 'command', func: name, args: [] }), YT_ORIGIN);
       return true;
     } catch (err) {
       console.warn('[musik] Befehl', name, 'fehlgeschlagen:', err);
@@ -136,7 +149,21 @@
     }
   }
 
-  // YouTube meldet seinen Zustand zurück, sobald wir zuhören
+  // Letzter Ausweg: Player sichtbar machen, damit man selbst auf Play drücken kann
+  function zeigeBuehne(grund) {
+    if (buehne.classList.contains('sichtbar')) return;
+    console.warn('[musik] Unsichtbare Wiedergabe klappt nicht (' + grund + '), Player wird sichtbar.');
+    buehne.classList.add('sichtbar');
+    setzeText('Ton nur über den Player — dort auf Play drücken.');
+  }
+
+  function starteUeberwachung(grund) {
+    if (sichtbarTimer) clearTimeout(sichtbarTimer);
+    sichtbarTimer = setTimeout(function () {
+      if (!hatJeGespielt && leiste.classList.contains('an')) zeigeBuehne(grund);
+    }, WARTEN_BIS_SICHTBAR);
+  }
+
   window.addEventListener('message', function (e) {
     if (!rahmen || e.source !== rahmen.contentWindow) return;
     if (String(e.origin).indexOf('youtube.com') === -1) return;
@@ -144,17 +171,21 @@
     try { daten = JSON.parse(e.data); } catch (err) { return; }
     if (!daten) return;
     if (daten.event === 'onReady') {
-      // Zuhören anmelden, damit Zustandsmeldungen kommen
       try {
         rahmen.contentWindow.postMessage(
-          JSON.stringify({ event: 'listening', id: 'ak-musik' }), YT_ORIGIN
-        );
+          JSON.stringify({ event: 'listening', id: 'ak-musik' }), YT_ORIGIN);
       } catch (err) {}
     }
-    var zustand = daten.info && typeof daten.info.playerState === 'number'
+    var zustand = (daten.info && typeof daten.info.playerState === 'number')
       ? daten.info.playerState : null;
-    if (zustand === 1) { zeigePause(); setzeText(titelText); }
-    else if (zustand === 2 || zustand === 0 || zustand === 5) { zeigePlay(); }
+    if (zustand === 1) {
+      hatJeGespielt = true;
+      if (sichtbarTimer) { clearTimeout(sichtbarTimer); sichtbarTimer = null; }
+      zeigePause();
+      if (!buehne.classList.contains('sichtbar')) setzeText(titelText);
+    } else if (zustand === 2 || zustand === 0 || zustand === 5) {
+      zeigePlay();
+    }
     if (daten.info && daten.info.errorCode) {
       console.warn('[musik] YouTube meldet Fehler', daten.info.errorCode);
       setzeText('Dieses Lied lässt sich hier nicht abspielen.');
@@ -177,20 +208,21 @@
     e.stopPropagation();
     var id = knopf.dataset.id || aktuelleId;
     if (!id) return;
-    if (!rahmen || aktuelleId !== id) {
-      // Erster Druck oder anderes Lied: Fenster neu bauen, diesmal mit Start
-      baueRahmen(id, true);
-      setzeText(titelText);
+    if (spielt) {
+      befehl('pauseVideo');
+      zeigePlay();
       return;
     }
-    if (spielt) {
-      if (!befehl('pauseVideo')) baueRahmen(id, false);
-      zeigePlay();
-    } else {
-      // Klappt der Befehl nicht, hilft Neubauen mit Startvorgabe immer
-      if (!befehl('playVideo')) baueRahmen(id, true);
-      zeigePause();
-    }
+    // Druck auf Play: erst der Befehl, und wenn nichts kommt, das Fenster neu mit Startvorgabe
+    var ging = befehl('playVideo');
+    if (!ging || !rahmen) baueRahmen(id, true);
+    starteUeberwachung('kein Start nach Klick');
+    setTimeout(function () {
+      if (!hatJeGespielt) {
+        console.warn('[musik] Nachfassen: Fenster wird mit Startvorgabe neu gebaut.');
+        baueRahmen(id, true);
+      }
+    }, 800);
   });
 
   /* ---------- Einklinken in Modal auf und zu ---------- */
@@ -201,18 +233,18 @@
     var roh = daten.musik_url || daten.musik || daten.lied_url || '';
     var id = musikId(roh);
     var bildSichtbar = bildRahmen.style.display !== 'none';
+    entferneRahmen();
     if (id && bildSichtbar) {
       titelText = daten.musik_titel || daten.lied || 'Musik zum Bild';
       setzeText(titelText);
       knopf.dataset.id = id;
       leiste.classList.add('an');
-      // Versuch, gleich loszulegen. Verweigert der Browser das, bleibt der Knopf auf Play
       baueRahmen(id, true);
+      starteUeberwachung('kein Start beim Öffnen');
     } else {
       if (roh && !bildSichtbar) console.warn('[musik] Musik vorhanden, aber kein Bild sichtbar — video_url gesetzt?');
       leiste.classList.remove('an');
       knopf.dataset.id = '';
-      entferneRahmen();
     }
   };
 
