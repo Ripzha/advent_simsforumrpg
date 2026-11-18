@@ -1015,7 +1015,7 @@
         if (jackFall.t > 1.5 || jackFall.x < -120) jackFall = null;
       }
 
-      if (!musikAn && (musikSource || musikTimer)) musikStop();
+      if (musikAn && laufend && !musikSource && !musikTimer && !musikLaedt) musikStart();
       const boden = tempoBoden();
       if (tempo < boden) tempo = boden;
       const stufe = boden - TEMPO_START;
@@ -2307,11 +2307,12 @@
   function tonSetzen(an) {
     musikAn = an;
     musikKnopf.textContent = musikAn ? '🔊' : '🔇';
+    // Hauptregler auf null: alles ist still, aber nichts wird abgebrochen.
+    // Dadurch ist die Musik beim Einschalten sofort wieder da.
     masterSetzen(musikAn);
-    if (musikAn) { if (laufend) { musikStart(); motorStart(); } }
-    else {
-      musikStop(); motorStop();
-      if (bossMusikTimer) { clearInterval(bossMusikTimer); bossMusikTimer = null; }
+    if (musikAn && laufend) {
+      if (!musikSource && !musikTimer) musikStart();
+      motorStart();
     }
     speicherSchreiben('schlitten_musik', musikAn ? 'an' : 'aus');
   }
