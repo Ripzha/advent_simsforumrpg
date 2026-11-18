@@ -186,15 +186,18 @@
       // Stumm = Regler auf 0, damit auch bereits geplante Töne nichts mehr hören lassen.
       master = actx.createGain();
       master.gain.value = musikAn ? 1 : 0;
-      master.connect(actx.destination);
+      if (musikAn) master.connect(actx.destination);
     }
     if (actx.state === 'suspended') actx.resume().catch(() => {});
     return actx;
   }
-  function masterSetzen(an) {
+    function masterSetzen(an) {
     if (!actx || !master) return;
     master.gain.cancelScheduledValues(actx.currentTime);
     master.gain.setTargetAtTime(an ? 1 : 0, actx.currentTime, 0.03);
+    // Hart trennen: so kann kein Klang den Regler umgehen
+    try { master.disconnect(); } catch (e) {}
+    if (an) master.connect(actx.destination);
   }
   function plink(stufe) {
     const c = audio(); if (!c) return;
