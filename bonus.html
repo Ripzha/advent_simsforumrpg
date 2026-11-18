@@ -201,70 +201,69 @@
       ctx.globalAlpha = 1;
     }
 
-    // Dunkler Schleier in der Mitte, damit die Schrift auf jedem Bild lesbar bleibt
-    const schleier = ctx.createRadialGradient(B / 2, H * 0.47, H * 0.08, B / 2, H * 0.47, H * 0.52);
-    schleier.addColorStop(0, 'rgba(6, 13, 28, 0.82)');
+    // Leichter Schleier im oberen Himmel, damit die Schrift überall lesbar bleibt.
+    // Bewusst schwach: der gemalte Rahmen und das Dorf sollen sichtbar bleiben.
+    const schleier = ctx.createRadialGradient(B / 2, H * 0.34, H * 0.06, B / 2, H * 0.34, H * 0.46);
+    schleier.addColorStop(0, 'rgba(6, 13, 28, 0.42)');
     schleier.addColorStop(1, 'rgba(6, 13, 28, 0)');
     ctx.fillStyle = schleier;
     ctx.fillRect(0, 0, B, H);
 
-    // Doppelter Goldrahmen
-    ctx.strokeStyle = '#c89248';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(58, 58, B - 116, H - 116);
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(74, 74, B - 148, H - 148);
+    // Eigener Rahmen nur, wenn kein Hintergrundbild da ist — das Bild bringt seinen mit
+    if (!hintergrundBild) {
+      ctx.strokeStyle = '#c89248';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(58, 58, B - 116, H - 116);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(74, 74, B - 148, H - 148);
+    }
 
     // Kopfzeile
-    mitte('ADVENTSKALENDER ' + JAHR, 236, '500 30px Karla, sans-serif', '#a8b8d5', 9);
-    mitte('simsforumrpg.de', 288, '400 28px Karla, sans-serif', '#8294b5', 3);
+    mitte('ADVENTSKALENDER ' + JAHR, 240, '500 29px Karla, sans-serif', '#b6c6e0', 9);
+    mitte('simsforumrpg.de', 288, '400 26px Karla, sans-serif', '#8ea2c4', 3);
 
     // Titel
-    mitte('Volle Kerzenreihe', 440, '500 92px Fraunces, Georgia, serif', '#f4d484');
+    mitte('Volle Kerzenreihe', 400, '500 84px Fraunces, Georgia, serif', '#f4d484');
 
     // Trennlinie mit Flamme
     ctx.strokeStyle = '#c89248'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(B / 2 - 250, 506); ctx.lineTo(B / 2 - 44, 506); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(B / 2 + 44, 506); ctx.lineTo(B / 2 + 250, 506); ctx.stroke();
-    flamme(B / 2, 524, 44);
+    ctx.beginPath(); ctx.moveTo(B / 2 - 240, 458); ctx.lineTo(B / 2 - 40, 458); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(B / 2 + 40, 458); ctx.lineTo(B / 2 + 240, 458); ctx.stroke();
+    flamme(B / 2, 474, 40);
 
     // Widmung
-    mitte('Diese Urkunde gehört', 660, '400 34px Karla, sans-serif', '#d8c89a');
+    mitte('Diese Urkunde gehört', 560, '400 32px Karla, sans-serif', '#dfd0a6');
 
     // Name — passt sich der Länge an
-    let groesse = 150;
+    let groesse = 140;
     ctx.font = '700 ' + groesse + 'px Caveat, cursive';
-    while (ctx.measureText(name).width > B - 300 && groesse > 56) {
+    while (ctx.measureText(name).width > B - 320 && groesse > 54) {
       groesse -= 4;
       ctx.font = '700 ' + groesse + 'px Caveat, cursive';
     }
-    mitte(name, 800, '700 ' + groesse + 'px Caveat, cursive', '#f4ead0');
+    mitte(name, 668, '700 ' + groesse + 'px Caveat, cursive', '#f8f0dc');
 
     // Begründung
-    mitte('für vierundzwanzig Türchen,', 918, '400 38px Fraunces, Georgia, serif', '#f4ead0');
-    mitte('jedes geöffnet an seinem eigenen Tag.', 976, '400 38px Fraunces, Georgia, serif', '#f4ead0');
+    mitte('für vierundzwanzig Türchen,', 762, '400 34px Fraunces, Georgia, serif', '#f4ead0');
+    mitte('jedes geöffnet an seinem eigenen Tag.', 812, '400 34px Fraunces, Georgia, serif', '#f4ead0');
 
-    // 24 Flammen in zwei Reihen
-    const proReihe = 12, abstand = 72;
-    for (let reihe = 0; reihe < 2; reihe++) {
-      const y = 1150 + reihe * 108;
-      const startX = B / 2 - ((proReihe - 1) * abstand) / 2;
-      for (let i = 0; i < proReihe; i++) {
-        const x = startX + i * abstand;
-        // Kerzenkörper
-        ctx.fillStyle = '#efe3cd';
-        ctx.fillRect(x - 9, y, 18, 54);
-        ctx.fillStyle = '#cbb896';
-        ctx.fillRect(x - 9, y, 18, 5);
-        flamme(x, y - 6, 34);
-      }
+    // 24 Kerzen in einer Reihe — die Kerzenreihe, um die es geht
+    const abstand = 43, oben = 890;
+    const startX = B / 2 - ((24 - 1) * abstand) / 2;
+    for (let i = 0; i < 24; i++) {
+      const x = startX + i * abstand;
+      ctx.fillStyle = '#efe3cd';
+      ctx.fillRect(x - 7, oben, 14, 42);
+      ctx.fillStyle = '#cbb896';
+      ctx.fillRect(x - 7, oben, 14, 4);
+      flamme(x, oben - 5, 26);
     }
 
-    // Fusszeile
-    mitte('Advent ' + JAHR + ' · ausgestellt am ' + heute(), 1498,
-          '400 30px Karla, sans-serif', '#a8b8d5', 1);
-    mitte('Der Laternenmann hat mitgezählt.', 1566,
-          'italic 400 32px Fraunces, Georgia, serif', '#c89248');
+    // Fusszeile, noch im Himmel über dem Dorf
+    mitte('Advent ' + JAHR + ' · ausgestellt am ' + heute(), 1012,
+          '400 27px Karla, sans-serif', '#b6c6e0', 1);
+    mitte('Der Laternenmann hat mitgezählt.', 1062,
+          'italic 400 29px Fraunces, Georgia, serif', '#d8a95e');
   }
 
   function heute() {
