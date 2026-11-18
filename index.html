@@ -1297,14 +1297,8 @@
     else { link.style.display = 'none'; }
     document.getElementById('ak-modal-credit').textContent = daten.einreicher ? `Eingereicht von ${daten.einreicher}` : '';
 
-    // Streak-Belohnung: nur im Finale-Modal, nur bei voller Kerzenreihe
-    const belohnung = document.getElementById('ak-modal-belohnung');
-    if (tag === 24 && globalPuenktlich && globalPuenktlich.size >= 24) {
-      document.getElementById('ak-belohnung-text').innerHTML = belohnungHtml();
-      belohnung.style.display = 'block';
-    } else {
-      belohnung.style.display = 'none';
-    }
+    // Streak-Belohnung erscheint erst, wenn man das 24. Türchen wieder schliesst
+    document.getElementById('ak-modal-belohnung').style.display = 'none';
 
     // Morgen-Teaser: nur beim heutigen Türchen, nur wenn morgen existiert + Einreicher bekannt
     const teaser = document.getElementById('ak-modal-teaser');
@@ -1334,6 +1328,7 @@
     return link ? `${esc} <a href="${String(link).replace(/"/g, '&quot;')}" target="_blank" rel="noopener">Zu deiner Belohnung →</a>` : esc;
   }
   function closeModal() {
+    const warTag = modalState.tag;
     const modal = document.getElementById('ak-modal');
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
@@ -1342,6 +1337,22 @@
     if (vBox) vBox.innerHTML = '';
     const vRahmen = document.getElementById('ak-modal-video-rahmen');
     if (vRahmen) vRahmen.style.display = 'none';
+    // Volle Kerzenreihe: die Belohnung kommt erst jetzt, nach dem Finale
+    if (warTag === 24 && globalPuenktlich && globalPuenktlich.size >= 24) {
+      setTimeout(zeigeBelohnung, 420);
+    }
+  }
+  function zeigeBelohnung() {
+    const m = document.getElementById('ak-geheim-modal');
+    if (!m) return;
+    m.querySelector('.ak-modal-day').textContent = 'Deine volle Kerzenreihe';
+    document.getElementById('ak-geheim-titel').textContent = 'Alle 24 — jeden Tag dabei';
+    document.getElementById('ak-geheim-text').innerHTML = belohnungHtml();
+    document.getElementById('ak-geheim-bild-rahmen').style.display = 'none';
+    document.getElementById('ak-geheim-link').style.display = 'none';
+    m.classList.add('show');
+    m.setAttribute('aria-hidden', 'false');
+    if (typeof playFinale === 'function') playFinale();
   }
   function modalNav(richtung) {
     const tage = navigierbareTage();
