@@ -2319,7 +2319,10 @@
     }
     speicherSchreiben('schlitten_musik', musikAn ? 'an' : 'aus');
   }
-  musikKnopf.onclick = () => tonSetzen(!musikAn);
+  musikKnopf.onclick = () => {
+    tonSetzen(!musikAn);
+    musikKnopf.blur();   // Fokus abgeben, sonst schaltet die Leertaste beim Springen mit
+  };
 
   // Tab im Hintergrund: Planer anhalten, beim Zurückkommen sauber weitermachen
   document.addEventListener('visibilitychange', () => {
