@@ -1348,7 +1348,16 @@
     m.querySelector('.ak-modal-day').textContent = 'Deine volle Kerzenreihe';
     document.getElementById('ak-geheim-titel').textContent = 'Alle 24 — jeden Tag dabei';
     document.getElementById('ak-geheim-text').innerHTML = belohnungHtml();
-    document.getElementById('ak-geheim-bild-rahmen').style.display = 'none';
+    const bRahmen = document.getElementById('ak-geheim-bild-rahmen');
+    const bBild = document.getElementById('ak-geheim-bild');
+    if (globalConfig.streak_belohnung_bild) {
+      bBild.src = globalConfig.streak_belohnung_bild;
+      bBild.alt = 'Belohnung für die volle Kerzenreihe';
+      bRahmen.style.display = 'block';
+    } else {
+      bRahmen.style.display = 'none';
+      bBild.removeAttribute('src');
+    }
     document.getElementById('ak-geheim-link').style.display = 'none';
     m.classList.add('show');
     m.setAttribute('aria-hidden', 'false');
