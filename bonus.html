@@ -3,68 +3,329 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Für dich — alle 24, jeden Tag</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Deine Urkunde · Adventskalender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --nacht: #0a1428; --gold: #c89248; --gold-hell: #f4d484; --cream: #f4ead0;
+    --nacht: #0a1428;
+    --nacht-tief: #060d1c;
+    --panel-rand: #3a4a6a;
+    --gold: #c89248;
+    --gold-hell: #f4d484;
+    --glut: #f4c870;
+    --cream: #f4ead0;
+    --cream-tief: #d8c89a;
     --himmel-text: #a8b8d5;
-    --serif: "Fraunces", Georgia, serif; --sans: "Karla", system-ui, sans-serif;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Karla", -apple-system, system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--nacht); color: var(--cream); font-family: var(--sans); min-height: 100%; overflow-x: hidden; }
+  html, body { margin: 0; padding: 0; background: var(--nacht); font-family: var(--sans); color: var(--cream); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+  h1 { font-family: var(--serif); font-size: 28px; font-weight: 500; margin: 0 0 6px; }
+  h1 em { font-style: italic; color: var(--gold-hell); }
+  .unter { color: var(--himmel-text); font-size: 14.5px; line-height: 1.6; margin: 0 0 26px; }
 
-  /* Polarlicht — das Echo der Belohnung */
-  .aurora { position: fixed; top: 0; left: 0; right: 0; height: 52%; z-index: 0; pointer-events: none; overflow: hidden; }
-  .aurora i { position: absolute; top: -30%; left: -10%; width: 55%; height: 120%; border-radius: 50%;
-    background: linear-gradient(180deg, rgba(80, 220, 160, 0) 0%, rgba(80, 220, 160, 0.16) 35%, rgba(120, 160, 255, 0.10) 65%, rgba(80, 220, 160, 0) 100%);
-    filter: blur(26px); transform: skewX(-18deg); animation: aurora-drift 11s ease-in-out infinite alternate; }
-  .aurora i:nth-child(2) { left: 28%; width: 48%; animation-duration: 14s; animation-delay: -4s;
-    background: linear-gradient(180deg, rgba(150, 120, 255, 0) 0%, rgba(150, 120, 255, 0.13) 40%, rgba(80, 220, 160, 0.10) 70%, rgba(150, 120, 255, 0) 100%); }
-  .aurora i:nth-child(3) { left: 60%; width: 50%; animation-duration: 17s; animation-delay: -8s; }
-  @keyframes aurora-drift {
-    0% { transform: skewX(-18deg) translateX(-4%) scaleY(1); opacity: 0.75; }
-    100% { transform: skewX(-10deg) translateX(7%) scaleY(1.15); opacity: 1; }
-  }
+  .karte { background: #121f3a; border: 1px solid var(--panel-rand); border-radius: 12px; padding: 20px; margin-bottom: 26px; }
+  label { display: block; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--himmel-text); margin-bottom: 8px; }
+  .reihe { display: flex; gap: 10px; flex-wrap: wrap; }
+  input[type="text"] { flex: 1; min-width: 200px; padding: 12px 14px; border-radius: 7px; border: 1px solid var(--panel-rand); background: #0b1730; color: var(--cream); font-family: var(--sans); font-size: 15.5px; }
+  input[type="text"]:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  button { padding: 12px 20px; border-radius: 7px; border: 1px solid var(--gold); background: linear-gradient(135deg, #dba458, #b58038); color: #2a1a0a; font-family: var(--sans); font-weight: 600; font-size: 14.5px; cursor: pointer; }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: 0.45; cursor: default; filter: none; }
+  button.leise { background: transparent; border-color: var(--panel-rand); color: var(--himmel-text); font-weight: 500; }
+  button.leise:hover { background: #1a2a45; color: var(--cream); }
+  .hinweis { font-size: 13px; color: var(--himmel-text); margin: 10px 0 0; min-height: 19px; }
+  .hinweis.fehler { color: #e8849a; }
 
-  .buehne { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 60px 18px 50px; text-align: center; }
-  .flamme { font-size: 34px; filter: drop-shadow(0 0 12px rgba(255, 224, 102, 0.8)); }
-  h1 { font-family: var(--serif); font-size: clamp(25px, 6vw, 36px); font-weight: 500; margin: 10px 0 8px; color: var(--gold-hell); }
-  .text { color: var(--himmel-text); font-size: 15.5px; line-height: 1.7; max-width: 480px; margin: 0 auto 30px; }
-  .text strong { color: var(--cream); }
+  .buehne { display: none; }
+  .buehne.an { display: block; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 10px; box-shadow: 0 18px 60px rgba(0,0,0,0.55); }
+  .aktionen { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 
-  .rahmen { display: inline-block; padding: 10px; background: linear-gradient(160deg, #6a4e2c, #3a2a18); border-radius: 6px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55); }
-  .rahmen img { display: block; max-width: 100%; border-radius: 3px; }
-
-  .kerzen { display: flex; justify-content: center; gap: 5px; margin: 34px 0 8px; flex-wrap: wrap; }
-  .kerzen i { width: 5px; height: 15px; background: linear-gradient(180deg, #f4e8c8, #d8c090); border-radius: 2px; position: relative; }
-  .kerzen i::before { content: ""; position: absolute; top: -7px; left: 50%; margin-left: -2.5px; width: 5px; height: 7px; background: radial-gradient(ellipse at 50% 80%, #ffd870 0%, #f4a030 70%, transparent 100%); border-radius: 50% 50% 40% 40%; animation: flackern 1.6s ease-in-out infinite alternate; }
-  .kerzen i:nth-child(2n)::before { animation-delay: -0.6s; }
-  .kerzen i:nth-child(3n)::before { animation-delay: -1.1s; }
-  @keyframes flackern { from { transform: scaleY(1); opacity: 0.85; } to { transform: scaleY(1.25); opacity: 1; } }
-  .kerzen-text { font-size: 12.5px; color: var(--himmel-text); margin: 0 0 26px; }
-
-  .zurueck a { color: var(--himmel-text); font-size: 13px; text-decoration: none; }
-  .zurueck a:hover { color: var(--gold-hell); }
+  .gesperrt { display: none; }
+  .gesperrt.an { display: block; }
+  .kerzen { display: flex; gap: 4px; flex-wrap: wrap; margin: 14px 0 0; }
+  .kerze { width: 8px; height: 8px; border-radius: 50%; background: #1e3050; }
+  .kerze.an { background: var(--glut); box-shadow: 0 0 6px rgba(244,200,112,0.7); }
+  a.zurueck { color: var(--himmel-text); font-size: 13.5px; text-decoration: underline; text-underline-offset: 3px; }
+  a.zurueck:hover { color: var(--cream); }
 </style>
 </head>
 <body>
-<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
-<div class="buehne">
-  <div class="flamme">🕯</div>
-  <h1>Alle 24 — jeden Tag.</h1>
-  <p class="text">Kein einziges Türchen verpasst, keinen einzigen Tag. <strong>Danke, dass du jeden Tag dabei warst.</strong> Das hier gibt es nur auf dieser Seite — und diese Seite finden nur die, die durchgehalten haben.</p>
+<div class="wrap">
 
-  <div class="rahmen">
-    <img src="bilder/bonus.jpg" alt="Dein Bonus-Bild" onerror="this.alt='Das Bonus-Bild fehlt noch — bilder/bonus.jpg hochladen.'; this.style.padding='40px 20px';">
+  <h1>Volle Kerzenreihe <em>2026</em></h1>
+  <p class="unter">Vierundzwanzig Türchen, jedes an seinem Tag. Das haben nicht viele geschafft. Trag deinen Namen ein, dann bekommst du deine Urkunde zum Herunterladen.</p>
+
+  <!-- Wer die Reihe nicht voll hat -->
+  <div class="gesperrt karte" id="gesperrt">
+    <strong style="font-family: var(--serif); font-size: 17px;">Diese Seite gehört den Pünktlichen.</strong>
+    <p class="unter" style="margin: 8px 0 0;">Deine Kerzenreihe zeigt <span id="zaehler">0</span> von 24. Die Urkunde gibt es für alle vierundzwanzig, geöffnet am jeweiligen Tag.</p>
+    <div class="kerzen" id="kerzen"></div>
+    <p style="margin: 16px 0 0;"><a class="zurueck" href="index.html">Zurück zum Kalender</a></p>
   </div>
 
-  <div class="kerzen" aria-hidden="true">
-    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+  <!-- Eingabe -->
+  <div class="karte" id="eingabe" style="display: none;">
+    <label for="name">Dein Name im Forum</label>
+    <div class="reihe">
+      <input type="text" id="name" maxlength="24" autocomplete="off" placeholder="z. B. Ripzha">
+      <button id="erstellen">Urkunde erstellen</button>
+    </div>
+    <p class="hinweis" id="hinweis"></p>
   </div>
-  <p class="kerzen-text">24 von 24 — die volle Kerzenreihe.</p>
 
-  <p class="zurueck"><a href="index.html">← Zurück zum Kalender</a></p>
+  <!-- Ergebnis -->
+  <div class="buehne" id="buehne">
+    <canvas id="urkunde" width="1240" height="1754" aria-label="Deine Urkunde"></canvas>
+    <div class="aktionen">
+      <button id="laden">Als Bild herunterladen</button>
+      <button class="leise" id="nochmal">Anderen Namen eintragen</button>
+      <a class="zurueck" href="index.html" style="align-self: center;">Zurück zum Kalender</a>
+    </div>
+  </div>
+
 </div>
+
+<script>
+  // Dieselbe Adresse wie im index.html
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxKRKsfh_2YFkS5a5kpDYWSQImA1lEq3ndnVJj4YpPqWcLrqmUinp-l4WA93e5U79MPA/exec';
+  // Liegt die Datei im Repo, wird sie als Hintergrund genommen. Fehlt sie, zeichnet die Seite selbst.
+  const HINTERGRUND = 'bilder/urkunde-hintergrund.jpg';
+
+  const canvas = document.getElementById('urkunde');
+  const ctx = canvas.getContext('2d');
+  const B = canvas.width, H = canvas.height;
+
+  /* ---------- Kerzenreihe aus dem Kalender lesen ---------- */
+  // Der Kalender merkt sich die pünktlich geöffneten Türchen im selben Browser.
+  function puenktlichZaehlen() {
+    let bestes = 0, jahr = new Date().getFullYear();
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        const treffer = k && k.match(/^adventskalender_(\d{4})_puenktlich$/);
+        if (!treffer) continue;
+        let liste = [];
+        try { liste = JSON.parse(localStorage.getItem(k) || '[]'); } catch (e) {}
+        if (liste.length >= bestes) { bestes = liste.length; jahr = Number(treffer[1]); }
+      }
+    } catch (e) {}
+    return { anzahl: bestes, jahr: jahr };
+  }
+
+  const stand = puenktlichZaehlen();
+  const testModus = new URLSearchParams(location.search).get('test') === '1';
+  const JAHR = stand.jahr;
+
+  if (stand.anzahl >= 24 || testModus) {
+    document.getElementById('eingabe').style.display = 'block';
+  } else {
+    const g = document.getElementById('gesperrt');
+    g.classList.add('an');
+    document.getElementById('zaehler').textContent = stand.anzahl;
+    const reihe = document.getElementById('kerzen');
+    for (let i = 0; i < 24; i++) {
+      const k = document.createElement('span');
+      k.className = 'kerze' + (i < stand.anzahl ? ' an' : '');
+      reihe.appendChild(k);
+    }
+  }
+
+  /* ---------- Zeichnen ---------- */
+  let hintergrundBild = null;
+  function ladeHintergrund() {
+    return new Promise((fertig) => {
+      const img = new Image();
+      img.onload = () => { hintergrundBild = img; fertig(); };
+      img.onerror = () => { hintergrundBild = null; fertig(); };
+      img.src = HINTERGRUND;
+    });
+  }
+
+  function flamme(x, y, hoehe) {
+    // Kleine Kerzenflamme, gezeichnet statt Schrift — bleibt überall gleich
+    ctx.beginPath();
+    ctx.moveTo(x, y - hoehe);
+    ctx.bezierCurveTo(x + hoehe * 0.62, y - hoehe * 0.45, x + hoehe * 0.5, y, x, y);
+    ctx.bezierCurveTo(x - hoehe * 0.5, y, x - hoehe * 0.62, y - hoehe * 0.45, x, y - hoehe);
+    ctx.closePath();
+    ctx.fillStyle = '#f4c870';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x, y - hoehe * 0.3, hoehe * 0.17, hoehe * 0.26, 0, 0, 7);
+    ctx.fillStyle = '#fff6dc';
+    ctx.fill();
+  }
+
+  function mitte(text, y, font, farbe, sperrung) {
+    ctx.font = font;
+    ctx.fillStyle = farbe;
+    ctx.textAlign = 'center';
+    if (!sperrung) { ctx.fillText(text, B / 2, y); return; }
+    // Gesperrter Text: Zeichen für Zeichen, damit der Abstand stimmt
+    const zeichen = text.split('');
+    let breite = 0;
+    zeichen.forEach(z => { breite += ctx.measureText(z).width + sperrung; });
+    breite -= sperrung;
+    let x = B / 2 - breite / 2;
+    ctx.textAlign = 'left';
+    zeichen.forEach(z => {
+      ctx.fillText(z, x, y);
+      x += ctx.measureText(z).width + sperrung;
+    });
+    ctx.textAlign = 'center';
+  }
+
+  function zeichne(name) {
+    // Grund
+    if (hintergrundBild) {
+      const skala = Math.max(B / hintergrundBild.width, H / hintergrundBild.height);
+      const w = hintergrundBild.width * skala, h = hintergrundBild.height * skala;
+      ctx.drawImage(hintergrundBild, (B - w) / 2, (H - h) / 2, w, h);
+    } else {
+      ctx.fillStyle = '#0a1428';
+      ctx.fillRect(0, 0, B, H);
+      // Sterne, damit es auch ohne Bild nach Nacht aussieht
+      for (let i = 0; i < 160; i++) {
+        const x = Math.random() * B, y = Math.random() * H * 0.72;
+        const r = Math.random() * 2.1 + 0.6;
+        ctx.globalAlpha = 0.25 + Math.random() * 0.6;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, 7);
+        ctx.fillStyle = '#f4ead0'; ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Dunkler Schleier in der Mitte, damit die Schrift auf jedem Bild lesbar bleibt
+    const schleier = ctx.createRadialGradient(B / 2, H * 0.47, H * 0.08, B / 2, H * 0.47, H * 0.52);
+    schleier.addColorStop(0, 'rgba(6, 13, 28, 0.82)');
+    schleier.addColorStop(1, 'rgba(6, 13, 28, 0)');
+    ctx.fillStyle = schleier;
+    ctx.fillRect(0, 0, B, H);
+
+    // Doppelter Goldrahmen
+    ctx.strokeStyle = '#c89248';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(58, 58, B - 116, H - 116);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(74, 74, B - 148, H - 148);
+
+    // Kopfzeile
+    mitte('ADVENTSKALENDER ' + JAHR, 236, '500 30px Karla, sans-serif', '#a8b8d5', 9);
+    mitte('simsforumrpg.de', 288, '400 28px Karla, sans-serif', '#8294b5', 3);
+
+    // Titel
+    mitte('Volle Kerzenreihe', 440, '500 92px Fraunces, Georgia, serif', '#f4d484');
+
+    // Trennlinie mit Flamme
+    ctx.strokeStyle = '#c89248'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(B / 2 - 250, 506); ctx.lineTo(B / 2 - 44, 506); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(B / 2 + 44, 506); ctx.lineTo(B / 2 + 250, 506); ctx.stroke();
+    flamme(B / 2, 524, 44);
+
+    // Widmung
+    mitte('Diese Urkunde gehört', 660, '400 34px Karla, sans-serif', '#d8c89a');
+
+    // Name — passt sich der Länge an
+    let groesse = 150;
+    ctx.font = '700 ' + groesse + 'px Caveat, cursive';
+    while (ctx.measureText(name).width > B - 300 && groesse > 56) {
+      groesse -= 4;
+      ctx.font = '700 ' + groesse + 'px Caveat, cursive';
+    }
+    mitte(name, 800, '700 ' + groesse + 'px Caveat, cursive', '#f4ead0');
+
+    // Begründung
+    mitte('für vierundzwanzig Türchen,', 918, '400 38px Fraunces, Georgia, serif', '#f4ead0');
+    mitte('jedes geöffnet an seinem eigenen Tag.', 976, '400 38px Fraunces, Georgia, serif', '#f4ead0');
+
+    // 24 Flammen in zwei Reihen
+    const proReihe = 12, abstand = 72;
+    for (let reihe = 0; reihe < 2; reihe++) {
+      const y = 1150 + reihe * 108;
+      const startX = B / 2 - ((proReihe - 1) * abstand) / 2;
+      for (let i = 0; i < proReihe; i++) {
+        const x = startX + i * abstand;
+        // Kerzenkörper
+        ctx.fillStyle = '#efe3cd';
+        ctx.fillRect(x - 9, y, 18, 54);
+        ctx.fillStyle = '#cbb896';
+        ctx.fillRect(x - 9, y, 18, 5);
+        flamme(x, y - 6, 34);
+      }
+    }
+
+    // Fusszeile
+    mitte('Advent ' + JAHR + ' · ausgestellt am ' + heute(), 1498,
+          '400 30px Karla, sans-serif', '#a8b8d5', 1);
+    mitte('Der Laternenmann hat mitgezählt.', 1566,
+          'italic 400 32px Fraunces, Georgia, serif', '#c89248');
+  }
+
+  function heute() {
+    const d = new Date();
+    return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
+  }
+
+  /* ---------- Eintragen ---------- */
+  async function melde(name) {
+    // text/plain vermeidet die Vorabfrage des Browsers, die Apps Script nicht beantwortet
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'urkunde_save', name: name, jahr: JAHR })
+      });
+    } catch (e) {
+      console.warn('[urkunde] Eintrag konnte nicht gemeldet werden:', e);
+    }
+  }
+
+  const hinweis = document.getElementById('hinweis');
+  const eingabeFeld = document.getElementById('name');
+  const knopf = document.getElementById('erstellen');
+
+  async function los() {
+    const name = eingabeFeld.value.trim().replace(/\s+/g, ' ');
+    hinweis.classList.remove('fehler');
+    if (name.length < 2) {
+      hinweis.textContent = 'Bitte trag deinen Namen ein, mindestens zwei Zeichen.';
+      hinweis.classList.add('fehler');
+      return;
+    }
+    knopf.disabled = true;
+    hinweis.textContent = 'Deine Urkunde wird ausgestellt …';
+    await document.fonts.ready;          // sonst zeichnet der Browser mit Ersatzschrift
+    if (!hintergrundBild) await ladeHintergrund();
+    zeichne(name);
+    melde(name);                          // läuft nebenher, die Urkunde wartet nicht darauf
+    document.getElementById('eingabe').style.display = 'none';
+    document.getElementById('buehne').classList.add('an');
+    hinweis.textContent = '';
+    knopf.disabled = false;
+  }
+
+  knopf.addEventListener('click', los);
+  eingabeFeld.addEventListener('keydown', (e) => { if (e.key === 'Enter') los(); });
+
+  document.getElementById('laden').addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.download = 'urkunde-adventskalender-' + JAHR + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+
+  document.getElementById('nochmal').addEventListener('click', () => {
+    document.getElementById('buehne').classList.remove('an');
+    document.getElementById('eingabe').style.display = 'block';
+    eingabeFeld.focus();
+    eingabeFeld.select();
+  });
+</script>
 </body>
 </html>
