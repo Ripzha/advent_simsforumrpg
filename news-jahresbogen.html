@@ -357,7 +357,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v8 · Jack endet im Lager",
+  fassung: "v9 · Gerichtstag mit den echten Bildern",
 
   uhrzeit: "20:00",
 
@@ -493,15 +493,15 @@ const KONFIG = {
           zoom: [1.06, 1.24], schwenk: [4, -4], ursprung: "50% 50%",
           ort: "Der Einbruch" },
         // Im Sommer stand er dafuer vor Gericht
-        { bild: "bilder/vaas-gericht.png",     ein: 34.4,
-          zoom: [1.22, 1.08], schwenk: [-3, 3], ursprung: "50% 45%",
-          ort: "Das Verfahren" },
-        // Eine halbe Werkstatt in den Hosentaschen
-        { bild: "bilder/vaas-property.png",    ein: 38.2,
-          zoom: [1.08, 1.24], schwenk: [3, -3], ursprung: "50% 50%", ort: "" },
+        { bild: "bilder/vaas-gericht-warten.png",   ein: 34.4,
+          zoom: [1.20, 1.08], schwenk: [-3, 3], ursprung: "50% 45%",
+          ort: "Riverdale County Courthouse" },
+        // Vier Minuten zu spaet, eine Unterlegscheibe im Metalldetektor
+        { bild: "bilder/vaas-gericht-kontrolle.png", ein: 38.2,
+          zoom: [1.06, 1.22], schwenk: [4, -4], ursprung: "50% 45%", ort: "" },
         // Das Urteil: achtzig Stunden gemeinnuetzige Arbeit
-        { bild: "bilder/vaas-urteil.png",      ein: 45.6,
-          zoom: [1.20, 1.06], schwenk: [-4, 3], ursprung: "50% 45%",
+        { bild: "bilder/vaas-gericht-saal.png",     ein: 45.6,
+          zoom: [1.20, 1.06], schwenk: [-3, 3], ursprung: "50% 45%",
           ort: "Das Urteil" }
       ]
     },
@@ -517,7 +517,11 @@ const KONFIG = {
       ton:   "clips/11-vaas-studio-b.mp3",
       binde: { ein: 1.4, aus: 7.0 },
       thema: [
-        { ein: 1.7, aus: 15.8, titel: "Der Vorschlag", ort: "Im Gerichtssaal",
+        // reichte noch im Saal einen Verbesserungsvorschlag ein
+        { ein: 1.7, aus: 7.0, titel: "Der Vorschlag", ort: "Noch im Saal",
+          bilder: ["bilder/vaas-einwand.png"] },
+        // Strafzeitkonto fuer spaetere Vergehen — der Richter lehnte ab
+        { ein: 7.0, aus: 15.8, titel: "Strafzeitkonto", ort: "Abgelehnt",
           bilder: ["bilder/vaas-kasten-b.png"] }
       ]
     }
