@@ -357,7 +357,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v4 · Grossvater im Themenkasten",
+  fassung: "v5 · fluessige Fahrten, Schluss ruhiger geschnitten",
 
   uhrzeit: "20:00",
 
@@ -439,18 +439,13 @@ const KONFIG = {
         { bild: "bilder/jack-truckstop.png",       ein: 56.7,
           zoom: [1.06, 1.20], schwenk: [4, -4], ursprung: "50% 45%",
           ort: "San Sequoia — Truck-Stop" },
-        { bild: "bilder/jack-kaffee.png",          ein: 59.5,
-          zoom: [1.20, 1.08], schwenk: [-3, 3], ursprung: "50% 45%", ort: "" },
         // das gepfaendete Werkzeug beim Raeumungsunternehmen zurueckholen
         { bild: "bilder/jack-schalter.png",        ein: 62.0,
-          zoom: [1.08, 1.24], schwenk: [4, -3], ursprung: "50% 50%",
+          zoom: [1.06, 1.22], schwenk: [4, -3], ursprung: "50% 50%",
           ort: "Räumungsunternehmen" },
-        // Ohne ihn zu fragen, weil sein Stolz jede Bezahlung abwehrt
-        { bild: "bilder/jack-lager.png",           ein: 65.6,
-          zoom: [1.22, 1.06], schwenk: [-4, 4], ursprung: "50% 50%", ort: "" },
         // Geld, Fotos und Kenntnisse sind vorhanden
-        { bild: "bilder/jack-kiste.png",           ein: 69.8,
-          zoom: [1.06, 1.22], schwenk: [3, -3], ursprung: "50% 45%", ort: "" },
+        { bild: "bilder/jack-kiste.png",           ein: 68.0,
+          zoom: [1.22, 1.06], schwenk: [-3, 3], ursprung: "50% 45%", ort: "" },
         // Bei Vollmacht und Ausweiskopie weist die Vorbereitung Luecken auf
         { bild: "bilder/jack-diner-donut.png",     ein: 73.0,
           zoom: [1.20, 1.06], schwenk: [-3, 3], ursprung: "50% 45%",
@@ -703,8 +698,17 @@ function ende() {
   el("leiste-zeit").textContent = "Ende";
 }
 
-/* ---------- Takt ---------- */
-setInterval(() => {
+/* ---------- Takt ----------
+   Das Bild laeuft ueber requestAnimationFrame, also mit der Bildrate des
+   Schirms statt alle 80 ms. Wichtig: waehrend der Ueberblendung bekommt
+   AUCH das ausgehende Bild weiter neue Werte, sonst friert es ein und der
+   Wechsel wirkt stockend. Dafuer darf sein Fahrtwert ueber 1 hinauslaufen,
+   solange die Blende dauert.                                            */
+
+const BLENDE = 1.0;   // Sekunden, deckt sich mit der CSS-Angabe fuer .kb
+
+function zeichne() {
+  requestAnimationFrame(zeichne);
   if (!laeuft) return;
   const t = teilJetzt();
   const q = quelle();
@@ -717,29 +721,42 @@ setInterval(() => {
     let i = -1;
     (t.thema || []).forEach((x, k) => { if (z >= x.ein && z < x.aus) i = k; });
     setzeThema(i, t.thema);
-  } else {
-    let i = -1;
-    t.bilder.forEach((s, k) => {
-      const bis = (k === t.bilder.length - 1) ? 1e9 : t.bilder[k + 1].ein;
-      if (z >= s.ein && z < bis) i = k;
-    });
-    if (i !== aktivesBild) {
-      aktivesBild = i;
-      t.elemente.forEach((e, k) => e.classList.toggle("sichtbar", k === i));
-      setzeOrt(i >= 0 ? (t.bilder[i].ort || "") : "");
-    }
-    if (i >= 0) {
-      const s   = t.bilder[i];
-      const bis = (i === t.bilder.length - 1) ? (d || s.ein + 10) : t.bilder[i + 1].ein;
-      const p   = Math.max(0, Math.min(1, (z - s.ein) / Math.max(0.1, bis - s.ein)));
-      t.elemente[i].style.transform = fahrt(s, p);
-    }
+    return;
   }
 
+  let i = -1;
+  t.bilder.forEach((s, k) => {
+    const bis = (k === t.bilder.length - 1) ? 1e9 : t.bilder[k + 1].ein;
+    if (z >= s.ein && z < bis) i = k;
+  });
+  if (i !== aktivesBild) {
+    aktivesBild = i;
+    t.elemente.forEach((e, k) => e.classList.toggle("sichtbar", k === i));
+    setzeOrt(i >= 0 ? (t.bilder[i].ort || "") : "");
+  }
+
+  // Alle Bilder des Teils bekommen ihren Wert, nicht nur das sichtbare
+  t.elemente.forEach((e, k) => {
+    const s = t.bilder[k];
+    const bis = (k === t.bilder.length - 1) ? (d || s.ein + 10) : t.bilder[k + 1].ein;
+    const dauer = Math.max(0.1, bis - s.ein);
+    const p = Math.max(0, Math.min(1 + BLENDE / dauer, (z - s.ein) / dauer));
+    e.style.transform = fahrt(s, p);
+  });
+}
+requestAnimationFrame(zeichne);
+
+/* Leiste und Zeitenliste brauchen keine Bildrate */
+setInterval(() => {
+  if (!laeuft) return;
+  const t = teilJetzt();
+  const q = quelle();
+  const z = q.currentTime || 0;
+  const d = q.duration && isFinite(q.duration) ? q.duration : 0;
   el("leiste-zeit").textContent = t.name + " · " + z.toFixed(1) + " / " + d.toFixed(1);
   el("leiste-fuell").style.width = (d ? (z / d * 100) : 0) + "%";
   if (zeitenAn) zeichneZeiten();
-}, 80);
+}, 150);
 
 /* ---------- Zeitenliste ---------- */
 function sek(x) { return Math.round(x * 10) / 10; }
