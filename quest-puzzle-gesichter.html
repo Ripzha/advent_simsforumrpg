@@ -249,13 +249,16 @@
   function layout() {
     const fw = flaeche.clientWidth, fh = flaeche.clientHeight;
     const quer = fw >= fh * 1.1;
+    // Das Brett nie so gross machen, dass das Quellbild hochgerechnet werden muesste
+    const dichte = Math.min(window.devicePixelRatio || 1, 3);
+    const obergrenze = Math.min(1240, (QUELL_B / dichte) * 1.15);
     let b;
     if (quer) {
       // Breiter Schirm: die Teile liegen links und rechts vom Brett
-      b = Math.min(fw * 0.60, fh * 0.74 * ASPEKT, 1240);
+      b = Math.min(fw * 0.60, fh * 0.74 * ASPEKT, obergrenze);
     } else {
       // Hochformat: Brett nach oben, die Teile darunter
-      b = Math.min(fw * 0.96, fh * 0.42 * ASPEKT, 1240);
+      b = Math.min(fw * 0.96, fh * 0.42 * ASPEKT, obergrenze);
     }
     brett.b = Math.max(240, Math.round(b));
     brett.h = Math.round(brett.b / ASPEKT);
@@ -306,6 +309,9 @@
     const pw = brett.b / SPALTEN;
     const ph = brett.h / ZEILEN;
     const m = Math.min(pw, ph) * 0.32;
+    // Auf dichten Bildschirmen (Retina) braucht die Zeichenflaeche mehr Punkte als die
+    // Anzeigeflaeche, sonst rechnet der Browser das Bild hoch und alles wirkt weich.
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
 
     for (let r = 0; r < ZEILEN; r++) {
       for (let c = 0; c < SPALTEN; c++) {
@@ -317,8 +323,11 @@
         const cv = document.createElement('canvas');
         const grB = Math.ceil(pw + 2 * m);
         const grH = Math.ceil(ph + 2 * m);
-        cv.width = grB; cv.height = grH;
+        cv.width = Math.round(grB * dpr);
+        cv.height = Math.round(grH * dpr);
         const ctx = cv.getContext('2d');
+        ctx.scale(dpr, dpr);          // ab hier wieder in normalen Pixeln rechnen
+        ctx.imageSmoothingQuality = 'high';
         teilPfad(ctx, pw, ph, m, tabT, tabR, tabB, tabL);
         ctx.save();
         ctx.clip();
@@ -335,7 +344,7 @@
         flaeche.appendChild(cv);
 
         const teil = {
-          c, r, el: cv, sitzt: false,
+          c, r, el: cv, sitzt: false, grB: grB, grH: grH,
           zielX: brett.x + c * pw - m,
           zielY: brett.y + r * ph - m,
           x: 0, y: 0
@@ -377,7 +386,7 @@
     const offen = teile.filter(t => !t.sitzt);
 
     offen.forEach(t => {
-      const gr = t.el.width, grH = t.el.height;
+      const gr = t.grB, grH = t.grH;
       // Zone nach Fläche auswählen, damit sich die Teile gleichmässig verteilen
       let w = Math.random() * gesamtGew, zone = zonen[0];
       for (let i = 0; i < zonen.length; i++) {
