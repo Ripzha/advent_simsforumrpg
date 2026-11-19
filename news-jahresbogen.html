@@ -357,7 +357,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v3 · Jack vollstaendig bebildert",
+  fassung: "v4 · Grossvater im Themenkasten",
 
   uhrzeit: "20:00",
 
@@ -389,7 +389,11 @@ const KONFIG = {
       ton:   "clips/10-jack-studio.mp3",
       binde: { ein: 1.5, aus: 8.0 },
       thema: [
-        { ein: 1.8, aus: 10.8, titel: "Jack", ort: "Der Kranich",
+        // Ihren Grossvater liess diese Familie umbringen
+        { ein: 1.8, aus: 8.5, titel: "Der Grossvater", ort: "Jack als Kind",
+          bilder: ["bilder/jack-grossvater.png"] },
+        // Sein Lieblingstier war der Kranich
+        { ein: 8.5, aus: 10.8, titel: "Der Kranich", ort: "Sein Lieblingstier",
           bilder: ["bilder/jack-kasten.png"] }
       ]
     },
