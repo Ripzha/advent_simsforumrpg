@@ -357,7 +357,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v6 · Vaas vollstaendig bebildert",
+  fassung: "v7 · Pfaendung verbindet Block 10 und 11",
 
   uhrzeit: "20:00",
 
@@ -439,13 +439,14 @@ const KONFIG = {
         { bild: "bilder/jack-truckstop.png",       ein: 56.7,
           zoom: [1.06, 1.20], schwenk: [4, -4], ursprung: "50% 45%",
           ort: "San Sequoia — Truck-Stop" },
-        // das gepfaendete Werkzeug beim Raeumungsunternehmen zurueckholen
-        { bild: "bilder/jack-schalter.png",        ein: 62.0,
-          zoom: [1.06, 1.22], schwenk: [4, -3], ursprung: "50% 50%",
+        // das gepfaendete Werkzeug EINES FREUNDES — hier Vaas, dem alles
+        // genommen wurde. Der Schnitt verbindet Block 10 und Block 11.
+        { bild: "bilder/vaas-gepfaendet.png",      ein: 62.0,
+          zoom: [1.04, 1.20], schwenk: [3, -3], ursprung: "50% 55%", ort: "" },
+        // beim Raeumungsunternehmen zurueckholen
+        { bild: "bilder/jack-schalter.png",        ein: 68.0,
+          zoom: [1.22, 1.06], schwenk: [-3, 3], ursprung: "50% 50%",
           ort: "Räumungsunternehmen" },
-        // Geld, Fotos und Kenntnisse sind vorhanden
-        { bild: "bilder/jack-kiste.png",           ein: 68.0,
-          zoom: [1.22, 1.06], schwenk: [-3, 3], ursprung: "50% 45%", ort: "" },
         // Bei Vollmacht und Ausweiskopie weist die Vorbereitung Luecken auf
         { bild: "bilder/jack-diner-donut.png",     ein: 73.0,
           zoom: [1.20, 1.06], schwenk: [-3, 3], ursprung: "50% 45%",
@@ -475,13 +476,10 @@ const KONFIG = {
       name: "11 Vaas · Vollbild",
       ton:  "clips/11-vaas-vollbild.mp3",
       bilder: [
-        // Dann kam ein Anruf aus dem Gefaengnis
-        { bild: "bilder/vaas-anruf.png",       ein:  0.3,
-          zoom: [1.06, 1.22], schwenk: [3, -3], ursprung: "50% 45%",
-          ort: "Der Anruf" },
-        // Seine Mutter, seit sieben Jahren hinter Panzerglas, angegriffen
-        { bild: "bilder/vaas-aufnahme.png",    ein:  4.6,
-          zoom: [1.06, 1.20], schwenk: [4, -3], ursprung: "50% 45%",
+        // Dann kam ein Anruf aus dem Gefaengnis. Seine Mutter, seit sieben
+        // Jahren hinter Panzerglas, war mit einem Messer angegriffen worden.
+        { bild: "bilder/vaas-aufnahme.png",    ein:  0.3,
+          zoom: [1.04, 1.20], schwenk: [4, -4], ursprung: "50% 45%",
           ort: "San Sequoia — Medical Center" },
         { bild: "bilder/vaas-kontrolle.png",   ein:  8.8,
           zoom: [1.20, 1.06], schwenk: [-4, 3], ursprung: "50% 45%", ort: "" },
