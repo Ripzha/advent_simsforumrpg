@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Das zerbrochene Bild</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --nacht: #0a1428; --nacht-tief: #060d1c; --panel-rand: #3a4a6a;
+    --gold: #c89248; --gold-hell: #f4d484; --cream: #f4ead0; --tinte: #2a1a0a;
+    --himmel-text: #a8b8d5;
+    --serif: "Fraunces", Georgia, serif; --sans: "Karla", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--nacht); color: var(--cream); font-family: var(--sans); height: 100%; overflow: hidden; }
+  .buehne { position: relative; width: 100%; height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: linear-gradient(180deg, var(--nacht-tief), var(--nacht) 45%); }
+  .kopf { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 18px 7px; z-index: 5; flex-wrap: wrap; gap: 8px; }
+  h1 { font-family: var(--serif); font-size: clamp(17px, 3.6vw, 25px); font-weight: 500; margin: 0; }
+  h1 em { font-style: italic; color: var(--gold-hell); }
+  .status { font-size: 13px; color: var(--himmel-text); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .status b { color: var(--gold-hell); font-family: var(--serif); font-weight: 500; }
+  .mini-knopf { background: transparent; border: 1px solid var(--panel-rand); color: var(--himmel-text); padding: 5px 12px; border-radius: 5px; font-size: 11.5px; cursor: pointer; font-family: var(--sans); }
+  .mini-knopf:hover { background: #1a2a45; color: var(--cream); }
+  .mini-knopf.aktiv { background: #2a3a5a; color: var(--cream); }
+
+  .spielflaeche { position: relative; flex: 1; overflow: hidden; touch-action: none;
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(120, 145, 190, 0.20) 0%, rgba(120, 145, 190, 0) 62%),
+      linear-gradient(180deg, #1c2b4a 0%, #16233e 100%); }
+  .brett { position: absolute; border: 2px dashed rgba(168, 184, 213, 0.35); border-radius: 4px; background: rgba(12, 24, 40, 0.5); }
+  .brett .vorlage { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+  .brett .vorlage.zeig { opacity: 0.3; }
+  /* Hilfsraster: zeigt die Felder, ohne das Bild zu verraten */
+  .brett .raster { position: absolute; inset: 0; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+  .brett .raster.zeig { opacity: 1; }
+
+  /* Teile sind hell (das Bild ist weiss), darum ein dunkler Schatten statt Leuchten */
+  .teil { position: absolute; cursor: grab; touch-action: none; will-change: transform; filter: drop-shadow(2px 4px 7px rgba(0, 0, 0, 0.55)); transform: translate(var(--tx, 0px), var(--ty, 0px)); }
+  .teil.greifen { cursor: grabbing; z-index: 1000 !important; filter: drop-shadow(0 0 7px rgba(244, 212, 132, 0.95)) drop-shadow(5px 10px 16px rgba(0, 0, 0, 0.75)); }
+  .teil.sitzt { cursor: default; filter: none; z-index: 1 !important; }
+  .teil.einrasten { animation: einrast 0.22s ease; }
+  @keyframes einrast { 0% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(1.06); } 100% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(1); } }
+
+  /* Deutlich über den Teilen: die liegen je nach Spielverlauf bis Ebene 1000 */
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; z-index: 1500; text-align: center; background: rgba(6, 13, 28, 0.82); backdrop-filter: blur(3px); transition: opacity 0.35s ease, visibility 0.35s ease; }
+  .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .screen h2 { font-family: var(--serif); font-size: clamp(22px, 5vw, 32px); font-weight: 500; margin: 0 0 6px; }
+  .screen h2 em { font-style: italic; color: var(--gold-hell); }
+  .screen p { color: var(--himmel-text); font-size: 14px; margin: 0 0 22px; max-width: 420px; line-height: 1.6; }
+  .knopf { background: var(--gold); color: var(--tinte); border: 1px solid var(--gold-hell); padding: 12px 26px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--sans); text-decoration: none; display: inline-block; }
+  .knopf:hover { background: #dba458; }
+  .knopf.sekundaer { background: transparent; color: var(--himmel-text); border-color: var(--panel-rand); font-weight: 500; }
+  .knopf-reihe { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .fertig-bild { max-width: min(86vw, 70vh); border-radius: 8px; border: 2px solid var(--gold-hell); box-shadow: 0 0 44px rgba(244, 212, 132, 0.4); margin-bottom: 18px; }
+  .dreh { display: none; font-size: 12.5px; color: var(--gold-hell); margin: -12px 0 18px; }
+  .dreh.an { display: block; }
+  /* Am Handy soll der Kopf wenig Platz fressen, das Brett braucht ihn */
+  @media (max-width: 560px) {
+    .kopf { padding: 8px 12px 6px; gap: 6px; }
+    .status { gap: 9px; font-size: 12px; }
+    .mini-knopf { padding: 4px 9px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="buehne">
+  <div class="kopf">
+    <h1>Das <em>zerbrochene</em> Bild</h1>
+    <div class="status">
+      <span><b id="sitzen">0</b> / <b id="gesamt">50</b> Teile</span>
+      <button class="mini-knopf" id="raster-knopf">Raster</button>
+      <button class="mini-knopf" id="vorlage-knopf">Vorlage zeigen</button>
+      <button class="mini-knopf" id="misch-knopf">Neu verstreuen</button>
+    </div>
+  </div>
+  <div class="spielflaeche" id="spielflaeche">
+    <div class="brett" id="brett">
+      <img class="vorlage" id="vorlage" alt="">
+      <canvas class="raster" id="raster"></canvas>
+    </div>
+  </div>
+
+  <!-- Intro -->
+  <div class="screen" id="screen-intro">
+    <h2>Das <em>zerbrochene</em> Bild</h2>
+    <p id="intro-text">Dieses Türchen ist in fünfzig Stücke gefallen — sie liegen überall verstreut. Zieh jedes Teil an seinen Platz auf dem Brett. Liegt es richtig, rastet es ein.</p>
+    <p class="dreh" id="dreh-hinweis">Am Handy geht es quer deutlich leichter.</p>
+    <div class="knopf-reihe">
+      <button class="knopf" id="start-knopf">Aufsammeln</button>
+      <button class="knopf sekundaer hidden" id="neu-knopf" style="display:none">Von vorn beginnen</button>
+    </div>
+  </div>
+
+  <!-- Fertig -->
+  <div class="screen hidden" id="screen-fertig">
+    <h2>Wieder <em>ganz.</em></h2>
+    <img class="fertig-bild" id="fertig-bild" alt="Das vollständige Bild">
+    <p id="fertig-text"></p>
+    <div class="knopf-reihe">
+      <a class="knopf" href="index.html">Zurück zum Kalender</a>
+      <button class="knopf sekundaer" id="nochmal-knopf">Nochmal puzzeln</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ---------- Einstellungen ----------
+  const BILD_URL = 'bilder/puzzle-gesichter.webp';
+  const QUELL_B = 1800, QUELL_H = 943;   // Format des Bildes, nichts wird beschnitten
+  const SPALTEN = 10, ZEILEN = 5;        // 50 Teile
+  const SNAP = 22;                       // Einrast-Abstand in px
+  const SPEICHER = 'advent_puzzle_gesichter';
+
+  const ASPEKT = QUELL_B / QUELL_H;
+  const N = SPALTEN * ZEILEN;
+
+  const flaeche = document.getElementById('spielflaeche');
+  const brettEl = document.getElementById('brett');
+  const rasterEl = document.getElementById('raster');
+  document.getElementById('gesamt').textContent = N;
+
+  let bild = null;              // Quell-Canvas
+  let bildUrlEcht = null;       // Adresse des geladenen Bildes, für Vorlage und Schlussbild
+  let brett = { x: 0, y: 0, b: 0, h: 0 };
+  let teile = [];
+  let tabsH = [], tabsV = [];
+  let sitzen = 0;
+  let zTop = 10;
+  let seed = 0;
+  let gesetzt = new Set();      // "r,c" der bereits eingerasteten Teile
+  let letzteB = 0, letzteH = 0;
+
+  // ---------- Zufall mit Startwert ----------
+  // Damit die Nasen nach einem Neuladen gleich aussehen wie vorher
+  function rngVon(start) {
+    let s = (start >>> 0) || 1;
+    return function () {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  // ---------- Spielstand ----------
+  function speichern() {
+    try {
+      localStorage.setItem(SPEICHER, JSON.stringify({ seed: seed, gesetzt: Array.from(gesetzt) }));
+    } catch (e) {}
+  }
+  function laden() {
+    try {
+      const d = JSON.parse(localStorage.getItem(SPEICHER) || 'null');
+      if (d && typeof d.seed === 'number' && Array.isArray(d.gesetzt)) {
+        seed = d.seed;
+        gesetzt = new Set(d.gesetzt);
+        return gesetzt.size;
+      }
+    } catch (e) {}
+    return 0;
+  }
+  function standLoeschen() {
+    try { localStorage.removeItem(SPEICHER); } catch (e) {}
+  }
+
+  // ---------- Quellbild vorbereiten ----------
+  function bereiteBild(imgOderNull) {
+    const c = document.createElement('canvas');
+    c.width = QUELL_B; c.height = QUELL_H;
+    const ctx = c.getContext('2d');
+    if (imgOderNull) {
+      // Cover-Fit: füllt die Quelle, überstehende Ränder mittig beschnitten
+      const iw = imgOderNull.naturalWidth, ih = imgOderNull.naturalHeight;
+      const skala = Math.max(QUELL_B / iw, QUELL_H / ih);
+      const sw = QUELL_B / skala, sh = QUELL_H / skala;
+      ctx.drawImage(imgOderNull, (iw - sw) / 2, (ih - sh) / 2, sw, sh, 0, 0, QUELL_B, QUELL_H);
+    } else {
+      ctx.fillStyle = '#0d1830';
+      ctx.fillRect(0, 0, QUELL_B, QUELL_H);
+      ctx.save();
+      ctx.translate((QUELL_B - QUELL_H) / 2, 0);
+      zeichnePlatzhalterSzene(ctx, QUELL_H);
+      ctx.restore();
+    }
+    return c;
+  }
+
+  // Ersatzbild, falls die Datei fehlt — das Puzzle bleibt spielbar
+  function zeichnePlatzhalterSzene(ctx, S) {
+    const grad = ctx.createLinearGradient(0, 0, 0, S);
+    grad.addColorStop(0, '#0d1830'); grad.addColorStop(0.55, '#1a2a4a'); grad.addColorStop(1, '#26385e');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, S, S);
+    ctx.fillStyle = '#f4ead0';
+    for (let i = 0; i < 90; i++) {
+      ctx.globalAlpha = 0.3 + Math.random() * 0.7;
+      ctx.beginPath(); ctx.arc(Math.random() * S, Math.random() * S * 0.5, Math.random() * 2 + 0.6, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(244,232,200,0.15)'; ctx.beginPath(); ctx.arc(S * 0.72, S * 0.2, 110, 0, 7); ctx.fill();
+    ctx.fillStyle = '#f4e8c8'; ctx.beginPath(); ctx.arc(S * 0.72, S * 0.2, 74, 0, 7); ctx.fill();
+    ctx.fillStyle = '#dfe8f4';
+    ctx.beginPath(); ctx.moveTo(0, S * 0.78); ctx.quadraticCurveTo(S * 0.3, S * 0.68, S * 0.55, S * 0.78); ctx.quadraticCurveTo(S * 0.8, S * 0.88, S, S * 0.76); ctx.lineTo(S, S); ctx.lineTo(0, S); ctx.fill();
+    function tanne(x, y, gr, farbe) {
+      ctx.fillStyle = farbe;
+      for (let i = 0; i < 3; i++) {
+        const b = gr * (1 - i * 0.22), h = gr * 0.62, oy = y - i * gr * 0.42;
+        ctx.beginPath(); ctx.moveTo(x, oy - h); ctx.lineTo(x + b / 2, oy); ctx.lineTo(x - b / 2, oy); ctx.closePath(); ctx.fill();
+      }
+    }
+    tanne(S * 0.18, S * 0.84, S * 0.17, '#16304a');
+    tanne(S * 0.32, S * 0.9, S * 0.12, '#1b3a56');
+    tanne(S * 0.86, S * 0.88, S * 0.15, '#16304a');
+    ctx.fillStyle = '#f4ead0';
+    for (let i = 0; i < 160; i++) {
+      ctx.globalAlpha = 0.25 + Math.random() * 0.55;
+      ctx.beginPath(); ctx.arc(Math.random() * S, Math.random() * S, Math.random() * 4 + 1.5, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---------- Puzzle-Kanten ----------
+  // Zeichnet eine Kante von (ax,ay) nach (bx,by); tab = 0 gerade, ±1 Nase raus/rein
+  function edge(ctx, ax, ay, bx, by, tab) {
+    if (!tab) { ctx.lineTo(bx, by); return; }
+    const dx = bx - ax, dy = by - ay;
+    const nx = -dy, ny = dx;
+    const p = (f, n) => [ax + dx * f + nx * n * tab, ay + dy * f + ny * n * tab];
+    let q = p(0.40, 0); ctx.lineTo(q[0], q[1]);
+    let c1 = p(0.52, 0.02), c2 = p(0.28, 0.24), m = p(0.50, 0.26);
+    ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], m[0], m[1]);
+    c1 = p(0.72, 0.24); c2 = p(0.48, 0.02); q = p(0.60, 0);
+    ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], q[0], q[1]);
+    ctx.lineTo(bx, by);
+  }
+
+  function teilPfad(ctx, pw, ph, m, tabT, tabR, tabB, tabL) {
+    ctx.beginPath();
+    ctx.moveTo(m, m);
+    edge(ctx, m, m, m + pw, m, tabT);
+    edge(ctx, m + pw, m, m + pw, m + ph, tabR);
+    edge(ctx, m + pw, m + ph, m, m + ph, tabB);
+    edge(ctx, m, m + ph, m, m, tabL);
+    ctx.closePath();
+  }
+
+  // ---------- Brett einpassen ----------
+  function layout() {
+    const fw = flaeche.clientWidth, fh = flaeche.clientHeight;
+    const quer = fw >= fh * 1.1;
+    let b;
+    if (quer) {
+      // Breiter Schirm: die Teile liegen links und rechts vom Brett
+      b = Math.min(fw * 0.60, fh * 0.74 * ASPEKT, 1240);
+    } else {
+      // Hochformat: Brett nach oben, die Teile darunter
+      b = Math.min(fw * 0.96, fh * 0.42 * ASPEKT, 1240);
+    }
+    brett.b = Math.max(240, Math.round(b));
+    brett.h = Math.round(brett.b / ASPEKT);
+    brett.x = Math.round((fw - brett.b) / 2);
+    brett.y = quer ? Math.round((fh - brett.h) / 2) : Math.round(fh * 0.04);
+    brettEl.style.left = brett.x + 'px';
+    brettEl.style.top = brett.y + 'px';
+    brettEl.style.width = brett.b + 'px';
+    brettEl.style.height = brett.h + 'px';
+    zeichneRaster();
+  }
+
+  // Hilfsraster auf dem Brett: zeigt die Felder, ohne das Bild zu zeigen
+  function zeichneRaster() {
+    rasterEl.width = brett.b;
+    rasterEl.height = brett.h;
+    const ctx = rasterEl.getContext('2d');
+    ctx.clearRect(0, 0, brett.b, brett.h);
+    ctx.strokeStyle = 'rgba(168, 184, 213, 0.28)';
+    ctx.lineWidth = 1;
+    for (let c = 1; c < SPALTEN; c++) {
+      const x = Math.round(c * brett.b / SPALTEN) + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, brett.h); ctx.stroke();
+    }
+    for (let r = 1; r < ZEILEN; r++) {
+      const y = Math.round(r * brett.h / ZEILEN) + 0.5;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(brett.b, y); ctx.stroke();
+    }
+  }
+
+  // ---------- Teile bauen ----------
+  function baueTeile() {
+    teile.forEach(t => t.el && t.el.remove());
+    teile = [];
+    sitzen = 0;
+
+    // Nasen aus dem Startwert — nach dem Neuladen dieselben Formen
+    const zufall = rngVon(seed);
+    tabsH = []; tabsV = [];
+    for (let r = 0; r < ZEILEN; r++) {
+      tabsH[r] = []; tabsV[r] = [];
+      for (let c = 0; c < SPALTEN; c++) {
+        tabsH[r][c] = zufall() < 0.5 ? 1 : -1;   // Kante rechts von (r,c)
+        tabsV[r][c] = zufall() < 0.5 ? 1 : -1;   // Kante unter (r,c)
+      }
+    }
+
+    const pw = brett.b / SPALTEN;
+    const ph = brett.h / ZEILEN;
+    const m = Math.min(pw, ph) * 0.32;
+
+    for (let r = 0; r < ZEILEN; r++) {
+      for (let c = 0; c < SPALTEN; c++) {
+        const tabT = r === 0 ? 0 : -tabsV[r - 1][c];
+        const tabB = r === ZEILEN - 1 ? 0 : tabsV[r][c];
+        const tabL = c === 0 ? 0 : -tabsH[r][c - 1];
+        const tabR = c === SPALTEN - 1 ? 0 : tabsH[r][c];
+
+        const cv = document.createElement('canvas');
+        const grB = Math.ceil(pw + 2 * m);
+        const grH = Math.ceil(ph + 2 * m);
+        cv.width = grB; cv.height = grH;
+        const ctx = cv.getContext('2d');
+        teilPfad(ctx, pw, ph, m, tabT, tabR, tabB, tabL);
+        ctx.save();
+        ctx.clip();
+        ctx.drawImage(bild, 0, 0, QUELL_B, QUELL_H, m - c * pw, m - r * ph, brett.b, brett.h);
+        ctx.restore();
+        // Dunkle Kontur — das Bild ist hell, eine helle Linie wäre unsichtbar
+        teilPfad(ctx, pw, ph, m, tabT, tabR, tabB, tabL);
+        ctx.strokeStyle = 'rgba(26, 40, 66, 0.7)';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+
+        cv.className = 'teil';
+        cv.style.width = grB + 'px'; cv.style.height = grH + 'px';
+        flaeche.appendChild(cv);
+
+        const teil = {
+          c, r, el: cv, sitzt: false,
+          zielX: brett.x + c * pw - m,
+          zielY: brett.y + r * ph - m,
+          x: 0, y: 0
+        };
+        teile.push(teil);
+
+        // Schon gesetzte Teile liegen gleich an ihrem Platz
+        if (gesetzt.has(r + ',' + c)) {
+          setzePos(teil, teil.zielX, teil.zielY);
+          teil.sitzt = true;
+          cv.classList.add('sitzt');
+          sitzen++;
+        } else {
+          machDraggable(teil);
+        }
+      }
+    }
+    document.getElementById('sitzen').textContent = sitzen;
+    verstreue();
+    if (sitzen === N) setTimeout(fertig, 300);
+  }
+
+  // ---------- Teile verstreuen ----------
+  function verstreue() {
+    const fw = flaeche.clientWidth, fh = flaeche.clientHeight;
+    // Freie Flächen rund um das Brett sammeln
+    const zonen = [];
+    const links = brett.x;
+    const rechts = fw - (brett.x + brett.b);
+    const oben = brett.y;
+    const unten = fh - (brett.y + brett.h);
+    if (links > 70) zonen.push({ x: 0, y: 0, b: links, h: fh, gew: links * fh });
+    if (rechts > 70) zonen.push({ x: brett.x + brett.b, y: 0, b: rechts, h: fh, gew: rechts * fh });
+    if (oben > 70) zonen.push({ x: 0, y: 0, b: fw, h: oben, gew: fw * oben });
+    if (unten > 70) zonen.push({ x: 0, y: brett.y + brett.h, b: fw, h: unten, gew: fw * unten });
+    if (!zonen.length) zonen.push({ x: 0, y: 0, b: fw, h: fh, gew: fw * fh });
+
+    const gesamtGew = zonen.reduce((s, z) => s + z.gew, 0);
+    const offen = teile.filter(t => !t.sitzt);
+
+    offen.forEach(t => {
+      const gr = t.el.width, grH = t.el.height;
+      // Zone nach Fläche auswählen, damit sich die Teile gleichmässig verteilen
+      let w = Math.random() * gesamtGew, zone = zonen[0];
+      for (let i = 0; i < zonen.length; i++) {
+        w -= zonen[i].gew;
+        if (w <= 0) { zone = zonen[i]; break; }
+      }
+      const x = zone.x + Math.random() * Math.max(1, zone.b - gr);
+      const y = zone.y + Math.random() * Math.max(1, zone.h - grH);
+      setzePos(t,
+        Math.max(0, Math.min(fw - gr, x)),
+        Math.max(0, Math.min(fh - grH, y)));
+      obenAuf(t);
+    });
+  }
+
+  function setzePos(t, x, y) {
+    t.x = x; t.y = y;
+    t.el.style.setProperty('--tx', x + 'px');
+    t.el.style.setProperty('--ty', y + 'px');
+  }
+
+  // Teil nach oben legen. Die Zahl darf nicht beliebig wachsen,
+  // sonst schiebt sie sich irgendwann über die Start- und Schlusskarte.
+  function obenAuf(t) {
+    if (zTop > 800) {
+      zTop = 10;
+      teile.forEach(x => { if (!x.sitzt) x.el.style.zIndex = ++zTop; });
+    }
+    t.el.style.zIndex = ++zTop;
+  }
+
+  // ---------- Ziehen und Ablegen ----------
+  function machDraggable(t) {
+    let offX = 0, offY = 0, aktiv = false;
+    t.el.addEventListener('pointerdown', (e) => {
+      if (t.sitzt) return;
+      aktiv = true;
+      t.el.setPointerCapture(e.pointerId);
+      t.el.classList.add('greifen');
+      obenAuf(t);
+      offX = e.clientX - t.x;
+      offY = e.clientY - t.y;
+      e.preventDefault();
+    });
+    t.el.addEventListener('pointermove', (e) => {
+      if (!aktiv) return;
+      setzePos(t, e.clientX - offX, e.clientY - offY);
+    });
+    const loslassen = () => {
+      if (!aktiv) return;
+      aktiv = false;
+      t.el.classList.remove('greifen');
+      if (Math.abs(t.x - t.zielX) < SNAP && Math.abs(t.y - t.zielY) < SNAP) {
+        setzePos(t, t.zielX, t.zielY);
+        t.sitzt = true;
+        t.el.classList.add('sitzt', 'einrasten');
+        sitzen++;
+        gesetzt.add(t.r + ',' + t.c);
+        speichern();
+        document.getElementById('sitzen').textContent = sitzen;
+        if (sitzen === N) setTimeout(fertig, 400);
+      }
+    };
+    t.el.addEventListener('pointerup', loslassen);
+    t.el.addEventListener('pointercancel', loslassen);
+  }
+
+  // ---------- Schluss ----------
+  function fertig() {
+    const f = document.getElementById('fertig-bild');
+    f.src = bildUrlEcht || bild.toDataURL('image/jpeg', 0.85);
+    document.getElementById('fertig-text').textContent =
+      'Alle ' + N + ' Teile sitzen — das ganze Forum wieder an einem Ort.';
+    // Wer ein fertiges Puzzle erneut öffnet, soll danach nicht auf der Startkarte landen
+    document.getElementById('screen-intro').classList.add('hidden');
+    document.getElementById('screen-fertig').classList.remove('hidden');
+  }
+
+  // ---------- Steuerung ----------
+  document.getElementById('vorlage-knopf').onclick = (e) => {
+    document.getElementById('vorlage').classList.toggle('zeig');
+    e.target.classList.toggle('aktiv');
+  };
+  document.getElementById('raster-knopf').onclick = (e) => {
+    rasterEl.classList.toggle('zeig');
+    e.target.classList.toggle('aktiv');
+  };
+  document.getElementById('misch-knopf').onclick = verstreue;
+  document.getElementById('start-knopf').onclick = () => {
+    document.getElementById('screen-intro').classList.add('hidden');
+  };
+  document.getElementById('neu-knopf').onclick = () => {
+    standLoeschen();
+    gesetzt = new Set();
+    seed = Math.floor(Math.random() * 1e9);
+    speichern();
+    baueTeile();
+    document.getElementById('screen-intro').classList.add('hidden');
+  };
+  document.getElementById('nochmal-knopf').onclick = () => {
+    document.getElementById('screen-fertig').classList.add('hidden');
+    standLoeschen();
+    gesetzt = new Set();
+    seed = Math.floor(Math.random() * 1e9);
+    speichern();
+    baueTeile();
+  };
+
+  // Grössenänderung: neu aufbauen, aber nur bei echter Änderung.
+  // Am Handy löst die Adressleiste sonst dauernd aus und würde das Puzzle neu mischen.
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const fw = flaeche.clientWidth, fh = flaeche.clientHeight;
+      if (Math.abs(fw - letzteB) < 40 && Math.abs(fh - letzteH) < 90) return;
+      letzteB = fw; letzteH = fh;
+      layout();
+      baueTeile();
+    }, 260);
+  });
+
+  // ---------- Start ----------
+  function init(imgOderNull, urlEcht) {
+    bild = bereiteBild(imgOderNull);
+    bildUrlEcht = urlEcht || null;
+    document.getElementById('vorlage').src = bildUrlEcht || bild.toDataURL('image/jpeg', 0.7);
+    letzteB = flaeche.clientWidth;
+    letzteH = flaeche.clientHeight;
+    layout();
+    baueTeile();
+
+    // Intro an den Spielstand anpassen
+    if (gesetzt.size > 0 && gesetzt.size < N) {
+      document.getElementById('intro-text').textContent =
+        'Du warst schon dabei: ' + gesetzt.size + ' von ' + N + ' Teilen liegen an ihrem Platz. Die übrigen warten verstreut.';
+      document.getElementById('start-knopf').textContent = 'Weiterpuzzeln';
+      document.getElementById('neu-knopf').style.display = 'inline-block';
+    }
+    // Am Handy im Hochformat ist ein so breites Bild eng
+    if (window.innerHeight > window.innerWidth && window.innerWidth < 760) {
+      document.getElementById('dreh-hinweis').classList.add('an');
+    }
+  }
+
+  const vorhanden = laden();
+  if (!vorhanden) {
+    seed = Math.floor(Math.random() * 1e9);
+    gesetzt = new Set();
+    speichern();
+  }
+
+  const img = new Image();
+  img.onload = () => init(img, BILD_URL);
+  img.onerror = () => { console.warn('[puzzle] Bild nicht gefunden:', BILD_URL); init(null, null); };
+  img.src = BILD_URL;
+})();
+</script>
+</body>
+</html>
