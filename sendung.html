@@ -191,6 +191,7 @@ html, body {
   <div class="feld" id="feld">
     <div class="blende" id="blende"></div>
     <video class="wischer" id="wischer" muted playsinline preload="auto"></video>
+    <video class="wischer" id="kennvideo" playsinline preload="auto"></video>
     <div class="laden" id="laden">
       <b id="laden-titel"></b>
       <span id="laden-nummer"></span>
@@ -230,12 +231,12 @@ html, body {
 const BLOECKE = [
   { nummer: "1–4",  titel: "Ident, Begrüssung, Remy", datei: "news-remy.html",         dauer: 132 },
   { nummer: "6",    titel: "Gemeindehaus",            datei: "news-gemeindehaus.html", dauer: 111 },
-  { nummer: "7",    titel: "Werbung ATLAS",           datei: "news-werbung.html",      dauer:  25 },
+  { nummer: "7",    titel: "Werbung ATLAS",           datei: "news-werbung.html",      dauer:  25, vorlauf: "kennung" },
   { nummer: "8–9b", titel: "Boom Boom und Bite",      datei: "news-boom.html",         dauer: 102 },
   { nummer: "10–11", titel: "Jahresbogen Jack und Vaas", datei: "news-jahresbogen.html", dauer: 165 },
   { nummer: "12",   titel: "Eriks Geburt",            datei: "news-erik.html",         dauer:  44 },
   { nummer: "13",   titel: "Eilmeldung",              datei: "news-eilmeldung.html",   dauer: 157 },
-  { nummer: "14–15", titel: "Werbung Magazin",        datei: "news-werbung-magazin.html", dauer: 33 },
+  { nummer: "14–15", titel: "Werbung Magazin",        datei: "news-werbung-magazin.html", dauer: 33, vorlauf: "kennung" },
   { nummer: "16",   titel: "Chip und das System",     datei: "news-chip.html",         dauer:  38 },
   { nummer: "18–19b", titel: "Dennah, Blaze und Jake", datei: "news-dennah-jake.html", dauer: 122 },
   { nummer: "20",   titel: "Wetter mit Artjom",       datei: "wetterkarte.html",       dauer:  84 },
@@ -249,35 +250,40 @@ const feld   = el("feld");
 const blende = el("blende");
 
 /* ---------- Uebergaenge ----------
-   WISCHER laeuft zwischen zwei Bloecken, ABBINDER zum Schluss der Sendung. */
+   Zwischen zwei Meldungen laeuft der Globuswischer. Vor einer Werbung und
+   am Schluss der Sendung laeuft stattdessen die kurze Senderkennung —
+   so wie im Fernsehen vor dem Werbeblock. Welcher Block welchen Vorlauf
+   bekommt, steht in BLOECKE unter "vorlauf". */
 const WISCHER  = "clips/globus-wisch.webm";
 const WISCHTON = "clips/logo-wisch-ton.mp3";
-const ABBINDER = "clips/logo-kurz.mp4";
+const KENNUNG  = "clips/logo-kurz.mp4";
 
-const wischer  = el("wischer");
-const wischton = new Audio(WISCHTON);
+const wischer   = el("wischer");     // stumm, Ton kommt aus der mp3
+const kennvideo = el("kennvideo");   // bringt den Ton selbst mit
+const wischton  = new Audio(WISCHTON);
 wischton.preload = "auto";
-wischer.src = WISCHER;
+wischer.src   = WISCHER;
+kennvideo.src = KENNUNG;
 
-/* Der Wischer laeuft, der Rahmenwechsel passiert dahinter. Das Versprechen
-   loest sich auf, sobald der Wischer weit genug ist, spaetestens nach
-   1,4 Sekunden — ein haengendes Video soll die Sendung nicht anhalten. */
-function wischeDurch(mitTon) {
-  return new Promise((fertig) => {
-    let erledigt = false;
-    const schluss = () => { if (!erledigt) { erledigt = true; fertig(); } };
-    try {
-      wischer.currentTime = 0;
-      wischer.classList.add("an");
-      const v = wischer.play();
-      if (v && v.catch) v.catch(schluss);
-      if (mitTon) { wischton.currentTime = 0; wischton.play().catch(() => {}); }
-    } catch (e) { schluss(); }
-    setTimeout(schluss, 620);
-    setTimeout(schluss, 1400);
-  });
+/* Wie lange der Vorlauf steht, bevor der neue Block aufgedeckt wird. */
+const VORLAUF = { wisch: 700, kennung: 1250 };
+
+/* Der Vorlauf laeuft, der Rahmenwechsel passiert dahinter. */
+function spieleVorlauf(art) {
+  const v = (art === "kennung") ? kennvideo : wischer;
+  try {
+    v.currentTime = 0;
+    v.classList.add("an");
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {});
+    if (art !== "kennung") { wischton.currentTime = 0; wischton.play().catch(() => {}); }
+  } catch (e) {}
+  return VORLAUF[art] || VORLAUF.wisch;
 }
-function wischerWeg() { wischer.classList.remove("an"); }
+function vorlaufWeg() {
+  wischer.classList.remove("an");
+  kennvideo.classList.remove("an");
+}
 
 let rahmen = [];          // zwei Rahmen im Wechsel
 let vorn = 0;             // welcher gerade zu sehen ist
@@ -403,15 +409,17 @@ function spiele(i) {
   clearInterval(uhr);
   blende.classList.add("an");
 
-  // Vor dem ersten Block kein Wischer — da kommt die Kennung der Sendung.
-  const mitWischer = (i > 0 && !ohneWischer);
+  // Vor dem ersten Block kein Vorlauf — da kommt das Intro der Sendung.
+  const mitVorlauf = (i > 0 && !ohneWischer);
   ohneWischer = false;
-  // Die Ladeanzeige soll nicht ueber dem Wischer stehen. Sie kommt erst,
-  // wenn der Wischer durch ist und der Block immer noch nicht laeuft.
+  const art  = BLOECKE[i].vorlauf || "wisch";
+  // Die Ladeanzeige soll nicht ueber dem Vorlauf stehen. Sie kommt erst,
+  // wenn der Vorlauf durch ist und der Block immer noch nicht laeuft.
   clearTimeout(ladeAnzeige);
-  if (mitWischer) {
-    wischeDurch(true);
-    ladeAnzeige = setTimeout(() => zeigeLaden(i), 1150);
+  let halten = 350;
+  if (mitVorlauf) {
+    halten = spieleVorlauf(art);
+    ladeAnzeige = setTimeout(() => zeigeLaden(i), halten + 450);
   } else {
     zeigeLaden(i);
   }
@@ -433,20 +441,20 @@ function spiele(i) {
     versuche++;
     if (starte(f)) {
       clearInterval(warte);
-      // Der Wischer soll nicht abgeschnitten wirken: erst weiterlaufen
+      // Der Vorlauf soll nicht abgeschnitten wirken: erst zu Ende laufen
       // lassen, dann aufdecken.
       setTimeout(() => {
         blende.classList.remove("an");
-        wischerWeg();
+        vorlaufWeg();
         clearTimeout(ladeAnzeige);
         versteckeLaden();
         ueberwache(f, i);
         ladeVor(i + 1);
-      }, mitWischer ? 700 : 350);
+      }, halten);
     } else if (versuche > 160) {        // nach 16 Sekunden aufgeben
       clearInterval(warte);
       blende.classList.remove("an");
-      wischerWeg();
+      vorlaufWeg();
       clearTimeout(ladeAnzeige);
       versteckeLaden();
       ueberwache(f, i);
@@ -518,21 +526,18 @@ function versteckeLaden() { el("laden").classList.remove("an"); }
 function fertig() {
   clearInterval(uhr);
   // Zum Schluss die kurze Senderkennung, danach erst die Schlusstafel.
-  wischer.muted = false;
-  wischer.src   = ABBINDER;
-  wischer.classList.add("an");
+  kennvideo.currentTime = 0;
+  kennvideo.classList.add("an");
   const tafel = () => {
-    wischer.classList.remove("an");
-    wischer.muted = true;
-    wischer.src   = WISCHER;
+    kennvideo.classList.remove("an");
     blende.classList.add("an");
     el("laden-titel").textContent  = "Ende der Sendung";
     el("laden-nummer").textContent = "SimsWelt News";
     el("laden").classList.add("an");
   };
-  wischer.onended = tafel;
+  kennvideo.onended = tafel;
   setTimeout(tafel, 2600);               // falls das Video nicht startet
-  const v = wischer.play();
+  const v = kennvideo.play();
   if (v && v.catch) v.catch(tafel);
 }
 
