@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimsWelt News — Chip und das System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   SIMSWELT NEWS — Block 9 und Off-Teil
+   Phase 1  Studiobild, Konstanze rechts, Themenkasten LINKS
+   Phase 2  Off-Teil, Vollbild-Bildstrecke
+   Zwei Tonspuren, die nacheinander laufen.
+   =================================================================== */
+
+:root {
+  --nacht:       #040a14;
+  --navy:        #08192e;
+  --silber:      #c9d6e4;
+  --weiss:       #ffffff;
+  --messing:     #c9992f;
+  --messing-hell:#e8c877;
+
+  /* Overlay-Positionen — im Browser mit J nachjustieren */
+  --thema-links:   5.4%;
+  --thema-oben:   15.0%;
+  --thema-breite: 36.0%;
+  --binde-links:   4.5%;
+  --binde-unten:  15.0%;
+
+  --marke: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --eng:   "Barlow Condensed", "Arial Narrow", sans-serif;
+  --text:  "Barlow", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: #02060c; font-family: var(--text); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.bühne {
+  position: relative; aspect-ratio: 16 / 9;
+  width: min(100vw, calc(100vh * 16 / 9)); height: auto;
+  background: #000; overflow: hidden; container-type: size;
+}
+
+.phase { position: absolute; inset: 0; opacity: 0; transition: opacity 0.55s ease; pointer-events: none; background: #000; }
+.phase.aktiv { opacity: 1; }
+#clip, #ident { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--nacht); }
+#phase-ident { z-index: 30; }
+.phase.fort { opacity: 0; transition: opacity 1.0s ease; }
+
+/* ---------- Vollbild-Bildstrecke ---------- */
+.strecke { position: absolute; inset: 0; background: #000; overflow: hidden; }
+.kb { position: absolute; inset: 0; opacity: 0; transition: opacity 1.0s ease; will-change: transform, opacity; }
+.kb.sichtbar { opacity: 1; }
+.kb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.strecke::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(4,10,20,0.55) 0%, rgba(4,10,20,0) 22%),
+    linear-gradient(0deg,  rgba(4,10,20,0.80) 0%, rgba(4,10,20,0) 30%);
+}
+
+/* ---------- Raute ---------- */
+.raute { display: inline-block; position: relative; width: .30em; height: .62em; margin: 0 .085em; }
+.raute::before { content: ""; position: absolute; inset: 0;   background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.raute::after  { content: ""; position: absolute; inset: 22%; background: var(--nacht);   clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+
+/* ---------- Senderkennung ---------- */
+.kennung {
+  position: absolute; top: 4.2%; right: 3.2%; z-index: 20;
+  display: flex; align-items: baseline; gap: 0.7em;
+  font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.5vw, 25px); letter-spacing: -0.012em;
+  color: var(--weiss); text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.kennung.sichtbar { opacity: 1; }
+.kennung .news { color: var(--messing-hell); }
+.kennung .uhr {
+  font-family: var(--eng); font-weight: 600; font-size: 0.66em;
+  letter-spacing: 0.22em; color: var(--silber);
+  padding-left: 0.75em; border-left: 1px solid rgba(201,214,228,0.35);
+}
+
+/* ---------- Themenkasten, LINKS neben Konstanze ---------- */
+.thema {
+  position: absolute; left: var(--thema-links); top: var(--thema-oben);
+  width: var(--thema-breite); z-index: 15;
+  opacity: 0; transform: translateX(-16px);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2,0.8,0.3,1);
+}
+.thema.sichtbar { opacity: 1; transform: translateX(0); }
+.thema-bild {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  border: 2px solid var(--messing); overflow: hidden; background: var(--nacht);
+  box-shadow: 0 12px 38px rgba(0,0,0,0.65); display: flex;
+}
+.thema-bild img {
+  flex: 1 1 0; min-width: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; will-change: transform;
+}
+.thema-bild img + img { border-left: 2px solid var(--messing); }
+.thema-zeile {
+  margin-top: 6px; background: rgba(6,16,30,0.94);
+  border-left: 4px solid var(--messing);
+  padding: 0.55em 0.95em 0.6em; text-align: left;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.55);
+}
+.thema-zeile b {
+  display: block; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(12px, 1.7vw, 29px); line-height: 1.06;
+  letter-spacing: -0.005em; color: var(--weiss);
+}
+.thema-zeile span {
+  display: block; margin-top: 0.22em;
+  font-family: var(--eng); font-weight: 600;
+  font-size: clamp(9px, 1.02vw, 17px);
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--messing-hell);
+}
+
+/* ---------- Bauchbinde ---------- */
+.binde {
+  position: absolute; left: var(--binde-links); bottom: var(--binde-unten);
+  z-index: 18; display: flex; align-items: stretch;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.binde.sichtbar { opacity: 1; transform: translateY(0); }
+.binde .flagge {
+  background: var(--messing); color: #0a1220;
+  font-family: var(--eng); font-weight: 700;
+  font-size: clamp(9px, 1.05vw, 18px); letter-spacing: 0.18em;
+  display: flex; align-items: center; padding: 0 0.9em;
+}
+.binde .inhalt { background: rgba(6,16,30,0.94); border-left: 1px solid rgba(201,214,228,0.22); padding: 0.55em 2em 0.6em 1.05em; }
+.binde .name { font-family: var(--marke); font-weight: 800; font-size: clamp(12px, 1.65vw, 28px); line-height: 1.06; color: var(--weiss); }
+.binde .rolle { font-family: var(--eng); font-weight: 600; font-size: clamp(9px, 1vw, 17px); letter-spacing: 0.22em; text-transform: uppercase; color: var(--messing-hell); }
+
+/* ---------- Ortsmarke ---------- */
+.ort {
+  position: absolute; left: var(--binde-links); bottom: calc(var(--binde-unten) + 1.5%);
+  z-index: 18; font-family: var(--marke); font-weight: 800;
+  font-size: clamp(11px, 1.45vw, 25px); color: var(--weiss);
+  background: rgba(6,16,30,0.92); border-left: 5px solid var(--messing);
+  padding: 0.42em 1.1em 0.46em 0.85em;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.ort.sichtbar { opacity: 1; transform: translateY(0); }
+
+/* ---------- Laufband ---------- */
+.laufband {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 25; height: 8.6%;
+  display: flex; align-items: stretch;
+  background: linear-gradient(180deg, var(--navy) 0%, var(--nacht) 100%);
+  border-top: 2px solid var(--messing); overflow: hidden;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.laufband.sichtbar { opacity: 1; }
+.laufband .marke {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 0.6em; padding: 0 1.4em;
+  background: var(--messing); color: var(--nacht);
+  font-family: var(--eng); font-weight: 700;
+  font-size: clamp(10px, 1.3vw, 22px); letter-spacing: 0.16em;
+}
+.laufband .marke i { font-style: normal; display: inline-block; width: 0.34em; height: 0.68em; background: var(--nacht); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+.laufband .spur { position: relative; flex: 1 1 auto; overflow: hidden; display: flex; align-items: center; }
+.laufband .zug {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  font-family: var(--eng); font-weight: 500;
+  font-size: clamp(11px, 1.4vw, 23px); letter-spacing: 0.04em;
+  color: var(--silber); animation: ticker 150s linear infinite; padding-left: 100%;
+}
+.laufband .zug i { font-style: normal; display: inline-block; width: 0.32em; height: 0.64em; background: var(--messing); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); margin: 0 1.6em; }
+@keyframes ticker { to { transform: translateX(-100%); } }
+
+/* ---------- Zeitleiste ---------- */
+.leiste {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 88;
+  display: none; align-items: center; gap: 0.9em; padding: 0.5em 1em 0.6em;
+  background: linear-gradient(0deg, rgba(4,10,20,0.95), rgba(4,10,20,0.6));
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; color: var(--messing-hell);
+}
+.leiste.zeig { display: flex; }
+.leiste .zeit { flex: 0 0 auto; min-width: 11em; }
+.leiste .spur2 { position: relative; flex: 1 1 auto; height: 16px; background: rgba(201,214,228,0.14); cursor: pointer; }
+.leiste .fuell { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--messing); }
+.leiste .marker { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.55); }
+.leiste button {
+  flex: 0 0 auto; font-family: inherit; font-size: 11px; letter-spacing: 0.06em;
+  color: var(--nacht); background: var(--messing-hell); border: none; padding: 0.45em 0.9em; cursor: pointer;
+}
+.leiste button:hover { background: var(--weiss); }
+.leiste .hinweis { flex: 0 0 auto; color: var(--silber); font-size: 11px; }
+
+/* ---------- Zeiten-Editor ---------- */
+.zeiten {
+  position: absolute; right: 1.5%; top: 2%; bottom: 12%; width: 30%; min-width: 320px;
+  z-index: 92; display: none; flex-direction: column;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  font-family: var(--text); font-size: 12px; color: var(--weiss);
+}
+.zeiten.zeig { display: flex; }
+.zeiten h3 { margin: 0; padding: 0.7em 0.9em; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--nacht); background: var(--messing-hell); }
+.zeiten .liste { flex: 1 1 auto; overflow-y: auto; padding: 0.4em 0.6em; }
+.zeiten .zeile { display: grid; grid-template-columns: 1fr auto auto; gap: 0.4em; align-items: center; padding: 0.35em 0.3em; border-bottom: 1px solid rgba(201,214,228,0.14); }
+.zeiten .zeile.jetzt { background: rgba(201,153,47,0.22); }
+.zeiten .titel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zeiten .titel small { display: block; color: var(--silber); font-size: 10px; }
+.zeiten button { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; border: 1px solid rgba(232,200,119,0.5); background: transparent; color: var(--messing-hell); padding: 0.28em 0.5em; cursor: pointer; }
+.zeiten button:hover { background: var(--messing); color: var(--nacht); }
+.zeiten .fuss { flex: 0 0 auto; padding: 0.55em 0.7em; border-top: 1px solid rgba(201,214,228,0.2); }
+.zeiten textarea { display: none; width: 100%; height: 170px; margin-top: 0.5em; background: #071322; color: var(--messing-hell); border: 1px solid rgba(232,200,119,0.4); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; padding: 0.4em; }
+.zeiten.ausgabe textarea { display: block; }
+
+/* ---------- Ziehen und Groesse ---------- */
+body.justiert .thema, body.justiert .binde { cursor: move; opacity: 1 !important; transform: none !important; outline: 1px dashed rgba(232,200,119,0.65); }
+.griff { position: absolute; right: -7px; bottom: -7px; width: 16px; height: 16px; z-index: 40; background: #35d6a0; border: 2px solid var(--nacht); cursor: nwse-resize; display: none; }
+body.justiert .griff { display: block; }
+
+.justier {
+  position: absolute; left: 1.5%; top: 2%; z-index: 95; display: none;
+  background: rgba(4,10,20,0.96); border: 1px solid var(--messing);
+  padding: 0.75em 1.15em; font-family: var(--text); font-size: 13px; line-height: 1.6;
+  color: var(--weiss); white-space: pre; pointer-events: none;
+}
+.justier.zeig { display: block; }
+.justier b { color: var(--messing-hell); font-weight: 600; }
+.justier code { display: none; margin-top: 0.55em; padding: 0.45em 0.65em; background: #071322; color: var(--messing-hell); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; user-select: all; }
+.justier.werte-zeigen code { display: block; pointer-events: auto; }
+
+/* ---------- Startbildschirm ---------- */
+.start {
+  position: absolute; inset: 0; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.1rem;
+  background: radial-gradient(ellipse at 50% 44%, #16314f 0%, #0a1c33 44%, #040a14 100%);
+  cursor: pointer; transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.start.weg { opacity: 0; visibility: hidden; }
+.start h1 { margin: 0; font-family: var(--marke); font-weight: 800; font-size: clamp(26px, 5vw, 84px); letter-spacing: -0.012em; color: var(--weiss); display: flex; align-items: baseline; }
+.start h1 .news { color: var(--messing-hell); }
+.start .linie { width: 42%; height: 2px; background: var(--messing); }
+.start p { margin: 0; font-family: var(--eng); font-weight: 600; font-size: clamp(11px, 1.3vw, 21px); letter-spacing: 0.42em; text-indent: 0.42em; text-transform: uppercase; color: rgba(201,214,228,0.82); }
+.start button { margin-top: 0.3rem; font-family: var(--eng); font-weight: 700; font-size: clamp(13px, 1.4vw, 22px); letter-spacing: 0.16em; text-transform: uppercase; color: var(--nacht); background: var(--messing); border: none; padding: 0.8em 2.6em; cursor: pointer; }
+.start button:hover { background: var(--messing-hell); }
+.start label { font-family: var(--eng); font-weight: 600; font-size: clamp(11px, 1.15vw, 18px); letter-spacing: 0.1em; text-transform: uppercase; color: var(--messing-hell); border-bottom: 1px solid rgba(232,200,119,0.5); cursor: pointer; }
+.start label input { display: none; }
+.start small { font-family: var(--text); font-size: clamp(10px, 0.95vw, 14px); color: rgba(201,214,228,0.5); }
+
+.fehlt {
+  position: absolute; inset: 0; z-index: 12; display: none;
+  align-items: center; justify-content: center;
+  background: repeating-linear-gradient(45deg, #0b1a2e 0 22px, #071322 22px 44px);
+  color: var(--messing-hell); font-family: var(--eng); font-weight: 600;
+  font-size: clamp(12px, 1.5vw, 22px); letter-spacing: 0.08em; text-align: center; padding: 2em;
+}
+.fehlt.zeig { display: flex; }
+
+/* ---------- Platzhalter fuer noch fehlende Bilder ---------- */
+.kb.platzhalter img { display: none; }
+.platz {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  background: repeating-linear-gradient(45deg, #0b1a2e 0 22px, #071322 22px 44px);
+  color: var(--messing-hell); font-family: var(--eng); font-weight: 600;
+  font-size: clamp(12px, 1.6vw, 24px); letter-spacing: 0.1em; padding: 1.5em;
+}
+.platz.klein { font-size: clamp(9px, 1.0vw, 15px); letter-spacing: 0.06em; padding: 0.6em; }
+</style>
+</head>
+<body>
+
+<div class="bühne" id="bühne">
+
+  <div class="phase" id="phase-clip">
+    <video id="clip" playsinline preload="auto"></video>
+    <div class="fehlt" id="clip-fehlt"></div>
+  </div>
+
+  <div class="phase" id="phase-voll">
+    <div class="strecke" id="strecke"></div>
+  </div>
+
+  <div class="kennung" id="kennung">
+    <span>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></span>
+    <span class="uhr" id="uhr">20:00</span>
+  </div>
+
+  <div class="thema" id="thema">
+    <div class="thema-bild" id="thema-bild"></div>
+    <div class="thema-zeile">
+      <b id="thema-titel"></b>
+      <span id="thema-ort"></span>
+    </div>
+  </div>
+
+  <div class="binde" id="binde">
+    <div class="flagge">LIVE</div>
+    <div class="inhalt">
+      <div class="name" id="binde-name"></div>
+      <div class="rolle" id="binde-rolle"></div>
+    </div>
+  </div>
+
+  <div class="ort" id="ortmarke"></div>
+
+  <div class="laufband" id="laufband">
+    <div class="marke"><i></i>EILMELDUNGEN</div>
+    <div class="spur"><div class="zug" id="zug"></div></div>
+  </div>
+
+  <div class="leiste" id="leiste">
+    <span class="zeit" id="leiste-zeit">—</span>
+    <span class="spur2" id="leiste-spur"><span class="fuell" id="leiste-fuell"></span></span>
+    <span class="hinweis">N nächster Teil · Z Zeiten · T ausblenden · R neu</span>
+  </div>
+
+  <div class="zeiten" id="zeiten">
+    <h3>Einblendezeiten · Z schliesst</h3>
+    <div class="liste" id="zeiten-liste"></div>
+    <div class="fuss">
+      <button id="zeiten-ausgabe">Werte zum Kopieren</button>
+      <textarea id="zeiten-text" readonly></textarea>
+    </div>
+  </div>
+
+  <div class="start" id="start">
+    <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
+    <div class="linie"></div>
+    <p>Chip und das System</p>
+    <button id="start-knopf">Abspielen</button>
+    <small>Leertaste pausiert · Pfeile springen · N nächster Teil · Z setzt Zeiten · T blendet aus · R startet neu</small>
+  </div>
+
+</div>
+
+
+<script>
+/* ===================================================================
+   KONFIG — Chip und das System
+
+   Die Sendung läuft als Folge von Teilen. Ein Teil ist entweder
+   "studio" (Vidnoz-Video, Ton steckt im Video) oder "strecke"
+   (Vollbild-Bilder über einer eigenen Tonspur).
+
+   Fehlt ein Studio-Video, springt die Seite auf die Ersatz-Tonspur
+   und zeigt an, welche Datei fehlt. Fehlt ein Bild, erscheint ein
+   beschrifteter Platzhalter. So läuft die Seite schon jetzt durch.
+
+   Zeiten sind Sekunden ab Beginn des jeweiligen Teils.
+   Mit Z lassen sie sich im Browser neu setzen.
+   =================================================================== */
+const KONFIG = {
+
+  fassung: "v1 · Block 16, Zeiten aus der Pausenmessung",
+
+  uhrzeit: "20:00",
+
+  binde: { name: "Konstanze Immalaut", rolle: "Moderatorin" },
+
+  ticker: [
+    "Oasis Springs — Spielbank meldet gleichbleibende Besucherzahlen",
+    "Verbraucherschutz — Systeme mit Mustererkennung ohne nachweisbaren Nutzen",
+    "Fallschirmsport — Tandemsprünge in der Dämmerung weiterhin erlaubt",
+    "Luftfahrt — Maschine mit dem Namen Molly besteht die Jahreskontrolle",
+    "Familie — Sparpläne für Kinder, Beratungsstelle rät zum Sparbuch",
+    "SimsWelt News sucht Verstärkung: Kolumne, Interview, Stadtgeflüster, Leserpost",
+    "Statistik — Hundertsechsundvierzig Simoleons entsprechen zwei Tankfüllungen",
+    "Wüste — Nachtfahrten auf der Schnellstrasse nur mit Fernlicht empfohlen",
+    "Glücksspiel — Branchenverband wirbt für massvollen Einsatz",
+    "Hinweis der Redaktion — vereinzelte Beiträge können Spuren von Nüssen enthalten"
+  ],
+
+  teile: [
+
+    /* ---------- Block 16 · Studio ----------
+       Text: Aus Oasis Springs liegt eine Zwischenbilanz vor. Das System,
+             mit dem Chip die Zukunft seiner Tochter Zoe finanzieren will,
+             hat bis September einen Verlust von hundertsechsundvierzig
+             Simoleons erwirtschaftet.
+       Ton läuft von 0,00 bis 12,59.                                     */
+    {
+      art:   "studio",
+      name:  "16 Chip · Studio",
+      clip:  "clips/16-chip-studio.mp4",
+      kasten: { links: "27%", oben: "16%", breite: "24%" },
+      ton:   "clips/16-chip-studio.mp3",
+      binde: { ein: 0.8, aus: 6.5 },
+      thema: [
+        { ein: 3.8, aus: 13.0, titel: "Zoe", ort: "Chips Tochter",
+          bilder: ["bilder/chip-zoe.png"] }
+      ]
+    },
+
+    /* ---------- Block 16 · Bildstrecke ---------- */
+    {
+      art:  "strecke",
+      name: "16 Chip · Vollbild",
+      ton:  "clips/16-chip-vollbild.mp3",
+      bilder: [
+        // Entwickelt wurde es gemeinsam mit Viola
+        { bild: "bilder/chip-roulette.png",  ein:  0.3,
+          zoom: [1.06, 1.22], schwenk: [4, -4], ursprung: "50% 50%",
+          ort: "Oasis Springs — Die Spielbank" },
+        // Grundlage ist das Glücksspiel
+        { bild: "bilder/chip-kasino.png",    ein:  3.0,
+          zoom: [1.22, 1.08], schwenk: [-4, 3], ursprung: "50% 50%", ort: "" },
+        // Nach Bekanntwerden der Zahlen beschlossen die beiden …
+        { bild: "bilder/chip-umarmung.png",  ein:  5.3,
+          zoom: [1.08, 1.24], schwenk: [3, -3], ursprung: "50% 45%", ort: "" },
+        // … künftig zusätzlich nach Mustern zu suchen. Und positiver zu formulieren.
+        { bild: "bilder/chip-gespraech.png", ein: 10.6,
+          zoom: [1.20, 1.06], schwenk: [-3, 3], ursprung: "50% 45%", ort: "" },
+        // Unabhängig davon sind beide aus einem Flugzeug gesprungen
+        { bild: "bilder/chip-flugzeug.png",  ein: 13.2,
+          zoom: [1.06, 1.22], schwenk: [5, -4], ursprung: "50% 50%",
+          ort: "Der Sprung" },
+        // Viola zuerst
+        { bild: "bilder/chip-viola-sprung.png", ein: 17.3,
+          zoom: [1.24, 1.08], schwenk: [-4, 4], ursprung: "50% 40%", ort: "" },
+        // Fünf Sekunden Weltuntergang
+        { bild: "bilder/chip-sprung.png",    ein: 18.8,
+          zoom: [1.08, 1.26], schwenk: [4, -4], ursprung: "50% 40%", ort: "" },
+        // und danach eine Erleuchtung
+        { bild: "bilder/chip-stadt.png",     ein: 23.3,
+          zoom: [1.20, 1.04], schwenk: [-2, 2], ursprung: "50% 55%", ort: "" }
+      ]
+    }
+
+  ]
+};
+
+/* =================================================================== */
+
+const el = (id) => document.getElementById(id);
+const clip      = el("clip");
+const phaseClip = el("phase-clip");
+const phaseVoll = el("phase-voll");
+const strecke   = el("strecke");
+const thema     = el("thema");
+const themaBild = el("thema-bild");
+const binde     = el("binde");
+const ortmarke  = el("ortmarke");
+
+const ton = new Audio();          // treibt Strecken und ersetzt fehlende Videos
+let nr = 0;                       // laufender Teil
+let aktiverThema = -1;
+let aktivesBild  = -1;
+let leisteAn  = true;
+let zeitenAn  = false;
+let laeuft    = false;
+
+el("uhr").textContent         = KONFIG.uhrzeit;
+el("binde-name").textContent  = KONFIG.binde.name;
+el("binde-rolle").textContent = KONFIG.binde.rolle;
+
+(function baueTicker() {
+  const einmal = KONFIG.ticker.map(t => "<span>" + t + "</span><i></i>").join("");
+  el("zug").innerHTML = einmal + einmal;
+})();
+
+/* ---------- Bildstrecken vorbereiten ---------- */
+KONFIG.teile.forEach((teil) => {
+  if (teil.art !== "strecke") return;
+  teil.elemente = teil.bilder.map((s) => {
+    const wrap = document.createElement("div");
+    wrap.className = "kb";
+    wrap.style.display = "none";
+    const img = document.createElement("img");
+    img.src = s.bild; img.alt = "";
+    s.fehlt = false;
+    img.addEventListener("error", () => {
+      s.fehlt = true;
+      wrap.classList.add("platzhalter");
+      const p = document.createElement("div");
+      p.className = "platz";
+      p.textContent = s.bild.replace("bilder/", "") + " fehlt noch";
+      wrap.appendChild(p);
+    });
+    wrap.appendChild(img);
+    wrap.style.transformOrigin = s.ursprung || "50% 50%";
+    wrap.style.transform = fahrt(s, 0);
+    strecke.appendChild(wrap);
+    return wrap;
+  });
+});
+
+/* Bilder vorladen */
+KONFIG.teile.forEach((t) => {
+  if (t.art === "strecke") t.bilder.forEach(s => { const v = new Image(); v.src = s.bild; });
+  else (t.thema || []).forEach(x => x.bilder.forEach(p => { const v = new Image(); v.src = p; }));
+});
+
+/* ---------- Bewegung in Standbildern ---------- */
+function fahrt(s, p) {
+  const z  = s.zoom    ? s.zoom[0]    + (s.zoom[1]    - s.zoom[0])    * p : 1;
+  const x  = s.schwenk ? s.schwenk[0] + (s.schwenk[1] - s.schwenk[0]) * p : 0;
+  const y  = s.heben   ? s.heben[0]   + (s.heben[1]   - s.heben[0])   * p : 0;
+  return "scale(" + z.toFixed(4) + ") translate(" + x.toFixed(3) + "%," + y.toFixed(3) + "%)";
+}
+
+/* ---------- Lage des Themenkastens ----------
+   Die Studioaufnahmen sind nicht gleich gerahmt. Steht Konstanze links,
+   gehoert der Kasten nach rechts; steht sie rechts, passt er in die
+   Luecke zwischen dem eingebauten Panel und ihr. Jeder Studioteil
+   bringt seine Lage selbst mit.                                        */
+function setzeKasten(t) {
+  const w = document.documentElement.style;
+  const k = t.kasten;
+  if (!k) {
+    w.removeProperty("--thema-links");
+    w.removeProperty("--thema-oben");
+    w.removeProperty("--thema-breite");
+    return;
+  }
+  w.setProperty("--thema-links",  k.links);
+  w.setProperty("--thema-oben",   k.oben);
+  w.setProperty("--thema-breite", k.breite);
+}
+
+/* ---------- Themenkasten ---------- */
+function setzeThema(i, liste) {
+  if (i === aktiverThema) return;
+  aktiverThema = i;
+  if (i < 0 || !liste || !liste[i]) { thema.classList.remove("sichtbar"); return; }
+  const t = liste[i];
+  themaBild.innerHTML = "";
+  t.bilder.forEach((p) => {
+    const img = document.createElement("img");
+    img.src = p; img.alt = "";
+    img.addEventListener("error", () => {
+      img.remove();
+      const d = document.createElement("div");
+      d.className = "platz klein";
+      d.textContent = p.replace("bilder/", "") + " fehlt";
+      themaBild.appendChild(d);
+    });
+    themaBild.appendChild(img);
+  });
+  el("thema-titel").textContent = t.titel;
+  el("thema-ort").textContent   = t.ort || "";
+  thema.classList.add("sichtbar");
+}
+
+/* ---------- Ortsmarke ---------- */
+function setzeOrt(text) {
+  if (!text) { ortmarke.classList.remove("sichtbar"); return; }
+  ortmarke.textContent = text;
+  ortmarke.classList.add("sichtbar");
+}
+
+/* ---------- Teile ---------- */
+function teilJetzt() { return KONFIG.teile[nr]; }
+
+function quelle() {
+  const t = teilJetzt();
+  return (t.art === "studio" && !t.videoFehlt) ? clip : ton;
+}
+
+function starte(i) {
+  if (i >= KONFIG.teile.length) { ende(); return; }
+  nr = i;
+  aktiverThema = -1; aktivesBild = -1;
+  const t = teilJetzt();
+  setzeKasten(t);
+
+  thema.classList.remove("sichtbar");
+  binde.classList.remove("sichtbar");
+  setzeOrt("");
+  el("clip-fehlt").classList.remove("zeig");
+
+  // alle Streckenbilder verstecken
+  KONFIG.teile.forEach((x) => {
+    if (x.art === "strecke" && x.elemente) {
+      x.elemente.forEach(e => { e.style.display = "none"; e.classList.remove("sichtbar"); });
+    }
+  });
+
+  if (t.art === "studio") {
+    phaseVoll.classList.remove("aktiv");
+    phaseClip.classList.add("aktiv");
+    ton.pause();
+    t.videoFehlt = false;
+    clip.src = t.clip;
+    clip.currentTime = 0;
+    const p = clip.play();
+    if (p && p.catch) p.catch(() => {});
+  } else {
+    phaseClip.classList.remove("aktiv");
+    phaseVoll.classList.add("aktiv");
+    clip.pause();
+    t.elemente.forEach(e => { e.style.display = "block"; });
+    ton.src = t.ton;
+    ton.currentTime = 0;
+    const p = ton.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+  laeuft = true;
+}
+
+/* Studio-Video fehlt: auf die Ersatz-Tonspur ausweichen */
+clip.addEventListener("error", () => {
+  const t = teilJetzt();
+  if (t.art !== "studio" || t.videoFehlt) return;
+  t.videoFehlt = true;
+  el("clip-fehlt").textContent = t.clip + " fehlt noch — es läuft nur der Ton";
+  el("clip-fehlt").classList.add("zeig");
+  ton.src = t.ton;
+  ton.currentTime = 0;
+  const p = ton.play();
+  if (p && p.catch) p.catch(() => {});
+});
+
+clip.addEventListener("ended", () => { if (teilJetzt().art === "studio") starte(nr + 1); });
+ton.addEventListener("ended",  () => { starte(nr + 1); });
+
+function ende() {
+  laeuft = false;
+  clip.pause(); ton.pause();
+  thema.classList.remove("sichtbar");
+  binde.classList.remove("sichtbar");
+  setzeOrt("");
+  el("leiste-zeit").textContent = "Ende";
+}
+
+/* ---------- Takt ----------
+   Das Bild laeuft ueber requestAnimationFrame, also mit der Bildrate des
+   Schirms statt alle 80 ms. Wichtig: waehrend der Ueberblendung bekommt
+   AUCH das ausgehende Bild weiter neue Werte, sonst friert es ein und der
+   Wechsel wirkt stockend. Dafuer darf sein Fahrtwert ueber 1 hinauslaufen,
+   solange die Blende dauert.                                            */
+
+const BLENDE = 1.0;   // Sekunden, deckt sich mit der CSS-Angabe fuer .kb
+
+function zeichne() {
+  requestAnimationFrame(zeichne);
+  if (!laeuft) return;
+  const t = teilJetzt();
+  const q = quelle();
+  const z = q.currentTime || 0;
+  const d = q.duration && isFinite(q.duration) ? q.duration : 0;
+
+  if (t.art === "studio") {
+    const b = t.binde;
+    if (b) binde.classList.toggle("sichtbar", z >= b.ein && z < b.aus);
+    let i = -1;
+    (t.thema || []).forEach((x, k) => { if (z >= x.ein && z < x.aus) i = k; });
+    setzeThema(i, t.thema);
+    return;
+  }
+
+  let i = -1;
+  t.bilder.forEach((s, k) => {
+    const bis = (k === t.bilder.length - 1) ? 1e9 : t.bilder[k + 1].ein;
+    if (z >= s.ein && z < bis) i = k;
+  });
+  if (i !== aktivesBild) {
+    aktivesBild = i;
+    t.elemente.forEach((e, k) => e.classList.toggle("sichtbar", k === i));
+    setzeOrt(i >= 0 ? (t.bilder[i].ort || "") : "");
+  }
+
+  // Alle Bilder des Teils bekommen ihren Wert, nicht nur das sichtbare
+  t.elemente.forEach((e, k) => {
+    const s = t.bilder[k];
+    const bis = (k === t.bilder.length - 1) ? (d || s.ein + 10) : t.bilder[k + 1].ein;
+    const dauer = Math.max(0.1, bis - s.ein);
+    const p = Math.max(0, Math.min(1 + BLENDE / dauer, (z - s.ein) / dauer));
+    e.style.transform = fahrt(s, p);
+  });
+}
+requestAnimationFrame(zeichne);
+
+/* Leiste und Zeitenliste brauchen keine Bildrate */
+setInterval(() => {
+  if (!laeuft) return;
+  const t = teilJetzt();
+  const q = quelle();
+  const z = q.currentTime || 0;
+  const d = q.duration && isFinite(q.duration) ? q.duration : 0;
+  el("leiste-zeit").textContent = t.name + " · " + z.toFixed(1) + " / " + d.toFixed(1);
+  el("leiste-fuell").style.width = (d ? (z / d * 100) : 0) + "%";
+  if (zeitenAn) zeichneZeiten();
+}, 150);
+
+/* ---------- Zeitenliste ---------- */
+function sek(x) { return Math.round(x * 10) / 10; }
+
+function zeichneZeiten() {
+  const t = teilJetzt();
+  const z = quelle().currentTime || 0;
+  const liste = el("zeiten-liste");
+  const eintraege = (t.art === "strecke") ? t.bilder : (t.thema || []);
+  if (liste.dataset.teil !== String(nr)) {
+    liste.dataset.teil = String(nr);
+    liste.innerHTML = "";
+    eintraege.forEach((s, i) => {
+      const zeile = document.createElement("div");
+      zeile.className = "zeile";
+      const titel = document.createElement("div");
+      titel.className = "titel";
+      titel.innerHTML = (s.bild ? s.bild.replace("bilder/", "") : s.titel) +
+                        "<small>ein " + s.ein.toFixed(1) + "</small>";
+      const knopf = document.createElement("button");
+      knopf.textContent = "ein setzen";
+      knopf.addEventListener("click", () => {
+        s.ein = sek(quelle().currentTime);
+        titel.querySelector("small").textContent = "ein " + s.ein.toFixed(1);
+        aktivesBild = -1; aktiverThema = -1;
+      });
+      zeile.appendChild(titel); zeile.appendChild(knopf);
+      liste.appendChild(zeile);
+    });
+  }
+  Array.from(liste.children).forEach((kind, i) => {
+    const s = eintraege[i];
+    const bis = (i === eintraege.length - 1) ? 1e9 : (eintraege[i + 1].ein || 1e9);
+    kind.classList.toggle("jetzt", z >= s.ein && z < bis);
+  });
+}
+
+el("zeiten-ausgabe").addEventListener("click", () => {
+  const zeilen = [];
+  KONFIG.teile.forEach((t) => {
+    zeilen.push("/* " + t.name + " */");
+    const eintraege = (t.art === "strecke") ? t.bilder : (t.thema || []);
+    eintraege.forEach((s) => {
+      zeilen.push("  " + (s.bild || s.titel) + "   ein: " + s.ein.toFixed(1));
+    });
+  });
+  const f = el("zeiten-text");
+  f.value = zeilen.join("\n");
+  el("zeiten").classList.add("ausgabe");
+  f.focus(); f.select();
+});
+
+/* ---------- Bedienung ---------- */
+function springe(sekunde) {
+  const q = quelle();
+  if (!q.duration) return;
+  q.currentTime = Math.max(0, Math.min(sekunde, q.duration));
+  aktivesBild = -1; aktiverThema = -1;
+}
+
+el("start-knopf").addEventListener("click", () => {
+  el("start").classList.add("weg");
+  el("kennung").classList.add("sichtbar");
+  el("laufband").classList.add("sichtbar");
+  el("leiste").classList.add("zeig");
+  starte(0);
+});
+
+el("leiste-spur").addEventListener("click", (e) => {
+  const q = quelle();
+  if (!q.duration) return;
+  const r = el("leiste-spur").getBoundingClientRect();
+  springe((e.clientX - r.left) / r.width * q.duration);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "TEXTAREA") return;
+  const k = e.key.toLowerCase();
+
+  if (e.code === "Space") {
+    e.preventDefault();
+    const q = quelle();
+    if (q.paused) { q.play(); laeuft = true; } else { q.pause(); }
+    return;
+  }
+  if (e.key === "ArrowRight") { e.preventDefault(); springe((quelle().currentTime || 0) + (e.shiftKey ? 1 : 5)); return; }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); springe((quelle().currentTime || 0) - (e.shiftKey ? 1 : 5)); return; }
+  if (k === "n") { e.preventDefault(); starte(nr + 1); return; }
+  if (k === "b") { e.preventDefault(); starte(Math.max(0, nr - 1)); return; }
+  if (k === "t") { leisteAn = !leisteAn; el("leiste").classList.toggle("zeig", leisteAn); return; }
+  if (k === "z") {
+    zeitenAn = !zeitenAn;
+    el("zeiten").classList.toggle("zeig", zeitenAn);
+    el("zeiten-liste").dataset.teil = "";
+    return;
+  }
+  if (k === "r") {
+    e.preventDefault();
+    clip.pause(); ton.pause();
+    el("start").classList.remove("weg");
+    el("kennung").classList.remove("sichtbar");
+    el("laufband").classList.remove("sichtbar");
+    laeuft = false; nr = 0;
+    return;
+  }
+});
+</script>
+</body>
+</html>
