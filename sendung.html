@@ -306,12 +306,13 @@ function medium(f) {
     if (!d) return null;
     const alle = Array.prototype.slice.call(d.querySelectorAll("video, audio"));
     // das längste Medium ist das eigentliche Programm, nicht die Kennung
-    let best = null;
+    let best = null, spielend = null;
     alle.forEach(m => {
       if (!m.duration || !isFinite(m.duration)) return;
+      if (!spielend && !m.paused && m.currentTime > 0) spielend = m;
       if (!best || m.duration > best.duration) best = m;
     });
-    return best;
+    return spielend || best;
   } catch (e) { return null; }
 }
 
@@ -326,11 +327,33 @@ function starte(f) {
   } catch (e) { return false; }
 }
 
+/* ---------- Mehrteilige Seiten melden sich selbst ----------
+   Eine Seite mit mehreren Teilen (Studio, Bildstrecke, Studio) laesst
+   sich am Medium nicht ablesen: zwischen den Teilen steht das Video am
+   Ende, und die Uhr hielte den Block faelschlich fuer fertig und wuerde
+   die Bildstrecke ueberspringen. Solche Seiten melden Beginn und Ende
+   selbst, und solange sie das tun, zaehlt hier nur ihre Meldung.      */
+let selbstmelder = false;
+let blockBegonnen = 0;
+
+window.addEventListener("message", (e) => {
+  const d = e.data;
+  if (!d || typeof d !== "object") return;
+  if (d.swn === "selbstmelder") { selbstmelder = true; return; }
+  if (d.swn === "ende") {
+    clearInterval(uhr);
+    const s = el("kette").children[index];
+    if (s) { s.classList.remove("jetzt"); s.classList.add("fertig"); }
+    spiele(index + 1);
+  }
+});
+
 /* ---------- Abspielen ---------- */
 function spiele(i) {
   if (i < 0) i = 0;
   if (i >= BLOECKE.length) { fertig(); return; }
   index = i;
+  selbstmelder = false;
 
   clearInterval(uhr);
   blende.classList.add("an");
@@ -378,9 +401,23 @@ function ladeVor(i) {
 /* Auf das Ende des Blocks warten */
 function ueberwache(f, i) {
   clearInterval(uhr);
+  blockBegonnen = Date.now();
   uhr = setInterval(() => {
     const m = medium(f);
     const s = el("kette").children[i];
+
+    // Selbstmelder: Fortschritt an der Uhr, Ende kommt per Meldung
+    if (selbstmelder) {
+      const t = (Date.now() - blockBegonnen) / 1000;
+      const d = BLOECKE[i].dauer || 1;
+      zeigeStand(i, Math.min(t, d), d);
+      if (s) {
+        const b = s.querySelector("i");
+        if (b) b.style.width = Math.min(100, t / d * 100) + "%";
+      }
+      return;
+    }
+
     if (!m) { zeigeStand(i, 0, BLOECKE[i].dauer); return; }
     zeigeStand(i, m.currentTime, m.duration);
     if (s) {

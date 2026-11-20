@@ -386,7 +386,7 @@ const KONFIG = {
       art:   "studio",
       name:  "20b · Rückgabe an das Studio",
       clip:  "clips/20b-rueckgabe-studio.mp4",
-      kasten: { links: "27%", oben: "16%", breite: "24%" },
+      kasten: { links: "5%", oben: "18%", breite: "40%" },
       ton:   "clips/20b-rueckgabe-studio.mp3",
       binde: { ein: 0.4, aus: 4.5 },
       thema: []
@@ -422,7 +422,13 @@ const themaBild = el("thema-bild");
 const binde     = el("binde");
 const ortmarke  = el("ortmarke");
 
-const ton = new Audio();          // treibt Strecken und ersetzt fehlende Videos
+const ton = new Audio();
+/* Die Tonspur gehoert ins Dokument: die Uebersicht sucht in jedem Rahmen
+   nach video- und audio-Elementen, um den Fortschritt zu lesen. Ein nur
+   im Skript erzeugtes Audio faende sie nicht.                          */
+ton.id = "strecken-ton";
+ton.style.display = "none";
+document.body.appendChild(ton);          // treibt Strecken und ersetzt fehlende Videos
 let nr = 0;                       // laufender Teil
 let aktiverThema = -1;
 let aktivesBild  = -1;
@@ -596,6 +602,7 @@ ton.addEventListener("ended",  () => { starte(nr + 1); });
 
 function ende() {
   laeuft = false;
+  try { parent.postMessage({ swn: "ende" }, "*"); } catch (e) {}
   clip.pause(); ton.pause();
   thema.classList.remove("sichtbar");
   binde.classList.remove("sichtbar");
@@ -724,6 +731,9 @@ function springe(sekunde) {
 
 el("start-knopf").addEventListener("click", () => {
   el("start").classList.add("weg");
+  /* Mehrteilige Seite: die Uebersicht darf nicht am Medium ablesen, wann
+     der Block zu Ende ist — zwischen den Teilen steht das Video am Ende. */
+  try { parent.postMessage({ swn: "selbstmelder" }, "*"); } catch (e) {}
   el("kennung").classList.add("sichtbar");
   el("laufband").classList.add("sichtbar");
   el("leiste").classList.add("zeig");
