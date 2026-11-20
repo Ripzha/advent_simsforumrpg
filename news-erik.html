@@ -553,8 +553,9 @@ KONFIG.teile.forEach((teil) => {
     const steht = naechstes ? (naechstes.ein - s.ein) : 4.0;
     let ruhig;
     if (s.ruhig !== undefined) ruhig = s.ruhig;
-    else if (steht < 3.0) ruhig = true;
-    else { ruhig = (lang % 2) === 1; lang++; }
+    else if (steht < 3.0) ruhig = true;        // kurz: still, sonst hektisch
+    else if (steht > 5.0) ruhig = false;       // lang: muss fahren, sonst klebt es
+    else { ruhig = (lang % 2) === 1; lang++; } // dazwischen abwechselnd
     if (ruhig) {
       const z = s.zoom ? (s.zoom[0] + s.zoom[1]) / 2 : 1.04;
       s.zoom = [z, z];
