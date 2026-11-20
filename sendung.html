@@ -432,12 +432,26 @@ function richteRahmenHer(f) {
   } catch (e) {}
 }
 
-/* ---------- Das Medium in einem Rahmen finden ---------- */
+/* ---------- Das Medium in einem Rahmen finden ----------
+   Nicht jedes Video in einer Seite ist Programm. Der Globuswischer
+   zwischen zwei Themen ist eine Sekunde lang und liegt fertig
+   geladen bereit, noch bevor der eigentliche Clip eine Quelle hat.
+   Wer ihn mitzaehlt, haelt den Block nach einer Sekunde fuer fertig
+   und ueberspringt ihn. Deshalb bleiben Wischer und Kennungen hier
+   aussen vor.                                                      */
+function istProgramm(m) {
+  if (!m) return false;
+  if (m.id === "wischer" || m.classList.contains("wischer")) return false;
+  if (m.id === "kennung" || m.classList.contains("kennung")) return false;
+  return true;
+}
+
 function medium(f) {
   try {
     const d = f.contentDocument;
     if (!d) return null;
-    const alle = Array.prototype.slice.call(d.querySelectorAll("video, audio"));
+    const alle = Array.prototype.slice.call(d.querySelectorAll("video, audio"))
+      .filter(istProgramm);
     // das längste Medium ist das eigentliche Programm, nicht die Kennung
     let best = null, spielend = null;
     alle.forEach(m => {
@@ -460,12 +474,16 @@ function starte(f) {
        Sekunden stocken. Die Warteschleife in spiele() gibt nach 16
        Sekunden ohnehin auf und startet dann trotzdem. */
     const m = Array.prototype.slice.call(d.querySelectorAll("video,audio"))
+      .filter(istProgramm)
       .filter((x) => x.src && x.duration && isFinite(x.duration))
       .sort((a, b) => b.duration - a.duration)[0];
     if (m) {
       if (m.readyState < 3) return false;
       const b = m.buffered;
-      if (b.length === 0 || b.end(b.length-1) < 3.0) return false;
+      /* Bei einer kurzen Datei reicht, was es gibt — sonst wartet die
+         Uebersicht auf drei Sekunden, die nie kommen. */
+      const genug = Math.min(3.0, m.duration * 0.5);
+      if (b.length === 0 || b.end(b.length - 1) < genug) return false;
     }
     k.click();
     return true;
