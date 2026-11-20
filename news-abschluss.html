@@ -283,16 +283,35 @@ body.justiert .griff { display: block; }
           mask-image: linear-gradient(to bottom, transparent 0, #000 11%, #000 89%, transparent 100%);
 }
 .abspann.sichtbar { opacity: 1; }
-.abspann::before {
-  content: ""; position: absolute; inset: 0 -12% 0 -10%;
+/* Der dunkle Verlauf liegt als eigene Flaeche hinter der Rolle. Im Kasten
+   selbst wuerde ihn das overflow:hidden abschneiden — dann sieht man rechts
+   eine harte Kante. */
+.abspann-grund {
+  position: absolute; left: 0; top: 4%; bottom: 16%;
+  width: 46%; z-index: 15; pointer-events: none;
+  opacity: 0; transition: opacity 0.9s ease;
   background: linear-gradient(to right,
-    rgba(4,10,20,0.80) 0%, rgba(4,10,20,0.62) 55%, rgba(4,10,20,0) 100%);
+    rgba(4,10,20,0.82) 0%, rgba(4,10,20,0.70) 40%, rgba(4,10,20,0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
 }
+.abspann-grund.sichtbar { opacity: 1; }
 .abspann-liste {
   position: absolute; left: 0; right: 0; top: 0;
   padding-right: 6%; will-change: transform;
 }
 .abspann .gruppe { margin-bottom: 1.7em; }
+.abspann .marke { margin-top: 2.6em; text-align: center; }
+.abspann .marke-zug {
+  font-family: var(--marke); font-weight: 800;
+  font-size: 1.5rem; letter-spacing: -0.012em;
+  color: var(--weiss); margin-bottom: 0.35em;
+}
+.abspann .marke-zug .news { color: var(--messing-hell); }
+.abspann .marke .wer {
+  font-family: var(--eng); font-weight: 600; font-size: 0.72rem;
+  letter-spacing: 0.34em; text-transform: uppercase; color: var(--silber);
+}
 .abspann .was {
   font-family: var(--eng); font-weight: 600; font-size: 0.74rem;
   letter-spacing: 0.2em; text-transform: uppercase;
@@ -338,6 +357,7 @@ body.justiert .griff { display: block; }
     </div>
   </div>
 
+  <div class="abspann-grund" id="abspann-grund"></div>
   <div class="abspann" id="abspann">
     <div class="abspann-liste" id="abspann-liste"></div>
   </div>
@@ -392,7 +412,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v1 · Blöcke 20b und 21, Block 23 folgt",
+  fassung: "v2 · Blöcke 20b, 21 und 23 mit Abspann",
 
   uhrzeit: "20:00",
 
@@ -424,11 +444,9 @@ const KONFIG = {
       kasten: { links: "5.4%", oben: "15%", breite: "36%" },
       ton:   "clips/20b-rueckgabe-studio.mp3",
       binde: { ein: 0.4, aus: 4.5 },
-      thema: [
-        // Vielen Dank, Artjom. Die Jacke können Sie jetzt ausziehen.
-        { ein: 0.6, aus: 8.1, titel: "Artjom Komarow", ort: "Wetter",
-          bilder: ["bilder/artjom-frosch.png"] }
-      ]
+      // Kein Bild: Konstanze verabschiedet nur den Wetterkollegen,
+      // dazu gibt es nichts zu zeigen.
+      thema: []
     },
 
     /* ---------- Block 21 · Kalender-Bilanz ----------
@@ -444,25 +462,49 @@ const KONFIG = {
       ton:   "clips/21-kalender-studio.mp3",
       binde: { ein: 0.6, aus: 6.0 },
       thema: [
-        // Vierundzwanzig Türchen, vierundzwanzig Beiträge
-        { ein:  0.6, aus: 11.2, titel: "Der Kalender", ort: "Vierundzwanzig Türchen",
+        /* Vierundzwanzig Türchen, vierundzwanzig Beiträge — dazu laufen die
+           Türchenbilder als Folge durch. Keine Nummern in den Zeilen, weil
+           die Nummern im Kalender getauscht wurden, die Dateinamen aber nicht. */
+        { ein:  0.6, aus:  2.4, titel: "Der Kalender", ort: "Vierundzwanzig Türchen",
           bilder: ["bilder/tuerchen-01.png"] },
+        { ein:  2.4, aus:  4.2, titel: "Der Kalender", ort: "",
+          bilder: ["bilder/tuerchen-06.png"] },
+        { ein:  4.2, aus:  6.0, titel: "Der Kalender", ort: "",
+          bilder: ["bilder/tuerchen-13.png"] },
+        { ein:  6.0, aus:  7.7, titel: "Der Kalender", ort: "",
+          bilder: ["bilder/tuerchen-15.png"] },
+        { ein:  7.7, aus:  9.5, titel: "Der Kalender", ort: "",
+          bilder: ["bilder/tuerchen-18.png"] },
+        { ein:  9.5, aus: 11.2, titel: "Der Kalender", ort: "",
+          bilder: ["bilder/tuerchen-23.png"] },
         // Es wurde gebacken, gezeichnet, gesungen, geklaviert …
         { ein: 11.3, aus: 13.2, titel: "Gebacken", ort: "Weihnachtskekse",
           bilder: ["bilder/tuerchen-9.png"] },
-        { ein: 13.2, aus: 15.0, titel: "Gezeichnet", ort: "Ein Comic",
+        { ein: 13.2, aus: 14.1, titel: "Gezeichnet", ort: "Ein Comic",
           bilder: ["bilder/tuerchen-22.png"] },
+        { ein: 14.1, aus: 15.0, titel: "Gezeichnet", ort: "Und noch einer",
+          bilder: ["bilder/tuerchen-16.png"] },
         // … und Schlitten gefahren
         { ein: 15.0, aus: 16.8, titel: "Schlitten gefahren", ort: "Das Schlittenspiel",
           bilder: ["bilder/schlitten-game.png"] },
         // Es wurde auch geflucht. Das stand nicht in den Türchen.
-        { ein: 16.8, aus: 21.0, titel: "Und geflucht", ort: "Das zerbrochene Bild",
+        { ein: 16.8, aus: 19.0, titel: "Und geflucht", ort: "Das zerbrochene Bild",
           bilder: ["bilder/tuerchen-20.png"] },
+        { ein: 19.0, aus: 21.0, titel: "Und geflucht", ort: "Der umgefallene Baum",
+          bilder: ["bilder/tuerchen-21.png"] },
         // Wir danken allen, die eines beigesteuert haben.
-        { ein: 21.0, aus: 24.0, titel: "Danke", ort: "Die Runde am Tisch",
+        { ein: 21.0, aus: 22.0, titel: "Danke", ort: "Die Runde am Tisch",
           bilder: ["bilder/tuerchen-6.png"] },
+        { ein: 22.0, aus: 23.0, titel: "Danke", ort: "Gib dem Baum Charakter",
+          bilder: ["bilder/tuerchen15.jpg"] },
+        { ein: 23.0, aus: 24.0, titel: "Danke", ort: "Ein gezeichneter Gruss",
+          bilder: ["bilder/tuerchen-11.png"] },
         // … obwohl längst klar war, dass irgendwann wieder ein Rätsel kommt
-        { ein: 24.0, aus: 31.2, titel: "Und allen, die geklickt haben",
+        { ein: 24.0, aus: 26.3, titel: "Und allen, die geklickt haben",
+          ort: "Ein Gedicht", bilder: ["bilder/tuerchen-04.png"] },
+        { ein: 26.3, aus: 28.7, titel: "Und allen, die geklickt haben",
+          ort: "Ein stiller Abend", bilder: ["bilder/tuerchen_13.png"] },
+        { ein: 28.7, aus: 31.2, titel: "Und allen, die geklickt haben",
           ort: "Irgendwann kommt ein Rätsel",
           bilder: ["bilder/tuerchen-3.png"] }
       ]
@@ -509,12 +551,12 @@ const KONFIG = {
             "Delsyn und Maryama",
             "Jonah",
             "Jake",
-            "Katherine"
+            "Katherine",
+            "Rulo",
+            "Nicole",
+            "Die Haushälterin",
+            "Frau Blücher"
           ] },
-        // Nur im Text vorgekommen, kein Bild
-        { was: "Ausserdem genannt", wer: ["Rulo", "Nicole",
-                                          "Die Haushälterin",
-                                          "Frau Blücher"] },
 
         { was: "Werbung",               wer: ["ATLAS",
                                               "SimsWelt News, das Magazin"] },
@@ -560,7 +602,11 @@ const KONFIG = {
         { was: "Dank an alle", wer: ["die ein Türchen beigesteuert haben",
                                      "und an alle, die jeden Tag geklickt haben"] },
 
-        { was: "", wer: ["Nichts davon ist erfunden"] }
+        { was: "Quelle",    wer: ["simsforumrpg.de"] },
+        { was: "Austausch", wer: ["Der Discord der Gemeinschaft"] },
+
+        // Senderkennung zum Schluss, wie die Abbinderkennung einer echten Sendung
+        { marke: true, wer: ["Nachrichten"] }
       ]
     }
 
@@ -672,6 +718,13 @@ function baueAbspann(liste) {
   liste.forEach((g) => {
     const d = document.createElement("div");
     d.className = "gruppe";
+    if (g.marke) {
+      d.className = "gruppe marke";
+      const m = document.createElement("div");
+      m.className = "marke-zug";
+      m.innerHTML = "S<i class=\"raute\"></i>MSWELT<span class=\"news\">&nbsp;NEWS</span>";
+      d.appendChild(m);
+    }
     if (g.was) {
       const a = document.createElement("div");
       a.className = "was"; a.textContent = g.was;
@@ -688,14 +741,22 @@ function baueAbspann(liste) {
 
 function setzeAbspann(t, z, d) {
   const a = el("abspann");
-  if (!t.abspann) { a.classList.remove("sichtbar"); return; }
+  const g = el("abspann-grund");
+  if (!t.abspann) {
+    a.classList.remove("sichtbar");
+    g.classList.remove("sichtbar");
+    return;
+  }
   const ein = (t.abspannAb === undefined) ? 3.0 : t.abspannAb;
-  const aus = (d || 0) - 0.8;
+  // Die Rolle endet etwas vor dem Schluss, damit die Senderkennung
+  // am Ende noch einen Moment stehen bleibt statt oben hinauszulaufen.
+  const aus = (d || 0) - 2.4;
   a.classList.toggle("sichtbar", z >= ein);
+  g.classList.toggle("sichtbar", z >= ein);
   if (z < ein || aus <= ein) return;
   const anteil = Math.max(0, Math.min(1, (z - ein) / (aus - ein)));
   const liste  = el("abspann-liste");
-  const weg    = a.clientHeight + liste.offsetHeight;
+  const weg    = liste.offsetHeight + a.clientHeight * 0.32;
   liste.style.transform = "translateY(" + (a.clientHeight - anteil * weg).toFixed(1) + "px)";
 }
 
@@ -748,6 +809,7 @@ function starte(i) {
   thema.classList.remove("sichtbar");
   binde.classList.remove("sichtbar");
   el("abspann").classList.remove("sichtbar");
+  el("abspann-grund").classList.remove("sichtbar");
   if (t.abspann) baueAbspann(t.abspann);
   setzeOrt("");
   el("clip-fehlt").classList.remove("zeig");
