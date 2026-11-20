@@ -52,6 +52,19 @@ html, body {
    gleichzeitig halb durch und man sieht Schwarz durchschlagen. So faellt
    nur der Clip weg und gibt das Vollbild darunter frei. */
 .phase { position: absolute; inset: 0; opacity: 0; transition: opacity 0.55s ease; pointer-events: none; }
+
+/* ---------- Weisser Uebergang ----------
+   Zwischen Studio und Vollbild blitzt es kurz weiss auf. Das deckt den
+   Wechsel zu, ueberbrueckt die Zehntelsekunde, in der das erste Bild
+   der Strecke noch nicht steht, und sieht besser aus als ein Durchgang
+   durch Schwarz. */
+.blitz {
+  position: absolute; inset: 0; z-index: 26; pointer-events: none;
+  background: #ffffff; opacity: 0;
+  transition: opacity 0.52s ease-out;
+  will-change: opacity;
+}
+.blitz.an { opacity: 0.82; transition: opacity 0.10s ease-in; }
 .phase.aktiv { opacity: 1; }
 #phase-clip { z-index: 2; }
 #phase-voll { z-index: 1; }
@@ -297,6 +310,8 @@ body.justiert .griff { display: block; }
     <video id="clip" playsinline preload="auto"></video>
     <div class="fehlt" id="clip-fehlt"></div>
   </div>
+
+  <div class="blitz" id="blitz"></div>
 
   <div class="phase" id="phase-voll">
     <div class="strecke" id="strecke"></div>
@@ -634,6 +649,16 @@ KONFIG.teile.forEach((teil) => {
   });
 });
 
+/* Ton und Video aller Teile im Voraus holen, damit der Wechsel nicht
+   stockt. Die Dateien liegen danach im Zwischenspeicher des Browsers. */
+KONFIG.teile.forEach(function (t) {
+  if (t.ton) { const a = new Audio(); a.preload = "auto"; a.src = t.ton; t.tonVor = a; }
+  if (t.clip) {
+    const v = document.createElement("video");
+    v.preload = "auto"; v.muted = true; v.src = t.clip; t.clipVor = v;
+  }
+});
+
 /* Bilder vorladen */
 KONFIG.teile.forEach((t) => {
   if (t.art === "strecke") t.bilder.forEach(s => { const v = new Image(); v.src = s.bild; });
@@ -748,8 +773,18 @@ function quelle() {
   return (t.art === "studio" && !t.videoFehlt) ? clip : ton;
 }
 
+/* Kurzer weisser Blitz beim Wechsel zwischen Studio und Vollbild */
+function blitze() {
+  const b = el("blitz");
+  b.classList.add("an");
+  setTimeout(function () { b.classList.remove("an"); }, 110);
+}
+
 function starte(i) {
   if (i >= KONFIG.teile.length) { ende(); return; }
+  // Beim Wechsel von einem Teil zum naechsten blitzt es weiss auf.
+  // Beim allerersten Teil nicht, da kommt die Sendung ohnehin frisch.
+  if (i > 0 && i < KONFIG.teile.length) blitze();
   nr = i;
   aktiverThema = -1; aktivesBild = -1;
   const t = teilJetzt();
@@ -863,6 +898,9 @@ function zeichne() {
     const bis = (k === t.bilder.length - 1) ? 1e9 : t.bilder[k + 1].ein;
     if (z >= s.ein && z < bis) i = k;
   });
+  // Vor dem Einsatz des ersten Bildes steht sonst nichts da und man
+  // sieht Schwarz. Also von Anfang an das erste Bild zeigen.
+  if (i < 0 && t.bilder.length) i = 0;
   if (i !== aktivesBild) {
     aktivesBild = i;
     t.elemente.forEach((e, k) => e.classList.toggle("sichtbar", k === i));
