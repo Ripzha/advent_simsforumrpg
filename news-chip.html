@@ -530,13 +530,40 @@ function setzeKasten(t) {
 }
 
 /* ---------- Themenkasten ---------- */
+/* ---------- Fahrt im Themenkasten ----------
+   Wie bei den Vollbildern soll auch das kleine Bild nicht stillstehen.
+   Richtung, Ursprung und Weite kommen aus dem Dateinamen, damit jedes
+   Bild seine eigene Bewegung hat und sie bei jedem Durchlauf dieselbe
+   ist. Die Weite waechst mit der Standzeit: ein Bild, das nur eine
+   Sekunde steht, bewegt sich kaum, ein langes faehrt weiter. */
+function kastenFahrt(img, pfad, nr, dauer) {
+  let h = nr * 2654435761;
+  for (let k = 0; k < pfad.length; k++) h = (h * 31 + pfad.charCodeAt(k)) | 0;
+  const a = Math.abs(h);
+
+  const weite = Math.min(0.13, 0.022 * Math.max(1, dauer));
+  const hinein = (a % 2) === 0;
+  const klein = 1.012;
+  const gross = klein + weite;
+  const ox = 32 + (a >>> 3) % 36;        // 32 bis 67 Prozent
+  const oy = 30 + (a >>> 9) % 40;        // 30 bis 69 Prozent
+
+  img.style.transformOrigin = ox + "% " + oy + "%";
+  img.style.transition = "none";
+  img.style.transform = "scale(" + (hinein ? klein : gross).toFixed(3) + ")";
+  void img.offsetWidth;                  // Zwischenstand erzwingen
+  img.style.transition = "transform " + Math.max(1, dauer).toFixed(2) + "s linear";
+  img.style.transform = "scale(" + (hinein ? gross : klein).toFixed(3) + ")";
+}
+
 function setzeThema(i, liste) {
   if (i === aktiverThema) return;
   aktiverThema = i;
   if (i < 0 || !liste || !liste[i]) { thema.classList.remove("sichtbar"); return; }
   const t = liste[i];
+  const dauer = Math.max(1, (t.aus || 0) - (t.ein || 0));
   themaBild.innerHTML = "";
-  t.bilder.forEach((p) => {
+  t.bilder.forEach((p, k) => {
     const img = document.createElement("img");
     img.src = p; img.alt = "";
     img.addEventListener("error", () => {
@@ -547,6 +574,7 @@ function setzeThema(i, liste) {
       themaBild.appendChild(d);
     });
     themaBild.appendChild(img);
+    kastenFahrt(img, p, i * 7 + k, dauer);
   });
   el("thema-titel").textContent = t.titel;
   el("thema-ort").textContent   = t.ort || "";

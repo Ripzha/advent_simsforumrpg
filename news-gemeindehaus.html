@@ -484,7 +484,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v27 · Handkamera",
+  fassung: "v28 · Handkamera ruhiger, ohne Spruenge",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -507,7 +507,7 @@ const KONFIG = {
   /* Handkamera: leichtes Wackeln während der Schalte.
      weite = Ausschlag in Prozent der Bildbreite, tempo = Geschwindigkeit,
      drehung = Neigung in Grad, zoom = Reserve, damit kein Rand entsteht.  */
-  handkamera: { ab: 15.3, bis: 86.0, weite: 1.10, tempo: 1.15, drehung: 0.35, zoom: 1.055 },
+  handkamera: { ab: 15.3, bis: 86.0, weite: 1.10, tempo: 0.55, drehung: 0.32, zoom: 1.055 },
 
   /* Leichter, gleichmässiger Regen. Sehr leise, weil Rivas Mikrofon
      die Umgebung ohnehin unterdrückt.                                  */
@@ -677,7 +677,12 @@ requestAnimationFrame(zeichneRegen);
    wie man es bei einer einzelnen Sinuswelle sofort erkennt.
    =================================================================== */
 let wackelZeit = 0;
-let stoss = { x: 0, y: 0, r: 0, rest: 0 };
+/* Umgreifen des Kameramanns. Die Huelle ist eine halbe Sinuswelle:
+   sie beginnt bei null, waechst, faellt wieder auf null. Dadurch gibt es
+   an keiner Stelle einen Sprung — die alte Fassung setzte den Versatz
+   schlagartig und liess ihn erst Sekunden spaeter auslaufen, das war das
+   Ruckeln. */
+let stoss = { x: 0, y: 0, r: 0, alter: 99, dauer: 1.1, pause: 4.0 };
 
 function wackle(jetzt) {
   const h = KONFIG.handkamera;
@@ -709,18 +714,21 @@ function wackle(jetzt) {
   let y = Math.sin(z * 0.61 + 2.2) * 0.55 + Math.sin(z * 1.47 + 0.9) * 0.28 + Math.sin(z * 2.63) * 0.12;
   let r = Math.sin(z * 0.49 + 1.1) * 0.7 + Math.sin(z * 1.13 + 2.6) * 0.3;
 
-  // ab und zu ein kleiner Ruck, wie beim Umgreifen
-  stoss.rest -= dt;
-  if (stoss.rest <= 0) {
-    stoss.rest = 2.5 + Math.random() * 5.5;
-    stoss.x = (Math.random() - 0.5) * 1.6;
-    stoss.y = (Math.random() - 0.5) * 1.2;
-    stoss.r = (Math.random() - 0.5) * 1.4;
+  // ab und zu ein langsames Umgreifen, weich ein und weich aus
+  stoss.alter += dt;
+  if (stoss.alter >= stoss.dauer + stoss.pause) {
+    stoss.alter = 0;
+    stoss.dauer = 1.1 + Math.random() * 0.8;
+    stoss.pause = 3.5 + Math.random() * 5.0;
+    stoss.x = (Math.random() - 0.5) * 0.9;
+    stoss.y = (Math.random() - 0.5) * 0.7;
+    stoss.r = (Math.random() - 0.5) * 0.8;
   }
-  const abkling = Math.max(0, Math.min(1, stoss.rest / 0.55));
-  x += stoss.x * abkling;
-  y += stoss.y * abkling;
-  r += stoss.r * abkling;
+  const huelle = (stoss.alter < stoss.dauer)
+    ? Math.sin(Math.PI * stoss.alter / stoss.dauer) : 0;
+  x += stoss.x * huelle;
+  y += stoss.y * huelle;
+  r += stoss.r * huelle;
 
   clip.style.transform =
     "scale(" + h.zoom + ") translate(" +
