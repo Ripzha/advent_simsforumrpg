@@ -65,6 +65,20 @@ html, body {
   will-change: opacity;
 }
 .blitz.an { opacity: 0.82; transition: opacity 0.10s ease-in; }
+
+/* ---------- Globuswischer zwischen zwei Meldungen ----------
+   Wechselt die Seite von einer Meldung zur naechsten, laeuft derselbe
+   Wischer wie zwischen zwei Bloecken. Er liegt mit screen ueber dem
+   Bild — sein Grund ist fast schwarz und faellt damit weg — und
+   blendet erst aus, wenn er durch ist. Sein Ton laeuft weiter. */
+.wischer {
+  position: absolute; inset: 0; z-index: 40; pointer-events: none;
+  width: 100%; height: 100%; object-fit: cover;
+  opacity: 0; transition: opacity 0.5s ease;
+  mix-blend-mode: screen; background: transparent;
+  will-change: opacity; transform: translateZ(0);
+}
+.wischer.an { opacity: 1; }
 .phase.aktiv { opacity: 1; }
 #phase-clip { z-index: 2; }
 #phase-voll { z-index: 1; }
@@ -365,6 +379,7 @@ body.justiert .griff { display: block; }
   </div>
 
   <div class="blitz" id="blitz"></div>
+  <video class="wischer" id="wischer" muted playsinline preload="auto"></video>
 
   <div class="phase" id="phase-voll">
     <div class="strecke" id="strecke"></div>
@@ -496,6 +511,7 @@ const KONFIG = {
     {
       art:   "studio",
       name:  "21 · Kalender-Bilanz",
+      wischer: true,          // neue Meldung, also Globuswischer
       clip:  "clips/21-kalender-studio.mp4",
       kasten: { links: "58.6%", oben: "15%", breite: "36%" },
       ton:   "clips/21-kalender-studio.mp3",
@@ -554,6 +570,7 @@ const KONFIG = {
     {
       art:   "studio",
       name:  "23 · Verabschiedung",
+      wischer: true,          // neue Meldung, also Globuswischer
       clip:  "clips/23-abschied-studio.mp4",
       kasten: { links: "58.6%", oben: "15%", breite: "36%" },
       ton:   "clips/23-abschied-studio.mp3",
@@ -958,11 +975,33 @@ function blitze() {
   setTimeout(function () { b.classList.remove("an"); }, 110);
 }
 
+/* Globuswischer, wenn eine neue Meldung anfaengt */
+const wischer  = el("wischer");
+const wischton = new Audio("clips/logo-wisch-ton.mp3");
+wischton.preload = "auto";
+wischer.src = "clips/globus-wisch.webm";
+
+function wische() {
+  try {
+    wischer.currentTime = 0;
+    wischer.classList.add("an");
+    const p = wischer.play();
+    if (p && p.catch) p.catch(function () {});
+    wischton.currentTime = 0;
+    wischton.play().catch(function () {});
+  } catch (e) {}
+  // Erst ausblenden, wenn der Wischer ganz durch ist — er ist am Ende
+  // am hellsten. Der laufende Teil liegt dann schon darunter.
+  setTimeout(function () { wischer.classList.remove("an"); }, 1000);
+}
+
 function starte(i) {
   if (i >= KONFIG.teile.length) { ende(); return; }
-  // Beim Wechsel von einem Teil zum naechsten blitzt es weiss auf.
-  // Beim allerersten Teil nicht, da kommt die Sendung ohnehin frisch.
-  if (i > 0 && i < KONFIG.teile.length) blitze();
+  /* Beim Wechsel innerhalb einer Meldung blitzt es weiss auf, beim
+     Wechsel zu einer neuen Meldung laeuft der Globuswischer. */
+  if (i > 0 && i < KONFIG.teile.length) {
+    if (KONFIG.teile[i].wischer) wische(); else blitze();
+  }
   nr = i;
   aktiverThema = -1; aktivesBild = -1;
   const t = teilJetzt();
