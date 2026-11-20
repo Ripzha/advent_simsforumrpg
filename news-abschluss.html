@@ -482,11 +482,15 @@ const KONFIG = {
       // Der Abspann setzt ein, nachdem der erste Satz gesprochen ist
       abspannAb: 4.5,
       abspann: [
-        { was: "SimsWelt News", wer: ["Sondersendung zum Heiligen Abend"] },
-        { was: "Moderation",   wer: ["Konstanze Immalaut"] },
-        { was: "Wetter",       wer: ["Artjom Komarow"] },
-        { was: "Aus dem Gemeindehaus", wer: ["Riva Babylon"] },
-        { was: "Eilmeldung",   wer: ["Ripzha", "Vaas Del Toro"] },
+        { was: "", wer: ["SimsWelt News"] },
+        { was: "", wer: ["Sondersendung zum Heiligen Abend"] },
+
+        { was: "Moderation",            wer: ["Konstanze Immalaut"] },
+        { was: "Wetter",                wer: ["Artjom Komarow"] },
+        { was: "Schalte Gemeindehaus",  wer: ["Riva Babylon"] },
+        { was: "Eilmeldung",            wer: ["Ripzha", "Vaas Del Toro"] },
+
+        // Zu sehen gewesen: eigene Aufnahme, Themenkasten oder Bildstrecke
         { was: "Im Rückblick", wer: [
             "Remy und Henry",
             "Iona, Shane, Lorna",
@@ -495,7 +499,6 @@ const KONFIG = {
             "Boom Boom und Bite",
             "Dennah und Blaze",
             "Vaas Del Toro",
-            "Rulo",
             "Veronika",
             "Viktor und Lilly",
             "Erik",
@@ -507,14 +510,36 @@ const KONFIG = {
             "Jonah",
             "Frau Blücher",
             "Jake",
-            "Nicole",
             "Katherine"
           ] },
-        { was: "Werbung",      wer: ["ATLAS", "SimsWelt News, das Magazin"] },
-        { was: "Der Kalender", wer: ["Vierundzwanzig Türchen",
-                                     "Vierundzwanzig Beiträge"] },
-        { was: "Adventskalender 2026", wer: ["simsforumrpg.de"] },
-        { was: "",             wer: ["Nichts davon ist erfunden"] }
+        // Nur im Text vorgekommen, kein Bild
+        { was: "Ausserdem genannt", wer: ["Rulo", "Nicole", "Die Haushälterin"] },
+
+        { was: "Redaktion",             wer: ["Ripzha"] },
+        { was: "Sprechtexte",           wer: ["Ripzha", "Claude"] },
+        { was: "Recherche",             wer: ["Die Ausgaben 33 bis 36",
+                                              "des Monatsmagazins"] },
+        { was: "Bildauswahl",           wer: ["Knox"] },
+        { was: "Grafik und Gestaltung", wer: ["Claude"] },
+        { was: "Schnitt",               wer: ["Claude"] },
+        { was: "Ton und Mischung",      wer: ["Claude"] },
+        { was: "Musik",                 wer: ["ElevenLabs Music"] },
+        { was: "Sprachaufnahmen",       wer: ["ElevenLabs"] },
+        { was: "Studioaufnahmen",       wer: ["Vidnoz"] },
+        { was: "Technik",               wer: ["Knox", "Claude"] },
+        { was: "Hilfsmittel",           wer: ["ElevenLabs", "Vidnoz",
+                                              "ChatGPT", "Claude"] },
+        { was: "Bildquellen",           wer: ["Die Sims 4",
+                                              "Beiträge der Gemeinschaft"] },
+        { was: "Sendeleitung",          wer: ["Ripzha"] },
+        { was: "Herausgeber",           wer: ["Ripzha"] },
+
+        { was: "Eine Produktion für den", wer: ["Adventskalender 2026",
+                                                "simsforumrpg.de"] },
+        { was: "Dank an alle", wer: ["die ein Türchen beigesteuert haben",
+                                     "und an alle, die jeden Tag geklickt haben"] },
+
+        { was: "", wer: ["Nichts davon ist erfunden"] }
       ]
     }
 
