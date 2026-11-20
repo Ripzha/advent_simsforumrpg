@@ -70,6 +70,9 @@ html, body {
   opacity: 0; pointer-events: none; transition: opacity 0.28s ease;
 }
 .wischer.an { opacity: 1; }
+/* Die Senderkennung blendet selbst aus Schwarz auf und wieder weg.
+   Eine zweite Blende darueber macht sie traege. */
+#kennvideo { transition: none; }
 
 /* Der Globus laeuft UEBER das Bild, nicht an seiner Stelle. Sein Grund
    ist fast schwarz (im Mittel RGB 2/5/10), mit screen faellt er deshalb
@@ -267,7 +270,7 @@ const blende = el("blende");
    bekommt, steht in BLOECKE unter "vorlauf". */
 const WISCHER  = "clips/globus-wisch.webm";
 const WISCHTON = "clips/logo-wisch-ton.mp3";
-const KENNUNG  = "clips/logo-kurz.mp4";
+const KENNUNG  = "clips/logo-kurz-weich.mp4";
 const RUECKKEHR = "clips/simswelt-news-rueckkehr.mp4";   // grosses Logo nach der Werbung
 
 const wischer   = el("wischer");     // stumm, Ton kommt aus der mp3
@@ -284,12 +287,13 @@ rueckvideo.src = RUECKKEHR;
 /* Der Vorlauf steht etwas laenger, als er braucht: die ersten Bilder
    des neuen Blocks fallen damit noch hinter den Wischer, und das
    Anlaufen des Videos faellt nicht auf. */
-const VORLAUF = { wisch: 1000, kennung: 1400, rueckkehr: 7000, ohne: 420 };
+const VORLAUF = { wisch: 1000, kennung: 1900, rueckkehr: 7000, ohne: 420 };
 
-/* Luft vor und nach einer Senderkennung. Der Wischer braucht keine, der
-   laeuft ueber das Bild. Die Kennung dagegen steht fuer sich:
-   Block — kurz schwarz — Kennung — kurz schwarz — Werbung. */
-const LUFT = { wisch: 0, kennung: 320, rueckkehr: 320, ohne: 0 };
+/* Luft vor und nach einem Vorlauf. Die kurze Senderkennung bringt ihre
+   eigene Blende aus Schwarz und nach Schwarz mit — zusaetzliche Luft
+   macht daraus eine Pause, die wie ein Aussetzer wirkt. Deshalb null.
+   Die lange Rueckkehrkennung darf etwas Luft haben. */
+const LUFT = { wisch: 0, kennung: 0, rueckkehr: 260, ohne: 0 };
 
 /* Der Vorlauf laeuft, der Rahmenwechsel passiert dahinter. */
 function spieleVorlauf(art) {
