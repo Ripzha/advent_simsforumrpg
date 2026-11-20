@@ -541,14 +541,18 @@ const KONFIG = {
       name: "19 Jake · Vollbild",
       ton:  "clips/19-jake-vollbild.mp3",
       bilder: [
-        // In einem Videogespräch sprach er offen über seine Epilepsie
+        // In einem Videogespräch sprach er offen über seine Epilepsie.
+        // Der Absatz ist lang, deshalb traegt ihn nicht ein Bild allein:
+        // ab 7,0 s uebernimmt Nicole, sonst stuende eines 13,4 s lang.
         { bild: "bilder/jake-videogespraech.png", ein:  0.3,
           zoom: [1.06, 1.20], schwenk: [3, -3], ursprung: "50% 50%",
           ort: "Das Videogespräch" },
-        // Seine Freundin Nicole umsorgt ihn mit einer Liebe, die ihn überfordert
-        { bild: "bilder/jake-nicole.png",         ein: 13.7,
+        { bild: "bilder/jake-nicole.png",         ein:  7.0,
           zoom: [1.20, 1.06], schwenk: [-3, 3], ursprung: "50% 40%",
           ort: "Nicole" },
+        // Seine Freundin Nicole umsorgt ihn mit einer Liebe, die ihn überfordert
+        { bild: "bilder/jake-nachdenklich.png",   ein: 13.7,
+          zoom: [1.06, 1.22], schwenk: [3, -2], ursprung: "50% 40%", ort: "" },
         // Der Freund hörte zu und sagte wenig
         { bild: "bilder/jake-freund.png",         ein: 20.0,
           zoom: [1.08, 1.24], schwenk: [4, -3], ursprung: "50% 50%", ort: "" },
