@@ -53,8 +53,8 @@ html, body {
    nur der Clip weg und gibt das Vollbild darunter frei. */
 .phase { position: absolute; inset: 0; opacity: 0; transition: opacity 0.55s ease; pointer-events: none; }
 .phase.aktiv { opacity: 1; }
-#phase-clip { z-index: 20; }
-#phase-voll { z-index: 10; }
+#phase-clip { z-index: 2; }
+#phase-voll { z-index: 1; }
 #clip, #ident { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--nacht); }
 #phase-ident { z-index: 30; }
 .phase.fort { opacity: 0; transition: opacity 1.0s ease; }

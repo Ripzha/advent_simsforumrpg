@@ -198,6 +198,7 @@ html, body {
     <div class="blende" id="blende"></div>
     <video class="wischer" id="wischer" muted playsinline preload="auto"></video>
     <video class="wischer" id="kennvideo" playsinline preload="auto"></video>
+    <video class="wischer" id="rueckvideo" playsinline preload="auto"></video>
     <div class="laden" id="laden">
       <b id="laden-titel"></b>
       <span id="laden-nummer"></span>
@@ -238,15 +239,17 @@ const BLOECKE = [
   { nummer: "1–4",  titel: "Ident, Begrüssung, Remy", datei: "news-remy.html",         dauer: 132 },
   { nummer: "6",    titel: "Gemeindehaus",            datei: "news-gemeindehaus.html", dauer: 111 },
   { nummer: "7",    titel: "Werbung ATLAS",           datei: "news-werbung.html",      dauer:  25, vorlauf: "kennung" },
-  { nummer: "8–9b", titel: "Boom Boom und Bite",      datei: "news-boom.html",         dauer: 102 },
+  // Dieser Block bringt die Rueckkehrkennung selbst mit, deshalb kein Vorlauf
+  { nummer: "8–9b", titel: "Boom Boom und Bite",      datei: "news-boom.html",         dauer: 102, vorlauf: "ohne" },
   { nummer: "10–11", titel: "Jahresbogen Jack und Vaas", datei: "news-jahresbogen.html", dauer: 165 },
   { nummer: "12",   titel: "Eriks Geburt",            datei: "news-erik.html",         dauer:  44 },
   { nummer: "13",   titel: "Eilmeldung",              datei: "news-eilmeldung.html",   dauer: 157 },
   { nummer: "14–15", titel: "Werbung Magazin",        datei: "news-werbung-magazin.html", dauer: 33, vorlauf: "kennung" },
-  { nummer: "16",   titel: "Chip und das System",     datei: "news-chip.html",         dauer:  38 },
+  // Nach der zweiten Werbung kommt das grosse Logo aus der Uebersicht
+  { nummer: "16",   titel: "Chip und das System",     datei: "news-chip.html",         dauer:  38, vorlauf: "rueckkehr" },
   { nummer: "18–19b", titel: "Dennah, Blaze und Jake", datei: "news-dennah-jake.html", dauer: 122 },
   { nummer: "20",   titel: "Wetter mit Artjom",       datei: "wetterkarte.html",       dauer:  84 },
-  { nummer: "20b–23", titel: "Abschluss und Verabschiedung", datei: "news-abschluss.html", dauer: 114 }
+  { nummer: "20b–23", titel: "Abschluss und Verabschiedung", datei: "news-abschluss.html", dauer: 115 }
 ];
 
 /* =================================================================== */
@@ -263,32 +266,39 @@ const blende = el("blende");
 const WISCHER  = "clips/globus-wisch.webm";
 const WISCHTON = "clips/logo-wisch-ton.mp3";
 const KENNUNG  = "clips/logo-kurz.mp4";
+const RUECKKEHR = "clips/simswelt-news-rueckkehr.mp4";   // grosses Logo nach der Werbung
 
 const wischer   = el("wischer");     // stumm, Ton kommt aus der mp3
 const kennvideo = el("kennvideo");   // bringt den Ton selbst mit
+const rueckvideo = el("rueckvideo");
 const wischton  = new Audio(WISCHTON);
 wischton.preload = "auto";
-wischer.src   = WISCHER;
-kennvideo.src = KENNUNG;
+wischer.src    = WISCHER;
+kennvideo.src  = KENNUNG;
+rueckvideo.src = RUECKKEHR;
 
-/* Wie lange der Vorlauf steht, bevor der neue Block aufgedeckt wird. */
-const VORLAUF = { wisch: 700, kennung: 1250 };
+/* Wie lange der Vorlauf steht, bevor der neue Block aufgedeckt wird.
+   "ohne" ist fuer Bloecke, die ihre Kennung selbst mitbringen. */
+const VORLAUF = { wisch: 700, kennung: 1250, rueckkehr: 6900, ohne: 250 };
 
 /* Der Vorlauf laeuft, der Rahmenwechsel passiert dahinter. */
 function spieleVorlauf(art) {
-  const v = (art === "kennung") ? kennvideo : wischer;
+  if (art === "ohne") return VORLAUF.ohne;
+  const v = (art === "kennung") ? kennvideo
+          : (art === "rueckkehr") ? rueckvideo : wischer;
   try {
     v.currentTime = 0;
     v.classList.add("an");
     const p = v.play();
     if (p && p.catch) p.catch(() => {});
-    if (art !== "kennung") { wischton.currentTime = 0; wischton.play().catch(() => {}); }
+    if (art === "wisch") { wischton.currentTime = 0; wischton.play().catch(() => {}); }
   } catch (e) {}
   return VORLAUF[art] || VORLAUF.wisch;
 }
 function vorlaufWeg() {
   wischer.classList.remove("an");
   kennvideo.classList.remove("an");
+  rueckvideo.classList.remove("an");
 }
 
 let rahmen = [];          // zwei Rahmen im Wechsel
@@ -420,7 +430,7 @@ function spiele(i) {
   const art  = BLOECKE[i].vorlauf || "wisch";
   /* Beim Globuswischer bleibt das Bild stehen und blendet darunter um.
      Die Senderkennung deckt ohnehin alles ab, da darf Schwarz drunter. */
-  if (!mitVorlauf || art === "kennung") blende.classList.add("an");
+  if (!mitVorlauf || art !== "wisch") blende.classList.add("an");
   // Die Ladeanzeige soll nicht ueber dem Vorlauf stehen. Sie kommt erst,
   // wenn der Vorlauf durch ist und der Block immer noch nicht laeuft.
   clearTimeout(ladeAnzeige);

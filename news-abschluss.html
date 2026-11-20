@@ -53,8 +53,8 @@ html, body {
    nur der Clip weg und gibt das Vollbild darunter frei. */
 .phase { position: absolute; inset: 0; opacity: 0; transition: opacity 0.55s ease; pointer-events: none; }
 .phase.aktiv { opacity: 1; }
-#phase-clip { z-index: 20; }
-#phase-voll { z-index: 10; }
+#phase-clip { z-index: 2; }
+#phase-voll { z-index: 1; }
 #clip, #ident { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--nacht); }
 #phase-ident { z-index: 30; }
 .phase.fort { opacity: 0; transition: opacity 1.0s ease; }
@@ -291,9 +291,12 @@ body.justiert .griff { display: block; }
 /* ---------- Abspann ----------
    Laufende Rolle am linken Rand, wie am Ende einer Nachrichtensendung.
    Oben und unten weich auslaufend, damit nichts hart abgeschnitten wirkt. */
+/* Die Rolle steht im goldenen Schnitt: ihre rechte Kante liegt auf
+   38,2 Prozent der Bildbreite. Konstanze beginnt gemessen erst bei
+   51,5 Prozent, dazwischen bleibt Luft. */
 .abspann {
-  position: absolute; left: 5.4%; top: 7%; bottom: 19%;
-  width: 31%; z-index: 16; overflow: hidden;
+  position: absolute; left: 9.2%; top: 7%; bottom: 19%;
+  width: 29%; z-index: 16; overflow: hidden;
   opacity: 0; transition: opacity 0.9s ease;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 11%, #000 89%, transparent 100%);
           mask-image: linear-gradient(to bottom, transparent 0, #000 11%, #000 89%, transparent 100%);
@@ -304,10 +307,10 @@ body.justiert .griff { display: block; }
    eine harte Kante. */
 .abspann-grund {
   position: absolute; left: 0; top: 4%; bottom: 16%;
-  width: 46%; z-index: 15; pointer-events: none;
+  width: 48%; z-index: 15; pointer-events: none;
   opacity: 0; transition: opacity 0.9s ease;
   background: linear-gradient(to right,
-    rgba(4,10,20,0.82) 0%, rgba(4,10,20,0.70) 40%, rgba(4,10,20,0) 100%);
+    rgba(4,10,20,0.82) 0%, rgba(4,10,20,0.72) 45%, rgba(4,10,20,0) 100%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
           mask-image: linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
 }
