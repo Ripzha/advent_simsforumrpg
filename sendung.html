@@ -60,6 +60,17 @@ html, body {
 }
 .blende.an { opacity: 1; }
 
+/* ---------- Wischer zwischen den Bloecken ----------
+   Der Globus laeuft eine Sekunde lang ueber das ganze Feld und deckt
+   dabei den Rahmenwechsel zu. Liegt ueber der Blende, damit darunter
+   in Ruhe geladen werden kann. */
+.wischer {
+  position: absolute; inset: 0; z-index: 42;
+  width: 100%; height: 100%; object-fit: cover; background: #000;
+  opacity: 0; pointer-events: none; transition: opacity 0.28s ease;
+}
+.wischer.an { opacity: 1; }
+
 /* ---------- Ladeanzeige ---------- */
 .laden {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -179,6 +190,7 @@ html, body {
 <div class="bühne">
   <div class="feld" id="feld">
     <div class="blende" id="blende"></div>
+    <video class="wischer" id="wischer" muted playsinline preload="auto"></video>
     <div class="laden" id="laden">
       <b id="laden-titel"></b>
       <span id="laden-nummer"></span>
@@ -235,6 +247,37 @@ const BLOECKE = [
 const el = (id) => document.getElementById(id);
 const feld   = el("feld");
 const blende = el("blende");
+
+/* ---------- Uebergaenge ----------
+   WISCHER laeuft zwischen zwei Bloecken, ABBINDER zum Schluss der Sendung. */
+const WISCHER  = "clips/globus-wisch.webm";
+const WISCHTON = "clips/logo-wisch-ton.mp3";
+const ABBINDER = "clips/logo-kurz.mp4";
+
+const wischer  = el("wischer");
+const wischton = new Audio(WISCHTON);
+wischton.preload = "auto";
+wischer.src = WISCHER;
+
+/* Der Wischer laeuft, der Rahmenwechsel passiert dahinter. Das Versprechen
+   loest sich auf, sobald der Wischer weit genug ist, spaetestens nach
+   1,4 Sekunden — ein haengendes Video soll die Sendung nicht anhalten. */
+function wischeDurch(mitTon) {
+  return new Promise((fertig) => {
+    let erledigt = false;
+    const schluss = () => { if (!erledigt) { erledigt = true; fertig(); } };
+    try {
+      wischer.currentTime = 0;
+      wischer.classList.add("an");
+      const v = wischer.play();
+      if (v && v.catch) v.catch(schluss);
+      if (mitTon) { wischton.currentTime = 0; wischton.play().catch(() => {}); }
+    } catch (e) { schluss(); }
+    setTimeout(schluss, 620);
+    setTimeout(schluss, 1400);
+  });
+}
+function wischerWeg() { wischer.classList.remove("an"); }
 
 let rahmen = [];          // zwei Rahmen im Wechsel
 let vorn = 0;             // welcher gerade zu sehen ist
@@ -334,6 +377,8 @@ function starte(f) {
    die Bildstrecke ueberspringen. Solche Seiten melden Beginn und Ende
    selbst, und solange sie das tun, zaehlt hier nur ihre Meldung.      */
 let selbstmelder = false;
+let ohneWischer  = false;       // beim Springen von Hand keinen Wischer
+let ladeAnzeige  = null;        // Ladeanzeige erst nach dem Wischer
 let blockBegonnen = 0;
 
 window.addEventListener("message", (e) => {
@@ -357,7 +402,19 @@ function spiele(i) {
 
   clearInterval(uhr);
   blende.classList.add("an");
-  zeigeLaden(i);
+
+  // Vor dem ersten Block kein Wischer — da kommt die Kennung der Sendung.
+  const mitWischer = (i > 0 && !ohneWischer);
+  ohneWischer = false;
+  // Die Ladeanzeige soll nicht ueber dem Wischer stehen. Sie kommt erst,
+  // wenn der Wischer durch ist und der Block immer noch nicht laeuft.
+  clearTimeout(ladeAnzeige);
+  if (mitWischer) {
+    wischeDurch(true);
+    ladeAnzeige = setTimeout(() => zeigeLaden(i), 1150);
+  } else {
+    zeigeLaden(i);
+  }
 
   // Läuft der Block schon im hinteren Rahmen? Dann nur tauschen.
   const hinten = 1 - vorn;
@@ -376,15 +433,21 @@ function spiele(i) {
     versuche++;
     if (starte(f)) {
       clearInterval(warte);
+      // Der Wischer soll nicht abgeschnitten wirken: erst weiterlaufen
+      // lassen, dann aufdecken.
       setTimeout(() => {
         blende.classList.remove("an");
+        wischerWeg();
+        clearTimeout(ladeAnzeige);
         versteckeLaden();
         ueberwache(f, i);
         ladeVor(i + 1);
-      }, 350);
+      }, mitWischer ? 700 : 350);
     } else if (versuche > 160) {        // nach 16 Sekunden aufgeben
       clearInterval(warte);
       blende.classList.remove("an");
+      wischerWeg();
+      clearTimeout(ladeAnzeige);
       versteckeLaden();
       ueberwache(f, i);
       ladeVor(i + 1);
@@ -454,10 +517,23 @@ function versteckeLaden() { el("laden").classList.remove("an"); }
 
 function fertig() {
   clearInterval(uhr);
-  blende.classList.add("an");
-  el("laden-titel").textContent  = "Ende der Sendung";
-  el("laden-nummer").textContent = "SimsWelt News";
-  el("laden").classList.add("an");
+  // Zum Schluss die kurze Senderkennung, danach erst die Schlusstafel.
+  wischer.muted = false;
+  wischer.src   = ABBINDER;
+  wischer.classList.add("an");
+  const tafel = () => {
+    wischer.classList.remove("an");
+    wischer.muted = true;
+    wischer.src   = WISCHER;
+    blende.classList.add("an");
+    el("laden-titel").textContent  = "Ende der Sendung";
+    el("laden-nummer").textContent = "SimsWelt News";
+    el("laden").classList.add("an");
+  };
+  wischer.onended = tafel;
+  setTimeout(tafel, 2600);               // falls das Video nicht startet
+  const v = wischer.play();
+  if (v && v.catch) v.catch(tafel);
 }
 
 /* ---------- Bedienung ---------- */
@@ -468,8 +544,8 @@ el("start-knopf").addEventListener("click", () => {
   spiele(0);
 });
 el("knopf-weiter").addEventListener("click", () => spiele(index + 1));
-el("knopf-zurueck").addEventListener("click", () => spiele(Math.max(0, index - 1)));
-el("knopf-neu").addEventListener("click", () => spiele(index));
+el("knopf-zurueck").addEventListener("click", () => { ohneWischer = true; spiele(Math.max(0, index - 1)); });
+el("knopf-neu").addEventListener("click", () => { ohneWischer = true; spiele(index); });
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "b" || e.key === "B") {
