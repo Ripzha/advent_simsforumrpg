@@ -464,11 +464,8 @@ const KONFIG = {
     },
 
     /* ---------- Block 5 · Bildstrecke ----------
-       Acht Stellen, gemessen an den Sprechpausen der Tonspur:
-       0,32 / 6,80 / 10,28 / 23,64 / 30,90 / 36,80 / 41,46 / 50,12.
-       Zwei Bilder fehlen noch — verendete Tiere am Ufer und das
-       beschädigte Gebäude. Solange stehen an diesen zwei Stellen
-       Wiederholungen, siehe PLATZHALTER.                             */
+       Elf Stellen, gesetzt auf die gemessenen Sprechpausen der
+       Tonspur. Das laengste Bild steht 7,3 s, keines steht still.  */
     {
       art:  "strecke",
       name: "5 Tauchpost · Vollbild",
@@ -482,35 +479,40 @@ const KONFIG = {
         // Ihre wahren Absichten sind unbekannt
         { bild: "bilder/tauchpost-ufer-nacht.png", ein:  6.8,
           zoom: [1.22, 1.06], schwenk: [-4, 3], ursprung: "50% 45%", ort: "" },
-        // Da an diesem Ort vermehrt verendete Tiere gefunden wurden,
-        // suchte die Gruppe Fluss und Ufer nach Hinweisen ab
-        { bild: "bilder/tauchpost-ausruestung.png", ein: 16.6,
+        // Da an diesem Ort vermehrt verendete Tiere gefunden wurden
+        { bild: "bilder/tauchpost-ausruestung.png", ein: 10.28,
           zoom: [1.06, 1.20], schwenk: [3, -3], ursprung: "50% 50%",
           ort: "Das Ufer" },
+        // suchte die Gruppe den Fluss und das umliegende Ufer ab
+        { bild: "bilder/tauchpost-auftauchen.png", ein: 16.6,
+          zoom: [1.20, 1.06], schwenk: [-3, 3], ursprung: "50% 45%", ort: "" },
         // Gerüchten zufolge unternahmen zwei weitere Mitglieder Tauchgänge
         { bild: "bilder/tauchpost-tauchgang.png",  ein: 23.64,
           zoom: [1.04, 1.20], schwenk: [3, -3], ursprung: "50% 50%",
           ort: "Im Fluss" },
         // Es gibt Hinweise darauf, dass mindestens einer von ihnen
-        { bild: "bilder/tauchpost-auftauchen.png", ein: 30.9,
-          zoom: [1.20, 1.06], schwenk: [-3, 3], ursprung: "50% 45%", ort: "" },
         // sich noch vor Ort seines Mageninhalts entledigte
-        { bild: "bilder/tauchpost-uebelkeit.png",  ein: 36.8,
+        { bild: "bilder/tauchpost-uebelkeit.png",  ein: 30.9,
           zoom: [1.06, 1.22], schwenk: [3, -2], ursprung: "50% 50%", ort: "" },
-        // PLATZHALTER — Möglicherweise diente der grossräumige Van als
-        // Tarnung. Hier gehört ein Bild des Vans von aussen hin.
-        { bild: "bilder/tauchpost-ausruestung.png", ein: 41.46,
-          zoom: [1.20, 1.06], schwenk: [-4, 3], ursprung: "50% 55%",
-          ort: "Der Van" },
-        // PLATZHALTER — Ob die mutwillige Sachbeschädigung des
-        // nahegelegenen Gebäudes der Gruppe zuzuschreiben ist, bleibt
-        // ungeklärt. Hier gehört das beschädigte Gebäude hin.
-        { bild: "bilder/tauchpost-ufer-nacht.png", ein: 50.12,
-          zoom: [1.06, 1.20], schwenk: [4, -3], ursprung: "50% 40%",
-          ort: "Das Gebäude" }
+        // bevor er spurlos verschwand
+        { bild: "bilder/tauchpost-van-uebel.png",  ein: 36.8,
+          zoom: [1.20, 1.06], schwenk: [-3, 2], ursprung: "50% 45%", ort: "" },
+        // Möglicherweise diente der grossräumige Van als kurzfristige
+        // Tarnung der weiteren Aktivisten
+        { bild: "bilder/tauchpost-security.png",   ein: 41.46,
+          zoom: [1.06, 1.20], schwenk: [3, -3], ursprung: "50% 45%",
+          ort: "Der Werkschutz" },
+        { bild: "bilder/tauchpost-suche.png",      ein: 45.5,
+          zoom: [1.20, 1.06], schwenk: [-4, 3], ursprung: "50% 50%", ort: "" },
+        // Ob die mutwillige Sachbeschädigung des nahegelegenen Gebäudes
+        // ebenfalls der Gruppe zuzuschreiben ist, bleibt ungeklärt
+        { bild: "bilder/tauchpost-scheibe.png",    ein: 50.12,
+          zoom: [1.06, 1.22], schwenk: [4, -3], ursprung: "50% 45%",
+          ort: "Das Gebäude" },
+        { bild: "bilder/tauchpost-flucht.png",     ein: 54.0,
+          zoom: [1.22, 1.06], schwenk: [-3, 3], ursprung: "50% 50%", ort: "" }
       ]
     }
-
   ]
 };
 
