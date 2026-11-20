@@ -397,7 +397,7 @@ function richteRahmenHer(f) {
     if (!d || !d.head || d.documentElement.dataset.swn === "1") return;
     d.documentElement.dataset.swn = "1";
     const st = d.createElement("style");
-    st.textContent = "#leiste, #zeiten { display: none !important; }";
+    st.textContent = "#leiste, #zeiten { display: none !important; }\n#start { opacity: 0 !important; pointer-events: none !important; }";
     d.head.appendChild(st);
     d.addEventListener("keydown", (e) => taste(e), true);
     d.addEventListener("mousemove", leisteWecken, true);
@@ -510,23 +510,28 @@ function spiele(i) {
   }
   rahmen.forEach((r, n) => r && r.classList.toggle("vorn", n === vorn));
 
-  // Warten, bis die Seite im Rahmen bereit ist, dann starten
+  /* Reihenfolge: der Vorlauf laeuft ganz durch, blendet ab, und erst
+     danach faengt der Block an. So beginnt nie eine Stimme, waehrend
+     der Wischer noch im Bild steht, und der Wischer faengt nie an,
+     solange noch gesprochen wird — das Ende des vorigen Blocks wird
+     abgewartet, samt der Sekunde Luft am Schluss der Tonspur. */
+  const ABBLENDE = 300;                 // deckt sich mit der CSS-Blende
+  const losAb = Date.now() + halten + (mitVorlauf ? ABBLENDE : 0);
+  let abgeblendet = false;
   let versuche = 0;
+
   const warte = setInterval(() => {
     versuche++;
-    if (starte(f)) {
-      clearInterval(warte);
-      // Der Vorlauf soll nicht abgeschnitten wirken: erst zu Ende laufen
-      // lassen, dann aufdecken.
-      setTimeout(() => {
-        blende.classList.remove("an");
-        vorlaufWeg();
-        clearTimeout(ladeAnzeige);
-        versteckeLaden();
-        ueberwache(f, i);
-        ladeVor(i + 1);
-      }, halten);
-    } else if (versuche > 160) {        // nach 16 Sekunden aufgeben
+    const uebrig = losAb - Date.now();
+
+    // Kurz vor Schluss den Vorlauf wegnehmen, damit er ausblenden kann
+    if (!abgeblendet && uebrig <= ABBLENDE) {
+      abgeblendet = true;
+      vorlaufWeg();
+    }
+    if (uebrig > 0 && versuche <= 160) return;
+
+    if (starte(f) || versuche > 160) {
       clearInterval(warte);
       blende.classList.remove("an");
       vorlaufWeg();
@@ -535,7 +540,7 @@ function spiele(i) {
       ueberwache(f, i);
       ladeVor(i + 1);
     }
-  }, 100);
+  }, 50);
 }
 
 /* Den nächsten Block still im zweiten Rahmen laden */
@@ -571,7 +576,9 @@ function ueberwache(f, i) {
       if (b) b.style.width = (m.currentTime / m.duration * 100) + "%";
     }
     // Ende erreicht
-    if (m.duration && m.currentTime >= m.duration - 0.35) {
+    // Die Tonspuren haben am Schluss eine Sekunde Luft — die soll auch
+    // wirklich laufen, bevor der Wischer kommt.
+    if (m.duration && m.currentTime >= m.duration - 0.05) {
       clearInterval(uhr);
       if (s) { s.classList.remove("jetzt"); s.classList.add("fertig"); }
       spiele(i + 1);
