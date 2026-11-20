@@ -76,6 +76,8 @@ html, body {
    weg und nur die goldenen Linien stehen ueber der laufenden Sendung.
    Darunter blenden die beiden Rahmen ineinander. */
 #wischer { mix-blend-mode: screen; background: transparent; }
+/* Eigene Ebene fuer die Vorlaeufe, damit das Mischen den Rest nicht bremst */
+.wischer { will-change: opacity; transform: translateZ(0); }
 
 /* ---------- Ladeanzeige ---------- */
 .laden {
@@ -213,7 +215,7 @@ html, body {
   <button id="knopf-zurueck">◀ Block</button>
   <button id="knopf-weiter">Block ▶</button>
   <button id="knopf-neu">Neu</button>
-  <span class="hinweis">Leertaste pausiert · B blendet die Leiste aus</span>
+  <span class="hinweis">Leertaste pausiert · B blendet die Leiste ganz aus</span>
 </div>
 
 <div class="start" id="start">
@@ -279,7 +281,10 @@ rueckvideo.src = RUECKKEHR;
 
 /* Wie lange der Vorlauf steht, bevor der neue Block aufgedeckt wird.
    "ohne" ist fuer Bloecke, die ihre Kennung selbst mitbringen. */
-const VORLAUF = { wisch: 700, kennung: 1250, rueckkehr: 6900, ohne: 250 };
+/* Der Vorlauf steht etwas laenger, als er braucht: die ersten Bilder
+   des neuen Blocks fallen damit noch hinter den Wischer, und das
+   Anlaufen des Videos faellt nicht auf. */
+const VORLAUF = { wisch: 1000, kennung: 1400, rueckkehr: 7000, ohne: 420 };
 
 /* Der Vorlauf laeuft, der Rahmenwechsel passiert dahinter. */
 function spieleVorlauf(art) {
@@ -306,6 +311,22 @@ let vorn = 0;             // welcher gerade zu sehen ist
 let index = -1;           // laufender Block
 let uhr = null;
 let leisteAn = true;
+let leisteUhr = null;
+
+/* Die Leiste legt sich von selbst schlafen, sobald die Maus ruht —
+   sonst steht sie vor dem Laufschriftbalken. Jede Mausbewegung holt
+   sie zurueck, B schaltet sie ganz ab. */
+function zeigeLeiste(an) {
+  el("leiste").classList.toggle("zeig", an && leisteAn);
+}
+function leisteWecken() {
+  if (!leisteAn) return;
+  zeigeLeiste(true);
+  clearTimeout(leisteUhr);
+  leisteUhr = setTimeout(() => zeigeLeiste(false), 2600);
+}
+document.addEventListener("mousemove", leisteWecken);
+document.addEventListener("mousedown", leisteWecken);
 
 /* ---------- Startbildschirm aufbauen ---------- */
 (function baueListe() {
@@ -318,7 +339,7 @@ let leisteAn = true;
       if (e.metaKey || e.ctrlKey || e.shiftKey) return;   // in neuem Tab öffnen zulassen
       e.preventDefault();
       el("start").classList.add("weg");
-      el("leiste").classList.toggle("zeig", leisteAn);
+      leisteWecken();
       baueKette();
       spiele(i);
     });
@@ -359,9 +380,29 @@ function ladeIn(rahmenNr, i) {
   if (f.dataset.block !== String(i)) {
     f.dataset.block = String(i);
     f.dataset.bereit = "";
+    f.addEventListener("load", () => richteRahmenHer(f), { once: true });
     f.src = BLOECKE[i].datei;
   }
   return f;
+}
+
+/* ---------- Jeden Block im Rahmen herrichten ----------
+   Zwei Sachen: seine eigene Bedienleiste bleibt aus, sonst stehen zwei
+   Leisten uebereinander und der Laufschriftbalken ist zu. Und seine
+   Tastatur wird mitgehoert, weil der Rahmen den Fokus hat und ein
+   Tastendruck sonst nie bei der Uebersicht ankommt. */
+function richteRahmenHer(f) {
+  try {
+    const d = f.contentDocument;
+    if (!d || !d.head || d.documentElement.dataset.swn === "1") return;
+    d.documentElement.dataset.swn = "1";
+    const st = d.createElement("style");
+    st.textContent = "#leiste, #zeiten { display: none !important; }";
+    d.head.appendChild(st);
+    d.addEventListener("keydown", (e) => taste(e), true);
+    d.addEventListener("mousemove", leisteWecken, true);
+    d.addEventListener("mousedown", leisteWecken, true);
+  } catch (e) {}
 }
 
 /* ---------- Das Medium in einem Rahmen finden ---------- */
@@ -387,6 +428,18 @@ function starte(f) {
     if (!d) return false;
     const k = d.getElementById("start-knopf");
     if (!k) return false;
+    /* Erst starten, wenn das groesste Medium wirklich losspielen kann.
+       Sonst faengt der Block an, bevor genug geladen ist, und die ersten
+       Sekunden stocken. Die Warteschleife in spiele() gibt nach 16
+       Sekunden ohnehin auf und startet dann trotzdem. */
+    const m = Array.prototype.slice.call(d.querySelectorAll("video,audio"))
+      .filter((x) => x.src && x.duration && isFinite(x.duration))
+      .sort((a, b) => b.duration - a.duration)[0];
+    if (m) {
+      if (m.readyState < 3) return false;
+      const b = m.buffered;
+      if (b.length === 0 || b.end(b.length-1) < 3.0) return false;
+    }
     k.click();
     return true;
   } catch (e) { return false; }
@@ -566,7 +619,7 @@ function fertig() {
 /* ---------- Bedienung ---------- */
 el("start-knopf").addEventListener("click", () => {
   el("start").classList.add("weg");
-  el("leiste").classList.toggle("zeig", leisteAn);
+  leisteWecken();
   baueKette();
   spiele(0);
 });
@@ -574,10 +627,10 @@ el("knopf-weiter").addEventListener("click", () => spiele(index + 1));
 el("knopf-zurueck").addEventListener("click", () => { ohneWischer = true; spiele(Math.max(0, index - 1)); });
 el("knopf-neu").addEventListener("click", () => { ohneWischer = true; spiele(index); });
 
-document.addEventListener("keydown", (e) => {
+function taste(e) {
   if (e.key === "b" || e.key === "B") {
     e.preventDefault(); leisteAn = !leisteAn;
-    el("leiste").classList.toggle("zeig", leisteAn); return;
+    zeigeLeiste(leisteAn); return;
   }
   if (e.code === "Space") {
     e.preventDefault();
@@ -593,7 +646,8 @@ document.addEventListener("keydown", (e) => {
   const weite = 5;
   if (e.key === "ArrowRight") { e.preventDefault(); m.currentTime = Math.min(m.duration, m.currentTime + weite); }
   if (e.key === "ArrowLeft")  { e.preventDefault(); m.currentTime = Math.max(0, m.currentTime - weite); }
-});
+}
+document.addEventListener("keydown", taste);
 </script>
 </body>
 </html>
