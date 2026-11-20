@@ -488,23 +488,30 @@ const KONFIG = {
         // dann über Blaze
         { bild: "bilder/dennah-blaze.png",          ein:  7.9,
           zoom: [1.06, 1.22], schwenk: [4, -3], ursprung: "50% 45%", ort: "" },
-        // Im August sass sie mit ihm im Pfadfinderlager
-        { bild: "bilder/dennah-lager.png",          ein:  9.6,
-          zoom: [1.22, 1.08], schwenk: [-4, 3], ursprung: "50% 45%",
+        /* Im August sass sie mit ihm im Pfadfinderlager. Das Lagerfeuer
+           steht am Anfang des Camps; die alte Einstellung stand hier
+           achteinhalb Sekunden am Stueck, das war zu lang. */
+        { bild: "bilder/dennah-camp-feuer.png",     ein:  9.6, ruhig: false,
+          zoom: [1.05, 1.20], schwenk: [3, -3], ursprung: "50% 55%",
           ort: "Camp Firefly" },
+        { bild: "bilder/dennah-lager.png",          ein: 13.9, ruhig: false,
+          zoom: [1.22, 1.08], schwenk: [-4, 3], ursprung: "50% 45%", ort: "" },
         // Delsyn trug sie aus dem Lagerfeuerkreis
-        { bild: "bilder/dennah-lagerfeuer.png",     ein: 18.4,
+        { bild: "bilder/dennah-lagerfeuer.png",     ein: 18.4, ruhig: false,
           zoom: [1.08, 1.26], schwenk: [3, -4], ursprung: "50% 45%", ort: "" },
         // Sie wusste es nicht
         { bild: "bilder/dennah-spiegel.png",        ein: 24.5,
           zoom: [1.20, 1.06], schwenk: [-3, 2], ursprung: "50% 45%", ort: "" },
-        // Blaze hat bemerkt, dass sie mit Nadel und Messer umgehen kann
-        { bild: "bilder/dennah-naehen.png",         ein: 27.6,
-          zoom: [1.06, 1.22], schwenk: [4, -4], ursprung: "50% 50%",
+        /* Blaze hat bemerkt, dass sie mit Nadel und Messer umgehen kann —
+           dazu die zerrissenen Sachen */
+        { bild: "bilder/dennah-zerrissen.png",      ein: 27.6, ruhig: false,
+          zoom: [1.04, 1.18], schwenk: [2, -2], ursprung: "50% 45%",
           ort: "Nadel und Messer" },
+        { bild: "bilder/dennah-handy.png",          ein: 31.9,
+          zoom: [1.18, 1.05], schwenk: [-2, 2], ursprung: "50% 45%", ort: "" },
         // Das hat vorher niemand zu ihr gesagt
-        { bild: "bilder/dennah-skatepark.png",      ein: 35.8,
-          zoom: [1.22, 1.06], schwenk: [-3, 3], ursprung: "50% 40%", ort: "" }
+        { bild: "bilder/dennah-kuss.png",           ein: 35.8, ruhig: false,
+          zoom: [1.16, 1.04], schwenk: [-2, 2], ursprung: "50% 42%", ort: "" }
       ]
     },
 
