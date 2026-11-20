@@ -79,6 +79,18 @@ html, body {
   will-change: opacity; transform: translateZ(0);
 }
 .wischer.an { opacity: 1; }
+
+/* ---------- Studio zu Studio ----------
+   Ein Standbild des letzten Bildes legt sich ueber den Clip, darunter
+   laeuft der neue schon an, und das Standbild blendet weich weg. Kein
+   harter Schnitt, kein Schwarz, kein Logo — bei zwei Bildern aus
+   demselben Studio waere das zu viel. */
+.standbild {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; z-index: 4; pointer-events: none;
+  opacity: 0; transition: opacity 0.65s ease;
+}
+.standbild.an { opacity: 1; transition: none; }
 .phase.aktiv { opacity: 1; }
 #phase-clip { z-index: 2; }
 #phase-voll { z-index: 1; }
@@ -322,6 +334,7 @@ body.justiert .griff { display: block; }
 
   <div class="phase" id="phase-clip">
     <video id="clip" playsinline preload="auto"></video>
+    <canvas class="standbild" id="standbild"></canvas>
     <div class="fehlt" id="clip-fehlt"></div>
   </div>
 
@@ -728,6 +741,20 @@ function blitze() {
   setTimeout(function () { b.classList.remove("an"); }, 110);
 }
 
+/* Standbild einfrieren und weich wegblenden */
+function friereClip() {
+  if (!clip.videoWidth || !clip.videoHeight) return false;
+  const c = el("standbild");
+  c.width = clip.videoWidth; c.height = clip.videoHeight;
+  try { c.getContext("2d").drawImage(clip, 0, 0); } catch (e) { return false; }
+  c.classList.add("an");
+  return true;
+}
+function loeseStandbild() {
+  const c = el("standbild");
+  requestAnimationFrame(function () { c.classList.remove("an"); });
+}
+
 /* Globuswischer, wenn eine neue Meldung anfaengt */
 const wischer  = el("wischer");
 const wischton = new Audio("clips/logo-wisch-ton.mp3");
@@ -750,10 +777,18 @@ function wische() {
 
 function starte(i) {
   if (i >= KONFIG.teile.length) { ende(); return; }
-  /* Beim Wechsel innerhalb einer Meldung blitzt es weiss auf, beim
-     Wechsel zu einer neuen Meldung laeuft der Globuswischer. */
-  if (i > 0 && i < KONFIG.teile.length) {
-    if (KONFIG.teile[i].wischer) wische(); else blitze();
+  /* Die Linie: zwei Studiobilder blenden weich ineinander, zwischen
+     Studio und Vollbildbericht blitzt es kurz weiss. Ein Logo kommt
+     hier nicht vor, das gehoert zwischen die Bloecke. */
+  const vorher = (i > 0) ? KONFIG.teile[i - 1] : null;
+  if (vorher) {
+    if (KONFIG.teile[i].wischer) {
+      wische();                       // neues Thema: Globus
+    } else if (vorher.art === "studio" && KONFIG.teile[i].art === "studio") {
+      if (!friereClip()) blitze();    // dieselbe Moderation: weiche Blende
+    } else {
+      blitze();                       // Studio zu Bericht: weisser Uebergang
+    }
   }
   nr = i;
   aktiverThema = -1; aktivesBild = -1;
@@ -783,7 +818,7 @@ function starte(i) {
     clip.currentTime = 0;
     /* Erst aufblenden, wenn das Video wirklich ein Bild hat. Sonst
        blendet eine schwarze Flaeche auf und das Bild springt hinterher. */
-    const zeigen = () => phaseClip.classList.add("aktiv");
+    const zeigen = () => { phaseClip.classList.add("aktiv"); loeseStandbild(); };
     if (clip.readyState >= 2) zeigen();
     else {
       clip.addEventListener("loadeddata", zeigen, { once: true });

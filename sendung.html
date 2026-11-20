@@ -48,7 +48,7 @@ html, body {
 }
 .feld iframe {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  border: 0; opacity: 0; transition: opacity 0.45s ease;
+  border: 0; opacity: 0; transition: opacity 0.6s ease;
   pointer-events: none;
 }
 .feld iframe.vorn { opacity: 1; pointer-events: auto; }
@@ -67,7 +67,7 @@ html, body {
 .wischer {
   position: absolute; inset: 0; z-index: 42;
   width: 100%; height: 100%; object-fit: cover; background: #000;
-  opacity: 0; pointer-events: none; transition: opacity 0.28s ease;
+  opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
 }
 .wischer.an { opacity: 1; }
 /* Die Senderkennung blendet selbst aus Schwarz auf und wieder weg.
@@ -253,8 +253,10 @@ const BLOECKE = [
   // Nach der zweiten Werbung kommt das grosse Logo aus der Uebersicht
   { nummer: "16",   titel: "Chip und das System",     datei: "news-chip.html",         dauer:  38, vorlauf: "rueckkehr" },
   { nummer: "18–19b", titel: "Dennah, Blaze und Jake", datei: "news-dennah-jake.html", dauer: 122 },
-  { nummer: "20",   titel: "Wetter mit Artjom",       datei: "wetterkarte.html",       dauer:  84 },
-  { nummer: "20b–23", titel: "Abschluss und Verabschiedung", datei: "news-abschluss.html", dauer: 115 }
+  // Konstanze kuendigt das Wetter an und nimmt es wieder entgegen —
+  // dazwischen gehoert kein Logo, das ist dieselbe Moderation.
+  { nummer: "20",   titel: "Wetter mit Artjom",       datei: "wetterkarte.html",       dauer:  84, vorlauf: "blende" },
+  { nummer: "20b–23", titel: "Abschluss und Verabschiedung", datei: "news-abschluss.html", dauer: 115, vorlauf: "blende" }
 ];
 
 /* =================================================================== */
@@ -287,17 +289,26 @@ rueckvideo.src = RUECKKEHR;
 /* Der Vorlauf steht etwas laenger, als er braucht: die ersten Bilder
    des neuen Blocks fallen damit noch hinter den Wischer, und das
    Anlaufen des Videos faellt nicht auf. */
-const VORLAUF = { wisch: 1000, kennung: 1900, rueckkehr: 7000, ohne: 420 };
+/* Die Linie, nach der die Sendung schneidet:
+     blende    — kein Logo, nur eine weiche Blende von Rahmen zu Rahmen.
+                 Fuer Stellen, an denen Konstanze durchmoderiert: das
+                 Wetter an- und abmoderieren, der Schluss der Sendung.
+     kennung   — vor einer Werbung: die kurze Senderkennung.
+     rueckkehr — nach einer Werbung: die grosse Kennung.
+     ohne      — der Block bringt seine Kennung selbst mit.
+     wisch     — der Globus. Der Normalfall zwischen zwei Bloecken,
+                 weil dort das Thema wechselt. */
+const VORLAUF = { blende: 450, wisch: 1000, kennung: 1900, rueckkehr: 7000, ohne: 420 };
 
 /* Luft vor und nach einem Vorlauf. Die kurze Senderkennung bringt ihre
    eigene Blende aus Schwarz und nach Schwarz mit — zusaetzliche Luft
    macht daraus eine Pause, die wie ein Aussetzer wirkt. Deshalb null.
    Die lange Rueckkehrkennung darf etwas Luft haben. */
-const LUFT = { wisch: 0, kennung: 0, rueckkehr: 260, ohne: 0 };
+const LUFT = { blende: 0, wisch: 0, kennung: 0, rueckkehr: 260, ohne: 0 };
 
 /* Der Vorlauf laeuft, der Rahmenwechsel passiert dahinter. */
 function spieleVorlauf(art) {
-  if (art === "ohne") return VORLAUF.ohne;
+  if (art === "ohne" || art === "blende") return VORLAUF[art];
   const v = (art === "kennung") ? kennvideo
           : (art === "rueckkehr") ? rueckvideo : wischer;
   const luft = LUFT[art] || 0;
@@ -497,7 +508,7 @@ function spiele(i) {
   const art  = BLOECKE[i].vorlauf || "wisch";
   /* Beim Globuswischer bleibt das Bild stehen und blendet darunter um.
      Die Senderkennung deckt ohnehin alles ab, da darf Schwarz drunter. */
-  if (!mitVorlauf || art !== "wisch") blende.classList.add("an");
+  if (!mitVorlauf || (art !== "wisch" && art !== "blende")) blende.classList.add("an");
   // Die Ladeanzeige soll nicht ueber dem Vorlauf stehen. Sie kommt erst,
   // wenn der Vorlauf durch ist und der Block immer noch nicht laeuft.
   clearTimeout(ladeAnzeige);
@@ -530,7 +541,10 @@ function spiele(i) {
      solange noch gesprochen wird — das Ende des vorigen Blocks wird
      abgewartet, samt der Sekunde Luft am Schluss der Tonspur. */
   const ABBLENDE = 300;                 // deckt sich mit der CSS-Blende
-  const losAb = Date.now() + halten + (mitVorlauf ? ABBLENDE : 0);
+  // Beim Wischer faengt der Block an, sobald das Video durch ist;
+  // das Ausblenden liegt dann schon ueber dem laufenden Block.
+  const losAb = Date.now() + halten +
+                ((mitVorlauf && art !== "wisch" && art !== "blende") ? ABBLENDE : 0);
   let abgeblendet = false;
   let versuche = 0;
 
@@ -539,7 +553,12 @@ function spiele(i) {
     const uebrig = losAb - Date.now();
 
     // Kurz vor Schluss den Vorlauf wegnehmen, damit er ausblenden kann
-    if (!abgeblendet && uebrig <= ABBLENDE + (LUFT[art] || 0)) {
+    /* Die Senderkennungen blenden selbst nach Schwarz, die nimmt man
+       vorher weg. Der Globuswischer dagegen ist am Ende am hellsten —
+       der laeuft ganz durch und blendet erst ueber dem schon laufenden
+       Block aus. Sein Ton laeuft dabei einfach weiter. */
+    if (!abgeblendet && art !== "wisch" && art !== "blende" &&
+        uebrig <= ABBLENDE + (LUFT[art] || 0)) {
       abgeblendet = true;
       vorlaufWeg();
     }
