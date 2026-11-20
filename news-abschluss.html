@@ -684,8 +684,11 @@ const KONFIG = {
 
         /* Technischer Anhang — die Zahlen sind gemessen, nicht geschaetzt:
            Sendelaenge aus der Blockliste, Bilder und Toene aus den
-           Sendeseiten gezaehlt, Fassungen und Produktionstage aus der
-           Versionsgeschichte. Vor der Veroeffentlichung neu zaehlen. */
+           Sendeseiten gezaehlt, Fassungen und Arbeitstage aus der
+           Versionsgeschichte. Die 14 Tage sind eine Untergrenze: gezaehlt
+           sind nur Tage, an denen etwas gespeichert wurde. Arbeit ohne
+           Speicherung — Stimmen generieren, Bilder in Sims bauen — faellt
+           dabei raus. Vor der Veroeffentlichung neu zaehlen. */
         { was: "Die Sendung in Zahlen", wer: [
             "19 Minuten Sendung",
             "22 Minuten Material geschnitten",
@@ -693,7 +696,7 @@ const KONFIG = {
             "47 Ton- und Videodateien",
             "12 752 Zeilen Code getippt",
             "139 mal neu gespeichert",
-            "an 12 Tagen gebaut",
+            "an 14 Tagen gebaut",
             "verteilt über zwei Monate"
           ] },
 
