@@ -47,8 +47,14 @@ html, body {
   background: #000; overflow: hidden; container-type: size;
 }
 
-.phase { position: absolute; inset: 0; opacity: 0; transition: opacity 0.55s ease; pointer-events: none; background: #000; }
+/* Die beiden Phasen liegen uebereinander, der Clip oben. Sie haben
+   KEINEN eigenen schwarzen Grund — sonst blendet beim Wechsel beides
+   gleichzeitig halb durch und man sieht Schwarz durchschlagen. So faellt
+   nur der Clip weg und gibt das Vollbild darunter frei. */
+.phase { position: absolute; inset: 0; opacity: 0; transition: opacity 0.55s ease; pointer-events: none; }
 .phase.aktiv { opacity: 1; }
+#phase-clip { z-index: 20; }
+#phase-voll { z-index: 10; }
 #clip, #ident { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--nacht); }
 #phase-ident { z-index: 30; }
 .phase.fort { opacity: 0; transition: opacity 1.0s ease; }
@@ -100,11 +106,21 @@ html, body {
   border: 2px solid var(--messing); overflow: hidden; background: var(--nacht);
   box-shadow: 0 12px 38px rgba(0,0,0,0.65); display: flex;
 }
+/* Beim Wechsel bleibt der Kasten stehen, nur sein Inhalt blendet um.
+   Dafuer liegt jedes Bildpaar in einem eigenen Satz, der ueber dem
+   alten aufblendet. */
+.thema-bild .satz {
+  position: absolute; inset: 0; display: flex;
+  opacity: 0; transition: opacity 0.45s ease;
+}
+.thema-bild .satz.sichtbar { opacity: 1; }
 .thema-bild img {
   flex: 1 1 0; min-width: 0; width: 100%; height: 100%;
   object-fit: cover; display: block; will-change: transform;
 }
 .thema-bild img + img { border-left: 2px solid var(--messing); }
+.thema-zeile { transition: opacity 0.17s ease; }
+.thema-zeile.wechsel { opacity: 0; }
 .thema-zeile {
   margin-top: 6px; background: rgba(6,16,30,0.94);
   border-left: 4px solid var(--messing);
@@ -536,6 +552,8 @@ const clip      = el("clip");
 const phaseClip = el("phase-clip");
 const phaseVoll = el("phase-voll");
 const strecke   = el("strecke");
+// Das Vollbild liegt dauerhaft bereit, der Clip blendet darueber weg.
+el("phase-voll").classList.add("aktiv");
 const thema     = el("thema");
 const themaBild = el("thema-bild");
 const binde     = el("binde");
@@ -563,6 +581,32 @@ el("binde-rolle").textContent = KONFIG.binde.rolle;
   const einmal = KONFIG.ticker.map(t => "<span>" + t + "</span><i></i>").join("");
   el("zug").innerHTML = einmal + einmal;
 })();
+
+/* ---------- Welche Bilder fahren ----------
+   Fahren alle Bilder, wirkt die Strecke hektisch. Regel: ein Bild, das
+   kuerzer als drei Sekunden steht, bleibt stehen, und von den laengeren
+   ruht jedes zweite. Ein ruhendes Bild steht leicht herangezoomt, damit
+   es neben den fahrenden nicht flach wirkt. Mit ruhig: true oder
+   ruhig: false laesst sich das fuer ein einzelnes Bild uebersteuern. */
+KONFIG.teile.forEach((teil) => {
+  if (teil.art !== "strecke") return;
+  let lang = 0;
+  teil.bilder.forEach((s, k) => {
+    const naechstes = teil.bilder[k + 1];
+    const steht = naechstes ? (naechstes.ein - s.ein) : 4.0;
+    let ruhig;
+    if (s.ruhig !== undefined) ruhig = s.ruhig;
+    else if (steht < 3.0) ruhig = true;
+    else { ruhig = (lang % 2) === 1; lang++; }
+    if (ruhig) {
+      const z = s.zoom ? (s.zoom[0] + s.zoom[1]) / 2 : 1.04;
+      s.zoom = [z, z];
+      s.schwenk = null;
+      s.heben = null;
+    }
+    s.steht = ruhig;
+  });
+});
 
 /* ---------- Bildstrecken vorbereiten ---------- */
 KONFIG.teile.forEach((teil) => {
@@ -637,7 +681,10 @@ function setzeThema(i, liste) {
   if (i < 0 || !liste || !liste[i]) { thema.classList.remove("sichtbar"); return; }
   const t = liste[i];
   const dauer = Math.max(1, (t.aus || 0) - (t.ein || 0));
-  themaBild.innerHTML = "";
+  const stand = thema.classList.contains("sichtbar");   // Kasten war schon da
+
+  const satz = document.createElement("div");
+  satz.className = "satz";
   t.bilder.forEach((p, k) => {
     const img = document.createElement("img");
     img.src = p; img.alt = "";
@@ -646,13 +693,43 @@ function setzeThema(i, liste) {
       const d = document.createElement("div");
       d.className = "platz klein";
       d.textContent = p.replace("bilder/", "") + " fehlt";
-      themaBild.appendChild(d);
+      satz.appendChild(d);
     });
-    themaBild.appendChild(img);
+    satz.appendChild(img);
     kastenFahrt(img, p, i * 7 + k, dauer);
   });
-  el("thema-titel").textContent = t.titel;
-  el("thema-ort").textContent   = t.ort || "";
+
+  const alte = Array.from(themaBild.querySelectorAll(".satz"));
+  themaBild.appendChild(satz);
+  if (stand) {
+    requestAnimationFrame(() => satz.classList.add("sichtbar"));
+    alte.forEach((a) => {
+      a.classList.remove("sichtbar");
+      setTimeout(() => a.remove(), 520);
+    });
+  } else {
+    alte.forEach((a) => a.remove());
+    satz.classList.add("sichtbar");
+  }
+
+  // Die Zeile darunter wechselt mit einem kurzen Wegtauchen, nicht hart
+  const zeile = thema.querySelector(".thema-zeile");
+  const schreibe = () => {
+    el("thema-titel").textContent = t.titel;
+    el("thema-ort").textContent   = t.ort || "";
+  };
+  if (stand) {
+    zeile.dataset.marke = String(i);
+    zeile.classList.add("wechsel");
+    setTimeout(() => {
+      if (zeile.dataset.marke !== String(i)) return;   // schon weiter
+      schreibe();
+      zeile.classList.remove("wechsel");
+    }, 170);
+  } else {
+    schreibe();
+    zeile.classList.remove("wechsel");
+  }
   thema.classList.add("sichtbar");
 }
 
@@ -690,17 +767,22 @@ function starte(i) {
   });
 
   if (t.art === "studio") {
-    phaseVoll.classList.remove("aktiv");
-    phaseClip.classList.add("aktiv");
     ton.pause();
     t.videoFehlt = false;
     clip.src = t.clip;
     clip.currentTime = 0;
+    /* Erst aufblenden, wenn das Video wirklich ein Bild hat. Sonst
+       blendet eine schwarze Flaeche auf und das Bild springt hinterher. */
+    const zeigen = () => phaseClip.classList.add("aktiv");
+    if (clip.readyState >= 2) zeigen();
+    else {
+      clip.addEventListener("loadeddata", zeigen, { once: true });
+      setTimeout(zeigen, 900);
+    }
     const p = clip.play();
     if (p && p.catch) p.catch(() => {});
   } else {
     phaseClip.classList.remove("aktiv");
-    phaseVoll.classList.add("aktiv");
     clip.pause();
     t.elemente.forEach(e => { e.style.display = "block"; });
     ton.src = t.ton;
@@ -758,7 +840,16 @@ function zeichne() {
     const b = t.binde;
     if (b) binde.classList.toggle("sichtbar", z >= b.ein && z < b.aus);
     let i = -1;
-    (t.thema || []).forEach((x, k) => { if (z >= x.ein && z < x.aus) i = k; });
+    const kaesten = t.thema || [];
+    kaesten.forEach((x, k) => { if (z >= x.ein && z < x.aus) i = k; });
+    /* Kurze Luecken zwischen zwei Kaesten ueberbruecken. Sonst faehrt der
+       ganze Kasten hinaus und gleich wieder herein, obwohl nur der Inhalt
+       wechseln soll. */
+    if (i < 0 && aktiverThema >= 0) {
+      const v = kaesten[aktiverThema];
+      const n = kaesten[aktiverThema + 1];
+      if (v && z >= v.aus && n && z < n.ein && (n.ein - v.aus) <= 1.5) i = aktiverThema;
+    }
     setzeThema(i, t.thema);
     return;
   }

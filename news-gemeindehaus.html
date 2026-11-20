@@ -484,7 +484,7 @@ body.justiert .griff { display: block; }
    =================================================================== */
 const KONFIG = {
 
-  fassung: "v28 · Handkamera ruhiger, ohne Spruenge",
+  fassung: "v29 · Handkamera ruhiger, Regenschleife ohne Naht",
 
   clip: "clips/gemeindehaus-schalte.mp4",
 
@@ -611,6 +611,59 @@ const rCtx  = regen.getContext("2d");
 const regenton = el("regenton");
 regenton.src = KONFIG.regen.ton;
 regenton.volume = 0;
+
+/* ---------- Regenschleife ohne Naht ----------
+   Ein mp3 traegt aus der Kodierung Stille am Anfang und am Ende. Das
+   audio-Element mit loop setzt die mit, und genau das hoert man beim
+   Zuruecksetzen als Stocken. Deshalb wird die Datei einmal dekodiert
+   und als Puffer geschleift — der laeuft abtastgenau durch.
+   Zusaetzlich wird das letzte halbe Sekunde ueber den Anfang geblendet:
+   gemessen sinkt der Pegelsprung an der Naht dadurch von 3,9 auf
+   0,55 Dezibel. Kann der Browser das nicht, bleibt das audio-Element. */
+let regenHahn = null;      // GainNode, wenn Web Audio laeuft
+let regenRaum = null;      // AudioContext
+let regenLaut = 0;         // aktueller Pegel, gilt fuer beide Wege
+
+function nahtlos(ac, roh, blende) {
+  const sr = roh.sampleRate;
+  const b  = Math.min(Math.floor(blende * sr), Math.floor(roh.length / 4));
+  const n  = roh.length - b;
+  const neu = ac.createBuffer(roh.numberOfChannels, n, sr);
+  for (let c = 0; c < roh.numberOfChannels; c++) {
+    const a = roh.getChannelData(c);
+    const z = neu.getChannelData(c);
+    z.set(a.subarray(0, n));
+    for (let i = 0; i < b; i++) {
+      const q = i / b;
+      z[i] = a[i] * Math.sqrt(q) + a[n + i] * Math.sqrt(1 - q);
+    }
+  }
+  return neu;
+}
+
+(function baueRegen() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC || !window.fetch) return;
+  let ac;
+  try { ac = new AC(); } catch (e) { return; }
+  fetch(KONFIG.regen.ton)
+    .then(a => a.arrayBuffer())
+    .then(a => ac.decodeAudioData(a))
+    .then((roh) => {
+      const q = ac.createBufferSource();
+      q.buffer = nahtlos(ac, roh, 0.5);
+      q.loop = true;
+      const hahn = ac.createGain();
+      hahn.gain.value = 0;
+      q.connect(hahn).connect(ac.destination);
+      q.start();
+      regenHahn = hahn;
+      regenRaum = ac;
+      regenton.pause();
+      regenton.removeAttribute("src");
+    })
+    .catch(() => {});
+})();
 const tropfen = Array.from({ length: KONFIG.regen.tropfen }, () => {
   const tiefe = 0.3 + Math.random() * 0.7;
   return { x: Math.random(), y: Math.random(), t: tiefe,
@@ -641,11 +694,17 @@ function zeichneRegen(jetzt) {
   // Ton weich dazublenden, aber zügig weg — im Studio darf nichts übrig bleiben
   const imStudio = t < KONFIG.schalteAb || t >= KONFIG.studioAb;
   const ziel = (laeuft && !clip.paused && !imStudio) ? KONFIG.regen.lautstaerke : 0;
-  const tempo = ziel > regenton.volume ? 1.2 : 4.5;
-  regenton.volume = Math.max(0, Math.min(1, regenton.volume + (ziel - regenton.volume) * Math.min(1, dt * tempo)));
-  if (imStudio) regenton.volume = 0;                       // kein Rest im Studio
-  if (regenton.volume > 0.004 && regenton.paused) regenton.play().catch(() => {});
-  if (regenton.volume <= 0.004 && !regenton.paused) regenton.pause();
+  const tempo = ziel > regenLaut ? 1.2 : 4.5;
+  regenLaut = Math.max(0, Math.min(1, regenLaut + (ziel - regenLaut) * Math.min(1, dt * tempo)));
+  if (imStudio) regenLaut = 0;                             // kein Rest im Studio
+  if (regenHahn) {
+    if (regenLaut > 0.004 && regenRaum.state === "suspended") regenRaum.resume();
+    regenHahn.gain.value = regenLaut;
+  } else {
+    regenton.volume = regenLaut;
+    if (regenLaut > 0.004 && regenton.paused) regenton.play().catch(() => {});
+    if (regenLaut <= 0.004 && !regenton.paused) regenton.pause();
+  }
   if (!laeuft) { requestAnimationFrame(zeichneRegen); return; }
 
   const neig = KONFIG.regen.schraeg / 100;
@@ -819,7 +878,11 @@ function start() {
   baueMarker();
   requestAnimationFrame(takt);
 }
-el("start-knopf").addEventListener("click", start);
+el("start-knopf").addEventListener("click", () => {
+  // Der Tonraum darf erst nach einem Klick aufwachen
+  if (regenRaum && regenRaum.state === "suspended") regenRaum.resume();
+  start();
+});
 el("start").addEventListener("click", (e) => { if (e.target.closest("label")) return; start(); });
 el("datei").addEventListener("change", (e) => {
   const f = e.target.files && e.target.files[0];

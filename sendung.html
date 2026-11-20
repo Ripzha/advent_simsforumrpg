@@ -71,6 +71,12 @@ html, body {
 }
 .wischer.an { opacity: 1; }
 
+/* Der Globus laeuft UEBER das Bild, nicht an seiner Stelle. Sein Grund
+   ist fast schwarz (im Mittel RGB 2/5/10), mit screen faellt er deshalb
+   weg und nur die goldenen Linien stehen ueber der laufenden Sendung.
+   Darunter blenden die beiden Rahmen ineinander. */
+#wischer { mix-blend-mode: screen; background: transparent; }
+
 /* ---------- Ladeanzeige ---------- */
 .laden {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -407,19 +413,25 @@ function spiele(i) {
   selbstmelder = false;
 
   clearInterval(uhr);
-  blende.classList.add("an");
 
   // Vor dem ersten Block kein Vorlauf — da kommt das Intro der Sendung.
   const mitVorlauf = (i > 0 && !ohneWischer);
   ohneWischer = false;
   const art  = BLOECKE[i].vorlauf || "wisch";
+  /* Beim Globuswischer bleibt das Bild stehen und blendet darunter um.
+     Die Senderkennung deckt ohnehin alles ab, da darf Schwarz drunter. */
+  if (!mitVorlauf || art === "kennung") blende.classList.add("an");
   // Die Ladeanzeige soll nicht ueber dem Vorlauf stehen. Sie kommt erst,
   // wenn der Vorlauf durch ist und der Block immer noch nicht laeuft.
   clearTimeout(ladeAnzeige);
   let halten = 350;
   if (mitVorlauf) {
     halten = spieleVorlauf(art);
-    ladeAnzeige = setTimeout(() => zeigeLaden(i), halten + 450);
+    // Ist der neue Block dann immer noch nicht da, erst jetzt zumachen
+    ladeAnzeige = setTimeout(() => {
+      blende.classList.add("an");
+      zeigeLaden(i);
+    }, halten + 450);
   } else {
     zeigeLaden(i);
   }
