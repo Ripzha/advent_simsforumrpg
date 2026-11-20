@@ -497,7 +497,7 @@ const KONFIG = {
 
   /* Bauchbinden: eine für Konstanze, eine für Riva */
   binden: [
-    { ab:  2.0, bis:  9.0, flagge: "HEUTE", name: "Konstanze Immalaut", rolle: "Moderatorin" },
+    { ab:  2.0, bis:  9.0, flagge: "LIVE",  name: "Konstanze Immalaut", rolle: "Moderatorin" },
     { ab: 16.5, bis: 24.0, flagge: "LIVE",  name: "Riva Babylon",       rolle: "Chefredaktion · Windenburg" }
   ],
 
@@ -582,6 +582,43 @@ baueKasten(el("rahmen-links"),  KONFIG.links);
 baueKasten(el("rahmen-rechts"), KONFIG.rechts);
 
 /* ---------- Auswahl innerhalb eines Kastens ---------- */
+/* ---------- Fahrt im Kasten ----------
+   Nicht jedes Bild faehrt, sonst wird es unruhig: jedes zweite steht
+   still. Richtung, Ursprung und Weite kommen aus dem Dateinamen, damit
+   jedes Bild seine eigene Bewegung hat und sie bei jedem Durchlauf
+   dieselbe ist. */
+function starteFahrt(liste, i, ende) {
+  const e = liste[i];
+  if (!e || !e.el) return;
+  const img = e.el;
+  if (i % 2 === 1) {                       // jedes zweite bleibt stehen
+    img.style.transition = "opacity 0.5s ease";
+    img.style.transform = "scale(1.02)";
+    return;
+  }
+  let folgt = ende;
+  for (let n = i + 1; n < liste.length; n++) {
+    if (!liste[n].aus && !liste[n].fehlt && liste[n].ab > e.ab) { folgt = liste[n].ab; break; }
+  }
+  const dauer = Math.max(2, ((e.bis && e.bis > e.ab) ? e.bis : folgt) - e.ab);
+
+  let h = 0;
+  for (let k = 0; k < e.bild.length; k++) h = (h * 31 + e.bild.charCodeAt(k)) | 0;
+  const a = Math.abs(h);
+  const hinein = (a % 2) === 0;
+  const klein = 1.015;
+  const gross = klein + Math.min(0.11, 0.013 * dauer);
+  const ox = 34 + (a >>> 3) % 32;
+  const oy = 30 + (a >>> 9) % 38;
+
+  img.style.transformOrigin = ox + "% " + oy + "%";
+  img.style.transition = "opacity 0.5s ease";
+  img.style.transform = "scale(" + (hinein ? klein : gross).toFixed(3) + ")";
+  void img.offsetWidth;
+  img.style.transition = "opacity 0.5s ease, transform " + dauer.toFixed(1) + "s linear";
+  img.style.transform = "scale(" + (hinein ? gross : klein).toFixed(3) + ")";
+}
+
 function waehle(liste, t, ende) {
   let treffer = -1;
   for (let i = 0; i < liste.length; i++) {
@@ -835,6 +872,7 @@ function takt() {
     if (r >= 0) {
       el("rechts-titel").textContent = KONFIG.rechts[r].titel;
       el("rechts-ort").textContent   = KONFIG.rechts[r].ort;
+      starteFahrt(KONFIG.rechts, r, KONFIG.studioAb);
     }
   }
   if (!istSchalte) KONFIG.rechts.forEach(e => { if (e.el) e.el.classList.remove("an"); });
