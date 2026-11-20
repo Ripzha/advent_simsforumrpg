@@ -370,6 +370,15 @@ body.justiert .griff { display: block; }
   font-family: var(--eng); font-weight: 600; font-size: 0.72rem;
   letter-spacing: 0.34em; text-transform: uppercase; color: var(--silber);
 }
+/* Der Anspruch unter der Kennung, wie im Senderkennungs-Video:
+   kleiner, weiter gesperrt und gedaempft, damit er nicht mit der
+   Zeile NACHRICHTEN um dieselbe Aufmerksamkeit kaempft. */
+.abspann .marke .nachsatz {
+  margin-top: 1.0em;
+  font-family: var(--eng); font-weight: 600; font-size: 0.6rem;
+  letter-spacing: 0.42em; text-transform: uppercase;
+  color: var(--silber); opacity: 0.55;
+}
 .abspann .was {
   font-family: var(--eng); font-weight: 600; font-size: 0.74rem;
   letter-spacing: 0.2em; text-transform: uppercase;
@@ -703,7 +712,8 @@ const KONFIG = {
         { was: "Austausch", wer: ["Der Discord der Gemeinschaft"] },
 
         // Senderkennung zum Schluss, wie die Abbinderkennung einer echten Sendung
-        { marke: true, wer: ["Nachrichten"] }
+        { marke: true, wer: ["Nachrichten"],
+          nachsatz: "Nichts davon ist erfunden" }
       ]
     }
 
@@ -871,6 +881,11 @@ function baueAbspann(liste) {
       b.className = "wer"; b.textContent = n;
       d.appendChild(b);
     });
+    if (g.nachsatz) {
+      const s = document.createElement("div");
+      s.className = "nachsatz"; s.textContent = g.nachsatz;
+      d.appendChild(s);
+    }
     w.appendChild(d);
   });
 }
