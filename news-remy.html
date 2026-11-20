@@ -459,7 +459,7 @@ body.justiert .thema, body.justiert .binde, body.justiert .monitor {
   <div class="ort" id="ortmarke"></div>
 
   <div class="laufband" id="laufband">
-    <div class="marke"><i></i>EILMELDUNGEN</div>
+    <div class="marke"><i></i>KURZ GEMELDET</div>
     <div class="spur"><div class="zug" id="zug"></div></div>
   </div>
 
@@ -536,13 +536,18 @@ const KONFIG = {
   /* rahmen: [links, oben, breite, hoehe] in Prozent der Buehne.
      Jeder Eintrag darf eine eigene Groesse haben. Im Ausrichtemodus J
      schiebst du den gerade laufenden Eintrag, C zeigt die Werte.        */
+  /* Alle drei Einblendungen stehen im selben Rahmen, damit der Monitor
+     nicht bei jedem Thema die Groesse wechselt. Die Buehne ist 16 zu 9,
+     deshalb ergibt gleiche Prozentzahl fuer Breite und Hoehe ein Bild
+     im Format 16 zu 9.
+     Artjoms Bild ist hoch (1122 zu 1402). Statt es zu beschneiden faehrt
+     der Ausschnitt mit fahrt: "hoch" von unten nach oben durch, dann
+     sieht man es im Lauf der Einblendung ganz. */
+  monitorRahmen: [6.5, 17.0, 34.0, 34.0],
   monitor: [
-    { ein:  8.2, aus: 14.4, bild: "bilder/jahresrueckblick-crew.png",
-      rahmen: [6.4, 16.6, 34.1, 40.1] },
-    { ein: 14.4, aus: 20.1, seite: true,
-      rahmen: [10.0, 22.1, 30.8, 33.7] },
-    { ein: 20.1, aus: 24.3, bild: "bilder/artjom-frosch.png",
-      rahmen: [13.0, 14.8, 24.4, 50.1] }
+    { ein:  8.2, aus: 14.4, bild: "bilder/jahresrueckblick-crew.png" },
+    { ein: 14.4, aus: 20.1, seite: true },
+    { ein: 20.1, aus: 24.3, bild: "bilder/artjom-frosch.png", fahrt: "hoch" }
   ],
 
   uhrzeit: "20:00",
@@ -821,7 +826,8 @@ function setzeRahmen(r) {
 
     // Jeder Eintrag darf eine eigene Groesse haben
     if (eintrag !== letzterEintrag) {
-      if (eintrag && eintrag.rahmen) setzeRahmen(eintrag.rahmen);
+      const r = (eintrag && eintrag.rahmen) || KONFIG.monitorRahmen;
+      if (eintrag && r) setzeRahmen(r);
       // Der Kalender wird nur neu eingepasst, wenn er selbst dran ist.
       // Sonst rechnet er waehrend des Ausblendens noch einmal um.
       if (eintrag && eintrag.seite) requestAnimationFrame(function () { passeSeiteEin(true); });
@@ -834,6 +840,16 @@ function setzeRahmen(r) {
       if (pfad) { bildEl.src = pfad; } else { bildEl.removeAttribute("src"); }
     }
     bildEl.style.opacity = pfad ? "1" : "0";
+
+    /* Hochformat im Querformatkasten: der Ausschnitt wandert von unten
+       nach oben, damit das ganze Bild einmal zu sehen ist. */
+    if (pfad && eintrag && eintrag.fahrt === "hoch") {
+      const d = Math.max(0.5, eintrag.aus - eintrag.ein);
+      const q = Math.max(0, Math.min(1, (clip.currentTime - eintrag.ein) / d));
+      bildEl.style.objectPosition = "50% " + (100 - 100*q).toFixed(1) + "%";
+    } else if (pfad) {
+      bildEl.style.objectPosition = "50% 50%";
+    }
 
     if (!zeigeSeite && !pfad) szene(t);
 
@@ -935,6 +951,7 @@ function takt() {
       monitor.classList.remove("sichtbar");
       phaseClip.classList.remove("aktiv");
       setTimeout(function () { phaseVoll.classList.add("aktiv"); }, 280);
+      el("laufband").classList.remove("sichtbar");   // nur im Studio
     }
     let treffer = 0;
     for (let i = 0; i < KONFIG.strecke.length; i++) {

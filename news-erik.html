@@ -326,7 +326,7 @@ body.justiert .griff { display: block; }
   <div class="ort" id="ortmarke"></div>
 
   <div class="laufband" id="laufband">
-    <div class="marke"><i></i>EILMELDUNGEN</div>
+    <div class="marke"><i></i>KURZ GEMELDET</div>
     <div class="spur"><div class="zug" id="zug"></div></div>
   </div>
 
@@ -694,6 +694,10 @@ function starte(i) {
       x.elemente.forEach(e => { e.style.display = "none"; e.classList.remove("sichtbar"); });
     }
   });
+
+  // Das Laufband gehoert ins Studio. Waehrend einer Vollbild-Bildstrecke
+  // waere es nur im Weg.
+  el("laufband").classList.toggle("sichtbar", t.art === "studio");
 
   if (t.art === "studio") {
     ton.pause();

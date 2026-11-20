@@ -435,7 +435,7 @@ body.justiert .griff { display: block; }
   <div class="ort" id="ortmarke"></div>
 
   <div class="laufband" id="laufband">
-    <div class="marke"><i></i>EILMELDUNGEN</div>
+    <div class="marke"><i></i>KURZ GEMELDET</div>
     <div class="spur"><div class="zug" id="zug"></div></div>
   </div>
 
@@ -804,6 +804,8 @@ let letzterLinks = -2, letzterRechts = -2, abschnitt = "";
 function takt() {
   const t = clip.currentTime;
   const istSchalte = t >= KONFIG.schalteAb && t < KONFIG.studioAb;
+  // Das Laufband gehoert ins Studio, nicht in die Schalte nach draussen
+  el("laufband").classList.toggle("sichtbar", !clip.paused && !istSchalte);
   const neuerAbschnitt = t < KONFIG.schalteAb ? "studio-vor"
                         : istSchalte ? "schalte" : "studio-nach";
   if (neuerAbschnitt !== abschnitt) abschnitt = neuerAbschnitt;
