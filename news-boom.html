@@ -472,6 +472,30 @@ KONFIG.strecke.map(x => x.bild)
   .forEach(p => { const v = new Image(); v.src = p; });
 
 /* ---------- Themenkasten ---------- */
+/* ---------- Fahrt im Themenkasten ----------
+   Steht im Eintrag ein eigener Zoom, gilt der. Sonst faehrt jeder
+   zweite Kasten von selbst: Richtung, Ursprung und Weite kommen aus
+   dem Dateinamen, die Weite waechst mit der Standzeit. Die anderen
+   stehen still, sonst wird es unruhig. */
+function fahrtImKasten(t, i, pfad) {
+  const dauer = Math.max(1, t.aus - t.ein);
+  if (t.zoom) {
+    return { von: t.zoom[0], bis: t.zoom[1], ursprung: t.ursprung || "50% 50%" };
+  }
+  if (i % 2 === 1) return null;
+  let h = i * 2654435761;
+  for (let k = 0; k < pfad.length; k++) h = (h * 31 + pfad.charCodeAt(k)) | 0;
+  const a = Math.abs(h);
+  const klein = 1.015;
+  const gross = klein + Math.min(0.12, 0.014 * dauer);
+  const hinein = (a % 2) === 0;
+  return {
+    von: (hinein ? klein : gross).toFixed(3),
+    bis: (hinein ? gross : klein).toFixed(3),
+    ursprung: (34 + (a >>> 3) % 32) + "% " + (30 + (a >>> 9) % 38) + "%"
+  };
+}
+
 function setzeThema(i) {
   if (i === aktiverThema) return;
   aktiverThema = i;
@@ -486,14 +510,17 @@ function setzeThema(i) {
       img.style.objectPosition = t.ausschnitt[t.bilder.indexOf(pfad)];
     }
     themaBild.appendChild(img);
-    if (t.zoom) {
+    const f = fahrtImKasten(t, i, pfad);
+    if (f) {
       const dauer = Math.max(1, t.aus - t.ein);
-      img.style.transformOrigin = t.ursprung || "50% 50%";
+      img.style.transformOrigin = f.ursprung;
       img.style.transition = "none";
-      img.style.transform = "scale(" + t.zoom[0] + ")";
+      img.style.transform = "scale(" + f.von + ")";
       void img.offsetWidth;
       img.style.transition = "transform " + dauer + "s linear";
-      img.style.transform = "scale(" + t.zoom[1] + ")";
+      img.style.transform = "scale(" + f.bis + ")";
+    } else {
+      img.style.transform = "scale(1.02)";
     }
   });
   el("thema-titel").textContent = t.titel;

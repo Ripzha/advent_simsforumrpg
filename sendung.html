@@ -286,19 +286,29 @@ rueckvideo.src = RUECKKEHR;
    Anlaufen des Videos faellt nicht auf. */
 const VORLAUF = { wisch: 1000, kennung: 1400, rueckkehr: 7000, ohne: 420 };
 
+/* Luft vor und nach einer Senderkennung. Der Wischer braucht keine, der
+   laeuft ueber das Bild. Die Kennung dagegen steht fuer sich:
+   Block — kurz schwarz — Kennung — kurz schwarz — Werbung. */
+const LUFT = { wisch: 0, kennung: 320, rueckkehr: 320, ohne: 0 };
+
 /* Der Vorlauf laeuft, der Rahmenwechsel passiert dahinter. */
 function spieleVorlauf(art) {
   if (art === "ohne") return VORLAUF.ohne;
   const v = (art === "kennung") ? kennvideo
           : (art === "rueckkehr") ? rueckvideo : wischer;
-  try {
-    v.currentTime = 0;
-    v.classList.add("an");
-    const p = v.play();
-    if (p && p.catch) p.catch(() => {});
-    if (art === "wisch") { wischton.currentTime = 0; wischton.play().catch(() => {}); }
-  } catch (e) {}
-  return VORLAUF[art] || VORLAUF.wisch;
+  const luft = LUFT[art] || 0;
+  const los = function () {
+    try {
+      v.currentTime = 0;
+      v.classList.add("an");
+      const p = v.play();
+      if (p && p.catch) p.catch(function () {});
+      if (art === "wisch") { wischton.currentTime = 0; wischton.play().catch(function () {}); }
+    } catch (e) {}
+  };
+  if (luft) setTimeout(los, luft); else los();
+  // Luft davor, der Vorlauf selbst, Luft danach
+  return luft + (VORLAUF[art] || VORLAUF.wisch) + luft;
 }
 function vorlaufWeg() {
   wischer.classList.remove("an");
@@ -525,7 +535,7 @@ function spiele(i) {
     const uebrig = losAb - Date.now();
 
     // Kurz vor Schluss den Vorlauf wegnehmen, damit er ausblenden kann
-    if (!abgeblendet && uebrig <= ABBLENDE) {
+    if (!abgeblendet && uebrig <= ABBLENDE + (LUFT[art] || 0)) {
       abgeblendet = true;
       vorlaufWeg();
     }
