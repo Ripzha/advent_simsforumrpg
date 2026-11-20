@@ -271,6 +271,37 @@ body.justiert .griff { display: block; }
   font-size: clamp(12px, 1.6vw, 24px); letter-spacing: 0.1em; padding: 1.5em;
 }
 .platz.klein { font-size: clamp(9px, 1.0vw, 15px); letter-spacing: 0.06em; padding: 0.6em; }
+
+/* ---------- Abspann ----------
+   Laufende Rolle am linken Rand, wie am Ende einer Nachrichtensendung.
+   Oben und unten weich auslaufend, damit nichts hart abgeschnitten wirkt. */
+.abspann {
+  position: absolute; left: 5.4%; top: 7%; bottom: 19%;
+  width: 31%; z-index: 16; overflow: hidden;
+  opacity: 0; transition: opacity 0.9s ease;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 11%, #000 89%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 11%, #000 89%, transparent 100%);
+}
+.abspann.sichtbar { opacity: 1; }
+.abspann::before {
+  content: ""; position: absolute; inset: 0 -12% 0 -10%;
+  background: linear-gradient(to right,
+    rgba(4,10,20,0.80) 0%, rgba(4,10,20,0.62) 55%, rgba(4,10,20,0) 100%);
+}
+.abspann-liste {
+  position: absolute; left: 0; right: 0; top: 0;
+  padding-right: 6%; will-change: transform;
+}
+.abspann .gruppe { margin-bottom: 1.7em; }
+.abspann .was {
+  font-family: var(--eng); font-weight: 600; font-size: 0.74rem;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--messing-hell); margin-bottom: 0.3em;
+}
+.abspann .wer {
+  font-size: 1.02rem; color: var(--weiss); line-height: 1.5;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
 </style>
 </head>
 <body>
@@ -305,6 +336,10 @@ body.justiert .griff { display: block; }
       <div class="name" id="binde-name"></div>
       <div class="rolle" id="binde-rolle"></div>
     </div>
+  </div>
+
+  <div class="abspann" id="abspann">
+    <div class="abspann-liste" id="abspann-liste"></div>
   </div>
 
   <div class="ort" id="ortmarke"></div>
@@ -431,6 +466,56 @@ const KONFIG = {
           ort: "Irgendwann kommt ein Rätsel",
           bilder: ["bilder/tuerchen-3.png"] }
       ]
+    },
+
+    /* ---------- Block 23 · Verabschiedung ----------
+       Ton laeuft von 0,35 bis 73,76. Dazu laeuft links der Abspann.    */
+    {
+      art:   "studio",
+      name:  "23 · Verabschiedung",
+      clip:  "clips/23-abschied-studio.mp4",
+      kasten: { links: "58.6%", oben: "15%", breite: "36%" },
+      ton:   "clips/23-abschied-studio.mp3",
+      binde: { ein: 0.6, aus: 6.0 },
+      thema: [],
+
+      // Der Abspann setzt ein, nachdem der erste Satz gesprochen ist
+      abspannAb: 4.5,
+      abspann: [
+        { was: "SimsWelt News", wer: ["Sondersendung zum Heiligen Abend"] },
+        { was: "Moderation",   wer: ["Konstanze Immalaut"] },
+        { was: "Wetter",       wer: ["Artjom Komarow"] },
+        { was: "Aus dem Gemeindehaus", wer: ["Riva Babylon"] },
+        { was: "Eilmeldung",   wer: ["Ripzha", "Vaas Del Toro"] },
+        { was: "Im Rückblick", wer: [
+            "Remy und Henry",
+            "Iona, Shane, Lorna",
+            "Yitzhak Hanan",
+            "Jack",
+            "Boom Boom und Bite",
+            "Dennah und Blaze",
+            "Vaas Del Toro",
+            "Rulo",
+            "Veronika",
+            "Viktor und Lilly",
+            "Erik",
+            "Gary",
+            "Misty",
+            "Chip und Zoe",
+            "Viola",
+            "Delsyn und Maryama",
+            "Jonah",
+            "Frau Blücher",
+            "Jake",
+            "Nicole",
+            "Katherine"
+          ] },
+        { was: "Werbung",      wer: ["ATLAS", "SimsWelt News, das Magazin"] },
+        { was: "Der Kalender", wer: ["Vierundzwanzig Türchen",
+                                     "Vierundzwanzig Beiträge"] },
+        { was: "Adventskalender 2026", wer: ["simsforumrpg.de"] },
+        { was: "",             wer: ["Nichts davon ist erfunden"] }
+      ]
     }
 
   ]
@@ -530,6 +615,44 @@ function setzeKasten(t) {
   w.setProperty("--thema-breite", k.breite);
 }
 
+/* ---------- Abspann ----------
+   Die Rolle wird einmal aufgebaut und dann ueber die Laufzeit des Teils
+   von unten nach oben durchgeschoben. Der Weg richtet sich nach der
+   tatsaechlichen Hoehe der Liste, stimmt also auch, wenn Namen
+   dazukommen.                                                          */
+function baueAbspann(liste) {
+  const w = el("abspann-liste");
+  w.innerHTML = "";
+  liste.forEach((g) => {
+    const d = document.createElement("div");
+    d.className = "gruppe";
+    if (g.was) {
+      const a = document.createElement("div");
+      a.className = "was"; a.textContent = g.was;
+      d.appendChild(a);
+    }
+    (g.wer || []).forEach((n) => {
+      const b = document.createElement("div");
+      b.className = "wer"; b.textContent = n;
+      d.appendChild(b);
+    });
+    w.appendChild(d);
+  });
+}
+
+function setzeAbspann(t, z, d) {
+  const a = el("abspann");
+  if (!t.abspann) { a.classList.remove("sichtbar"); return; }
+  const ein = (t.abspannAb === undefined) ? 3.0 : t.abspannAb;
+  const aus = (d || 0) - 0.8;
+  a.classList.toggle("sichtbar", z >= ein);
+  if (z < ein || aus <= ein) return;
+  const anteil = Math.max(0, Math.min(1, (z - ein) / (aus - ein)));
+  const liste  = el("abspann-liste");
+  const weg    = a.clientHeight + liste.offsetHeight;
+  liste.style.transform = "translateY(" + (a.clientHeight - anteil * weg).toFixed(1) + "px)";
+}
+
 /* ---------- Themenkasten ---------- */
 function setzeThema(i, liste) {
   if (i === aktiverThema) return;
@@ -578,6 +701,8 @@ function starte(i) {
 
   thema.classList.remove("sichtbar");
   binde.classList.remove("sichtbar");
+  el("abspann").classList.remove("sichtbar");
+  if (t.abspann) baueAbspann(t.abspann);
   setzeOrt("");
   el("clip-fehlt").classList.remove("zeig");
 
@@ -656,6 +781,7 @@ function zeichne() {
   if (t.art === "studio") {
     const b = t.binde;
     if (b) binde.classList.toggle("sichtbar", z >= b.ein && z < b.aus);
+    setzeAbspann(t, z, d);
     let i = -1;
     (t.thema || []).forEach((x, k) => { if (z >= x.ein && z < x.aus) i = k; });
     setzeThema(i, t.thema);
