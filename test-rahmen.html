@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rahmen</title>
+<style>html,body{margin:0;background:#111;color:#eee;font:14px system-ui}</style>
+</head>
+<body>
+<audio id="ton" src="clips/logo-wisch-ton.mp3" preload="auto"></audio>
+<script>
+/* Diese Seite tut nichts von selbst. Die Messseite greift auf
+   document.getElementById("ton") zu und ruft dort play() auf. */
+window.parent.postMessage({ pruef: "bereit", wer: location.search }, "*");
+</script>
+</body>
+</html>

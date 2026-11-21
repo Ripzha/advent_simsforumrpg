@@ -139,6 +139,23 @@ html, body {
 .leiste button:hover { background: var(--weiss); }
 .leiste .hinweis { flex: 0 0 auto; color: var(--silber); }
 
+/* Auf dem Handy gibt es keine Maus: die Leiste kommt beim Tippen und
+   muss mit dem Finger treffbar sein. Der Hinweistext hat da keinen
+   Platz, und die Blockkette sitzt in einer eigenen Zeile. */
+@media (max-width: 760px), (pointer: coarse) {
+  .leiste {
+    flex-wrap: wrap; gap: 0.5em 0.7em; padding: 0.6em 0.7em 0.9em;
+  }
+  .leiste .hinweis { display: none; }
+  .leiste .stand { order: 1; min-width: 0; flex: 1 1 auto; font-size: 11px; }
+  .leiste .kette { order: 3; flex: 1 1 100%; }
+  .leiste .kette span { height: 18px; }
+  .leiste button {
+    order: 2; font-size: 13px; padding: 0.7em 1.05em;
+    min-width: 3.6em; min-height: 44px;      /* Fingerbreite */
+  }
+}
+
 /* ---------- Startbildschirm ---------- */
 .start {
   position: absolute; inset: 0; z-index: 90;
@@ -163,33 +180,41 @@ html, body {
   font-size: clamp(11px, 1.3vw, 20px); letter-spacing: 0.4em;
   text-indent: 0.4em; text-transform: uppercase; color: rgba(201,214,228,0.82);
 }
+/* Ein Knopf, und der soll gross sein: das hier ist eine Sendung,
+   kein Videoschrank, aus dem man sich Stuecke herausklickt. */
 .start button {
-  font-family: var(--eng); font-weight: 700; font-size: clamp(13px, 1.4vw, 22px);
-  letter-spacing: 0.16em; text-transform: uppercase; color: var(--nacht);
-  background: var(--messing); border: none; padding: 0.8em 2.8em; cursor: pointer;
+  margin-top: 0.6rem;
+  font-family: var(--eng); font-weight: 700; font-size: clamp(16px, 2vw, 30px);
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--nacht);
+  background: var(--messing); border: none;
+  padding: 0.95em 2.6em; cursor: pointer; border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(201,153,47,0.5), 0 0 44px rgba(201,153,47,0.28);
+  transition: transform 0.15s ease, background 0.2s ease;
 }
-.start button:hover { background: var(--messing-hell); }
+.start button:hover { background: var(--messing-hell); transform: translateY(-1px); }
+.start button:active { transform: translateY(1px); }
 
-/* Blockliste auf dem Startbildschirm */
-.liste {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 0.55rem; width: min(900px, 92%); margin-top: 0.4rem;
+/* Tippaufforderung — nur wenn der Browser den Ton sperrt */
+.tipp {
+  position: absolute; inset: 0; z-index: 95; display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+  background: rgba(4,10,20,0.92); border: none; width: 100%;
+  font-family: var(--eng); font-weight: 700; font-size: clamp(15px, 2vw, 26px);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--messing-hell);
+  cursor: pointer;
 }
-.liste a {
-  display: block; text-decoration: none; padding: 0.7em 0.9em;
-  background: rgba(8,25,46,0.8); border-left: 3px solid var(--messing);
-  transition: background 0.2s ease;
+.tipp.an { display: flex; }
+.tipp i {
+  display: block; width: 4.4rem; height: 4.4rem; border-radius: 50%;
+  background: var(--messing); position: relative;
 }
-.liste a:hover { background: rgba(14,38,68,0.95); }
-.liste a b {
-  display: block; font-family: var(--marke); font-weight: 800;
-  font-size: 15px; color: var(--weiss);
+.tipp i::after {
+  content: ""; position: absolute; left: 38%; top: 28%;
+  border-left: 1.35rem solid var(--nacht);
+  border-top: 0.95rem solid transparent; border-bottom: 0.95rem solid transparent;
 }
-.liste a span {
-  display: block; margin-top: 0.2em; font-family: var(--eng); font-weight: 600;
-  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--messing-hell);
-}
+.tipp small { font-family: var(--text); font-size: 13px; letter-spacing: 0;
+              text-transform: none; color: rgba(201,214,228,0.6); }
 .start small {
   font-family: var(--text); font-size: clamp(10px, 0.95vw, 13px);
   color: rgba(201,214,228,0.5); text-align: center; max-width: 42em;
@@ -225,12 +250,17 @@ html, body {
   <h1>S<i class="raute"></i>MSWELT<span class="news">&nbsp;NEWS</span></h1>
   <div class="linie"></div>
   <p>Sondersendung · Durchlauf</p>
-  <button id="start-knopf">Alles abspielen</button>
-  <div class="liste" id="start-liste"></div>
-  <small>Einzeln anschauen: auf einen Block klicken. Beim Durchlauf wird der jeweils
-         nächste Block im Hintergrund geladen. Die Sendung ist noch nicht vollständig —
-         es laufen nur die fertigen Blöcke.</small>
+  <button id="start-knopf">Sendung starten</button>
+  <small>22 Minuten · am besten mit Ton und im Vollbild. Während der Sendung
+         kommt unten eine Leiste zum Vor- und Zurückspringen — am Handy
+         einmal aufs Bild tippen.</small>
 </div>
+
+<button class="tipp" id="tipp">
+  <i></i>
+  <span>Antippen</span>
+  <small>Safari erlaubt den Ton erst nach einer Berührung.</small>
+</button>
 
 <script>
 /* ===================================================================
@@ -356,29 +386,50 @@ function leisteWecken() {
   if (!leisteAn) return;
   zeigeLeiste(true);
   clearTimeout(leisteUhr);
-  leisteUhr = setTimeout(() => zeigeLeiste(false), 2600);
+  /* Mit dem Finger braucht man laenger als mit der Maus. */
+  const ruhe = (window.matchMedia &&
+                matchMedia("(pointer: coarse)").matches) ? 4500 : 2600;
+  leisteUhr = setTimeout(() => zeigeLeiste(false), ruhe);
 }
 document.addEventListener("mousemove", leisteWecken);
 document.addEventListener("mousedown", leisteWecken);
+document.addEventListener("touchstart", leisteWecken, { passive: true });
 
-/* ---------- Startbildschirm aufbauen ---------- */
-(function baueListe() {
-  const l = el("start-liste");
-  BLOECKE.forEach((b, i) => {
-    const a = document.createElement("a");
-    a.href = b.datei;
-    a.innerHTML = "<b>" + b.titel + "</b><span>Block " + b.nummer + " · " + laenge(b.dauer) + "</span>";
-    a.addEventListener("click", (e) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey) return;   // in neuem Tab öffnen zulassen
-      e.preventDefault();
-      el("start").classList.add("weg");
-      leisteWecken();
-      baueKette();
-      spiele(i);
-    });
-    l.appendChild(a);
+/* ---------- Tonsperre loesen ----------
+   Auf dem Handy darf eine Seite Ton nur abspielen, wenn der Benutzer
+   darin getippt hat, und die Sperre haengt am einzelnen Tonelement:
+   was im Tippen selbst einmal play() bekommt, darf spaeter von alleine.
+   Darum beruehrt der erste Tipp jedes Element, das die Sendung braucht
+   — auch die im schon geladenen Rahmen. Lautstaerke auf null, damit
+   das Loesen nicht zu hoeren ist; stumm schalten darf man nicht, eine
+   stumme Wiedergabe loest die Sperre nicht. */
+function loeseTonsperre() {
+  const alle = [wischton, wischer, kennvideo, rueckvideo];
+  rahmen.forEach((f) => {
+    if (!f) return;
+    try {
+      const d = f.contentDocument;
+      if (d) Array.prototype.push.apply(
+        alle, Array.prototype.slice.call(d.querySelectorAll("video, audio")));
+    } catch (e) {}
   });
-})();
+  alle.forEach((m) => {
+    if (!m) return;
+    if (!m.paused && m.currentTime > 0) return;        // laeuft schon
+    let laut = 1;
+    try {
+      laut = m.volume;
+      m.volume = 0;
+      const p = m.play();
+      const zurueck = function () {
+        try { m.pause(); m.currentTime = 0; m.volume = laut; } catch (e) {}
+      };
+      if (p && p.then) p.then(zurueck, zurueck); else setTimeout(zurueck, 0);
+    } catch (e) {
+      try { m.volume = laut; } catch (e2) {}
+    }
+  });
+}
 
 function laenge(s) {
   const m = Math.floor(s / 60), r = Math.round(s % 60);
@@ -435,6 +486,9 @@ function richteRahmenHer(f) {
     d.addEventListener("keydown", (e) => taste(e), true);
     d.addEventListener("mousemove", leisteWecken, true);
     d.addEventListener("mousedown", leisteWecken, true);
+    /* Am Handy gibt es keine Maus. Ein Tipp im Bild holt die Leiste —
+       der Tipp landet im Rahmen, darum muss der Rahmen ihn melden. */
+    d.addEventListener("touchstart", leisteWecken, { capture: true, passive: true });
   } catch (e) {}
 }
 
@@ -597,6 +651,7 @@ function spiele(i) {
       clearTimeout(ladeAnzeige);
       versteckeLaden();
       ueberwache(f, i);
+      beobachteStart(f, i);
       ladeVor(i + 1);
     }
   }, 50);
@@ -618,6 +673,9 @@ function ueberwache(f, i) {
   uhr = setInterval(() => {
     const m = medium(f);
     const s = el("kette").children[i];
+
+    // Laeuft es, ist die Tippaufforderung erledigt
+    if (selbstmelder || (m && !m.paused && m.currentTime > 0.1)) zeigeTipp(false);
 
     // Selbstmelder: Fortschritt an der Uhr, Ende kommt per Meldung
     if (selbstmelder) {
@@ -703,10 +761,45 @@ function fertig() {
 
 /* ---------- Bedienung ---------- */
 el("start-knopf").addEventListener("click", () => {
+  loeseTonsperre();                 // muss im Tippen selbst passieren
   el("start").classList.add("weg");
   leisteWecken();
   baueKette();
   spiele(0);
+});
+
+/* ---------- Tippaufforderung ----------
+   Wenn der Browser den Ton trotzdem sperrt, steht der Block bei 0 und
+   nichts passiert. Dann kommt diese Flaeche: ein echter Tipp darauf
+   loest die Sperre fuer den gerade geladenen Rahmen und startet ihn
+   neu. Lieber ein Tipp als eine Sendung, die stumm steht. */
+let tippUhr = null;
+function zeigeTipp(an) {
+  el("tipp").classList.toggle("an", !!an);
+}
+function beobachteStart(f, i) {
+  clearTimeout(tippUhr);
+  tippUhr = setTimeout(() => {
+    const m = medium(f);
+    const laeuft = m && !m.paused && m.currentTime > 0.1;
+    if (!laeuft) zeigeTipp(true);
+  }, 3500);
+}
+el("tipp").addEventListener("click", () => {
+  zeigeTipp(false);
+  const f = rahmen[vorn];
+  if (!f) return;
+  loeseTonsperre();
+  try {
+    const d = f.contentDocument;
+    const k = d && d.getElementById("start-knopf");
+    if (k) k.click();
+  } catch (e) {}
+  clearTimeout(tippUhr);
+  tippUhr = setTimeout(() => {
+    const m = medium(f);
+    if (!(m && !m.paused && m.currentTime > 0.1)) zeigeTipp(true);
+  }, 3500);
 });
 el("knopf-weiter").addEventListener("click", () => spiele(index + 1));
 el("knopf-zurueck").addEventListener("click", () => { ohneWischer = true; spiele(Math.max(0, index - 1)); });
@@ -733,6 +826,14 @@ function taste(e) {
   if (e.key === "ArrowLeft")  { e.preventDefault(); m.currentTime = Math.max(0, m.currentTime - weite); }
 }
 document.addEventListener("keydown", taste);
+
+/* ---------- Ersten Block vorladen ----------
+   Zwei Gruende. Erstens faengt die Sendung dann ohne Warten an.
+   Zweitens, und wichtiger: der Rahmen ist damit schon da, wenn der
+   Benutzer auf den Startknopf tippt — nur so kann derselbe Tipp die
+   Tonsperre fuer die Medien darin loesen. Ein Rahmen, der erst nach
+   dem Tippen entsteht, bekommt vom Tipp nichts mehr mit. */
+ladeIn(1, 0);
 </script>
 </body>
 </html>

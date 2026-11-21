@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tonprüfung Handy</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; background: #0b0d12; color: #e8ecf4;
+               font: 16px/1.45 -apple-system, system-ui, sans-serif; }
+  .huelle { max-width: 34rem; margin: 0 auto; padding: 1.4rem 1.1rem 4rem; }
+  h1 { font-size: 1.25rem; margin: 0 0 .3rem; }
+  p.hin { color: #9aa6bd; margin: 0 0 1.2rem; }
+  button#los { display: block; width: 100%; padding: 1.1rem; font-size: 1.1rem;
+               font-weight: 600; border: 0; border-radius: .7rem;
+               background: #2f6df6; color: #fff; }
+  button#los:disabled { background: #2a3142; color: #7d879b; }
+  ol { list-style: none; margin: 1.6rem 0 0; padding: 0; }
+  li { display: flex; gap: .7rem; align-items: flex-start;
+       padding: .7rem .2rem; border-top: 1px solid #1e2534; }
+  .zeichen { width: 1.6rem; text-align: center; font-size: 1.1rem; flex: none; }
+  .warte { color: #6b7488; }
+  .ja { color: #3ddc84; }
+  .nein { color: #ff5f56; }
+  .was { font-weight: 600; }
+  .grund { display: block; color: #8d97ad; font-size: .85rem;
+           word-break: break-word; }
+  #ergebnis { margin-top: 1.6rem; padding: 1rem; border-radius: .7rem;
+              background: #151a25; display: none; }
+  #ergebnis.an { display: block; }
+  #ergebnis b { display: block; margin-bottom: .3rem; }
+  iframe { width: 1px; height: 1px; border: 0; position: absolute;
+           left: -9999px; top: 0; }
+</style>
+</head>
+<body>
+<div class="huelle">
+  <h1>Tonprüfung</h1>
+  <p class="hin">Einmal tippen, dann ungefähr zwölf Sekunden nicht anfassen.
+     Es kommt mehrmals ein kurzer Wischton — das ist der Prüfton.</p>
+
+  <button id="los">Prüfung starten</button>
+
+  <ol id="liste"></ol>
+
+  <div id="ergebnis"></div>
+</div>
+
+<audio id="eigen" src="clips/logo-wisch-ton.mp3" preload="auto"></audio>
+<iframe id="vorab1" src="test-rahmen.html?a" allow="autoplay"></iframe>
+<iframe id="vorab2" src="test-rahmen.html?b" allow="autoplay"></iframe>
+
+<script>
+const PROBEN = [
+  { id: "A", was: "Ton in dieser Seite selbst" },
+  { id: "B", was: "Ton im vorher geladenen Rahmen, sofort beim Tippen" },
+  { id: "C", was: "Ton im vorher geladenen Rahmen, 2 Sekunden später" },
+  { id: "D", was: "Ton in einem Rahmen, der erst nach dem Tippen entsteht" },
+  { id: "E", was: "derselbe Rahmen ohne allow=autoplay" }
+];
+const stand = {};
+const liste = document.getElementById("liste");
+
+PROBEN.forEach(p => {
+  const li = document.createElement("li");
+  li.innerHTML = '<span class="zeichen warte" id="z-' + p.id + '">·</span>' +
+                 '<span><span class="was">' + p.id + ' — ' + p.was + '</span>' +
+                 '<span class="grund" id="g-' + p.id + '">wartet</span></span>';
+  liste.appendChild(li);
+});
+
+function melde(id, ok, grund) {
+  stand[id] = ok;
+  const z = document.getElementById("z-" + id);
+  z.textContent = ok ? "✓" : "✗";
+  z.className = "zeichen " + (ok ? "ja" : "nein");
+  document.getElementById("g-" + id).textContent = grund;
+}
+
+/* Eine Probe: play() rufen, 600 ms später nachsehen, ob die Uhr
+   wirklich gelaufen ist. Eine erfuellte Zusage allein beweist nichts. */
+function probe(id, ton) {
+  if (!ton) { melde(id, false, "kein Tonelement gefunden"); return; }
+  let absage = "";
+  try {
+    ton.currentTime = 0;
+    ton.volume = 1;
+    ton.muted = false;
+    const p = ton.play();
+    if (p && p.catch) p.catch(e => { absage = (e && e.name ? e.name : "Fehler") +
+                                              ": " + (e && e.message ? e.message : ""); });
+  } catch (e) {
+    absage = "Ausnahme: " + e;
+  }
+  setTimeout(() => {
+    const lief = !ton.paused && ton.currentTime > 0.03;
+    melde(id, lief, lief ? "gelaufen bis " + ton.currentTime.toFixed(2) + " s"
+                         : (absage || "play() ohne Absage, aber die Uhr stand still")
+                           + " · readyState " + ton.readyState);
+    try { ton.pause(); } catch (e) {}
+    pruefeFertig();
+  }, 600);
+}
+
+function rahmenTon(f) {
+  try { return f.contentDocument.getElementById("ton"); } catch (e) { return null; }
+}
+
+/* D und E: Rahmen entsteht erst nach dem Tippen — genau der Fall,
+   den die Sendung braucht. */
+function neuerRahmen(id, mitErlaubnis) {
+  const f = document.createElement("iframe");
+  if (mitErlaubnis) f.setAttribute("allow", "autoplay");
+  f.src = "test-rahmen.html?" + id;
+  f.addEventListener("load", () => {
+    setTimeout(() => probe(id, rahmenTon(f)), 120);
+  });
+  document.body.appendChild(f);
+}
+
+function pruefeFertig() {
+  if (Object.keys(stand).length < PROBEN.length) return;
+  const k = document.getElementById("ergebnis");
+  let text;
+  if (stand.D) {
+    text = "<b>Alles gut auf dieser Seite.</b>Safari erlaubt den Ton auch in " +
+           "Rahmen, die nach dem Tippen entstehen. Dann liegt der Fehler in " +
+           "der Sendung nicht an der Tonsperre.";
+  } else if (stand.C || stand.B) {
+    text = "<b>Das ist der Fehler.</b>Ton geht nur in Rahmen, die beim Tippen " +
+           "schon da waren. Die Sendung baut jeden Block erst danach — darum " +
+           "startet nichts. Muss umgebaut werden.";
+  } else if (stand.A) {
+    text = "<b>Harte Sperre.</b>Ton geht nur in der Seite selbst, in keinem " +
+           "Rahmen. Die Tonspur muss komplett in die Übersicht wandern.";
+  } else {
+    text = "<b>Gar kein Ton.</b>Nicht mal in dieser Seite. Dann ist es nicht " +
+           "die Tonsperre: Stromsparmodus, stummer Schalter oder die Datei " +
+           "selbst. Bitte Stromsparmodus aus und nochmal.";
+  }
+  k.innerHTML = text + '<div class="grund" style="margin-top:.6rem">Kennung: ' +
+                PROBEN.map(p => p.id + (stand[p.id] ? "+" : "-")).join(" ") +
+                ' · ' + navigator.userAgent + '</div>';
+  k.classList.add("an");
+}
+
+document.getElementById("los").addEventListener("click", function () {
+  this.disabled = true;
+  this.textContent = "läuft …";
+
+  // A und B muessen im Tippen selbst passieren
+  probe("A", document.getElementById("eigen"));
+  probe("B", rahmenTon(document.getElementById("vorab1")));
+
+  // C: derselbe Aufbau, aber spaeter — pruefst die haftende Freigabe
+  setTimeout(() => probe("C", rahmenTon(document.getElementById("vorab2"))), 2500);
+
+  // D und E: Rahmen entstehen erst jetzt
+  setTimeout(() => neuerRahmen("D", true),  5000);
+  setTimeout(() => neuerRahmen("E", false), 7500);
+});
+</script>
+</body>
+</html>
