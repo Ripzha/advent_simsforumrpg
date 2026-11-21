@@ -457,11 +457,22 @@ const KONFIG = {
       kasten: { links: "5.4%", oben: "15%", breite: "36%" },
       ton:   "clips/17-camp-studio.mp3",
       binde: { ein: 0.6, aus: 6.5 },
+      /* Der dritte Satz zaehlt fuenf Namen auf. Statt ein Bild ueber
+         die ganze Aufzaehlung zu legen, wechselt das Kaestchen mit:
+         erst das Camp, dann Gesicht fuer Gesicht in der Reihenfolge,
+         in der Konstanze sie nennt. Die Zeiten stammen aus der
+         Pausenmessung — die Leitung beginnt bei 8,82 s.             */
       thema: [
-        { ein: 1.4, aus: 8.4, titel: "Camp Firefly", ort: "Marina und Margarethe",
-          bilder: ["bilder/camp-vorbereitung.png"] },
-        { ein: 8.8, aus: 17.2, titel: "Die Leitung", ort: "Delsyn Fisher",
-          bilder: ["bilder/camp-aufsicht.png"] }
+        { ein: 1.2, aus: 8.5, titel: "Camp Firefly", ort: "Granite Falls",
+          bilder: ["bilder/camp-statue.png"] },
+        { ein: 9.0, aus: 11.2, titel: "Die Leitung", ort: "Delsyn Fisher",
+          bilder: ["bilder/camp-aufsicht.png"] },
+        { ein: 11.2, aus: 13.4, titel: "Die Leitung", ort: "Maryama Loh-Se",
+          bilder: ["bilder/camp-uniformen.png"] },
+        { ein: 13.4, aus: 15.4, titel: "Unterstützung", ort: "Alma Garcia-Klein",
+          bilder: ["bilder/camp-nachdenklich.png"] },
+        { ein: 15.4, aus: 17.3, titel: "Unterstützung", ort: "Marina und Margarethe",
+          bilder: ["bilder/camp-vorbereitung.png"] }
       ]
     },
 
@@ -485,9 +496,6 @@ const KONFIG = {
         { bild: "bilder/camp-leitung.png",     ein:  5.6,
           zoom: [1.22, 1.06], schwenk: [-3, 3], ursprung: "50% 45%",
           ort: "Maryama und Chip" },
-        { bild: "bilder/camp-uniformen.png",   ein:  8.2,
-          zoom: [1.06, 1.20], schwenk: [3, -2], ursprung: "50% 50%",
-          ort: "Theo" },
         // Am ersten Tag führte Maryama Loh-Se eine Gruppe in den Wald
         { bild: "bilder/camp-wald.png",        ein: 10.8,
           zoom: [1.06, 1.20], schwenk: [3, -3], ursprung: "50% 50%",
