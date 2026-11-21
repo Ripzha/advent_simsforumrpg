@@ -831,11 +831,20 @@ function starte(i) {
     }
     const p = clip.play();
     if (p && p.catch) p.catch(() => {});
+    /* Waehrend der Studioteil laeuft, ist das Tonelement frei. Also
+       schon jetzt die Tonspur des naechsten Teils hineinladen — sonst
+       faengt sie beim Umschalten bei readyState 0 an und es entsteht
+       eine Luecke von gut hundert Millisekunden. */
+    const naechster = KONFIG.teile[i + 1];
+    if (naechster && naechster.ton && ton.src.indexOf(naechster.ton) < 0) {
+      try { ton.src = naechster.ton; ton.load(); } catch (e) {}
+    }
   } else {
     phaseClip.classList.remove("aktiv");
     clip.pause();
     t.elemente.forEach(e => { e.style.display = "block"; });
-    ton.src = t.ton;
+    // schon vorgeladen? Dann die Quelle nicht neu setzen, das wirft sie weg
+    if (ton.src.indexOf(t.ton) < 0) ton.src = t.ton;
     ton.currentTime = 0;
     const p = ton.play();
     if (p && p.catch) p.catch(() => {});
