@@ -82,7 +82,10 @@
   .note.verpasst { opacity: 0.25; }
 
   /* ---------- Klaviatur ---------- */
-  .klaviatur { position: relative; height: clamp(120px, 22vh, 180px); z-index: 4; display: flex; padding: 0 10px 10px; gap: 3px; }
+  .klaviatur { position: relative; height: clamp(120px, 22vh, 180px); z-index: 4; display: flex; padding: 0 10px 10px; gap: 3px; touch-action: none; }
+  /* touch-action wird nicht vererbt — jede Taste braucht die Regel selbst,
+     sonst erkennt iOS auf ihr weiterhin einen Doppeltipp und zoomt rein. */
+  .klaviatur *, .taste, .schwarz { touch-action: none; }
   .taste { position: relative; flex: 1; background: linear-gradient(180deg, #f8f4e8 0%, #eee6d0 88%, #d8cdb0 100%); border: 1px solid #b8ad90; border-radius: 0 0 8px 8px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px; user-select: none; transition: background 0.06s ease; }
   .taste:active, .taste.gedrueckt { background: linear-gradient(180deg, #eadfc2 0%, #dfd2ae 100%); }
   .taste.aufleuchten { background: linear-gradient(180deg, #ffedb8 0%, #f4d484 100%); }
@@ -512,6 +515,14 @@
     const el = e.target.closest('[data-note]');
     if (el) { e.preventDefault(); eingabe(el.dataset.note); }
   });
+  // Zweite Absicherung gegen den Doppeltipp-Zoom. iOS startet die Geste schon
+  // beim Berühren, die Eingabe selbst läuft über pointerdown.
+  klaviatur.addEventListener('touchstart', (e) => {
+    if (e.target.closest('[data-note]')) e.preventDefault();
+  }, { passive: false });
+  klaviatur.addEventListener('touchend', (e) => {
+    if (e.target.closest('[data-note]')) e.preventDefault();
+  }, { passive: false });
   document.addEventListener('keydown', (e) => {
     if (e.repeat) return;
     const note = KUERZEL_MAP[e.key.toUpperCase()];
@@ -541,6 +552,7 @@
 (function(){
   var letzterTipp = 0;
   function bedienelement(el){ return el && el.closest && el.closest('button, a'); }
+  function amKlavier(el){ return el && el.closest && el.closest('.klaviatur'); }
   document.addEventListener('touchend', function(e){
     if (bedienelement(e.target)) return;   // Knöpfe und Links normal lassen
     var jetzt = Date.now();
@@ -549,6 +561,7 @@
   }, { passive: false });
   // Pinch-Zoom (zwei Finger) blocken
   document.addEventListener('touchmove', function(e){
+    if (amKlavier(e.target)) { e.preventDefault(); return; }  // Akkorde mit zwei Fingern bleiben erlaubt
     if (e.touches && e.touches.length > 1) e.preventDefault();
   }, { passive: false });
   // Halte-Menü / Textauswahl / Safari-Gesten
