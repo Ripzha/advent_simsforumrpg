@@ -208,6 +208,13 @@ function zeige(i) {
 }
 
 function spiele(i) {
+  /* In der Sendung bringt die Uebersicht die Rueckkehrkennung selbst
+     mit (Block 16 hat vorlauf "rueckkehr"). Spielte die Seite sie
+     zusaetzlich, kaeme derselbe Ton zweimal — erst ein kurzer
+     Anschlag, dann die ganze Kennung. Einzeln geoeffnet laeuft sie
+     weiterhin, damit die Seite fuer sich vollstaendig bleibt. */
+  if (parent !== window && KONFIG.abschnitte[i] &&
+      KONFIG.abschnitte[i].id === "kennung") { fertig(); return; }
   if (i >= KONFIG.abschnitte.length) { fertig(); return; }
   nr = i;
   zeige(i);
