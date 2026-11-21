@@ -1400,7 +1400,6 @@
     if (globalOpened && !globalOpened.has(tag)) {
       globalOpened.add(tag);
       saveSet(`adventskalender_${globalJahr}_opened`, globalOpened);
-      registrierePuenktlich(tag);
       const el = doorElemente[tag];
       if (el) {
         el.classList.add('opened');
@@ -1409,8 +1408,9 @@
           el.querySelector('.door-thumb').innerHTML = `<img src="${daten.bild_url}" alt="" loading="lazy">`;
         }
       }
-      updateProgress();
     }
+    registrierePuenktlich(tag);
+    updateProgress();
   }
   function registrierePuenktlich(tag) {
     // Im Test-Modus zählt jedes Öffnen als pünktlich, damit die Belohnung testbar ist
@@ -1570,6 +1570,10 @@
             setTimeout(() => showModal(tag), reducedMotion ? 100 : 560);
           }
         } else {
+          // Auch beim erneuten Anklicken zählen. Sonst kommt im Test-Modus
+          // niemand auf 24, dessen Türchen vorher schon offen waren.
+          registrierePuenktlich(tag);
+          updateProgress();
           showModal(tag);
         }
       });
