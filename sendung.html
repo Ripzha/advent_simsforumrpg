@@ -704,6 +704,14 @@ function starte(f, nr, zwingen) {
       const genug = Math.min(3.0, m.duration * 0.5);
       if (b.length === 0 || b.end(b.length - 1) < genug) return false;
     }
+    /* Manche Blockseiten laden erst ihre Bilder und sperren ihren
+       Startknopf so lange ("Laedt... 34 / 39"). Ein Klick darauf
+       verpufft, und der Block bliebe stumm stehen. Also warten —
+       und wenn die Zeit abgelaufen ist, die Sperre aufheben. */
+    if (k.disabled) {
+      if (!zwingen) return false;
+      try { k.disabled = false; } catch (e) {}
+    }
     k.click();
     return true;
   } catch (e) { return false; }

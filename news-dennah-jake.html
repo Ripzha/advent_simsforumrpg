@@ -849,15 +849,37 @@ function setzeThema(i, liste) {
 
   const alte = Array.from(themaBild.querySelectorAll(".satz"));
   themaBild.appendChild(satz);
-  if (stand) {
-    requestAnimationFrame(() => satz.classList.add("sichtbar"));
-    alte.forEach((a) => {
-      a.classList.remove("sichtbar");
-      setTimeout(() => a.remove(), 520);
+  /* Erst zeigen, wenn das Bild wirklich da ist. Sonst klafft im
+     Kaestchen kurz ein Loch und es sieht aus, als lade es jedes Mal
+     neu — besonders, wenn man mitten in einen Block springt und die
+     Bilder gerade erst geholt werden. Das vorige Bild steht dann
+     einen Moment laenger stehen, der Kasten selbst bleibt. */
+  const offen = Array.prototype.slice.call(satz.querySelectorAll("img"))
+    .filter((x) => !x.complete || !x.naturalWidth);
+  let rest = offen.length;
+  const zeigen = function () {
+    if (rest < 0 || aktiverThema !== i) return;      // schon weiter
+    rest = -1;
+    if (stand) {
+      requestAnimationFrame(() => satz.classList.add("sichtbar"));
+      alte.forEach((a) => {
+        a.classList.remove("sichtbar");
+        setTimeout(() => a.remove(), 520);
+      });
+    } else {
+      alte.forEach((a) => a.remove());
+      satz.classList.add("sichtbar");
+    }
+    thema.classList.add("sichtbar");
+  };
+  if (!rest) zeigen();
+  else {
+    offen.forEach((x) => {
+      const ab = function () { if (--rest <= 0) zeigen(); };
+      x.addEventListener("load", ab, { once: true });
+      x.addEventListener("error", ab, { once: true });
     });
-  } else {
-    alte.forEach((a) => a.remove());
-    satz.classList.add("sichtbar");
+    setTimeout(zeigen, 1200);            // Notbremse, falls nichts kommt
   }
 
   // Die Zeile darunter wechselt mit einem kurzen Wegtauchen, nicht hart
@@ -885,7 +907,6 @@ function setzeThema(i, liste) {
     schreibe();
     zeile.classList.remove("wechsel");
   }
-  thema.classList.add("sichtbar");
 }
 
 /* ---------- Ortsmarke ---------- */
