@@ -338,6 +338,35 @@ body.justiert .griff { display: block; }
 
 
 <script>
+/* ---------- Ruhemodus ----------
+   Die Übersicht legt alle Blöcke schon beim Öffnen als Rahmen an, weil
+   Safari am Handy Ton nur in Rahmen erlaubt, die beim Tippen des
+   Zuschauers schon da waren. Ein Rahmen, der erst während der Sendung
+   entsteht, bleibt stumm. Damit beim Öffnen aber nicht alle Blöcke
+   zugleich ihre Dateien ziehen, hält eine Seite mit ?ruhig=1 jede
+   Quelle zurück, bis die Übersicht meldet, dass dieser Block dran ist. */
+const RUHIG = /[?&]ruhig=1/.test(location.search);
+const wartendeQuellen = [];
+function spaeter(element, pfad) {
+  if (RUHIG && !holeMedien.schon) { wartendeQuellen.push([element, pfad]); return element; }
+  element.src = pfad;
+  return element;
+}
+function holeMedien() {
+  if (holeMedien.schon) return;
+  holeMedien.schon = true;
+  wartendeQuellen.forEach(function (w) { try { w[0].src = w[1]; } catch (e) {} });
+  wartendeQuellen.length = 0;
+}
+window.addEventListener("message", function (e) {
+  if (e && e.data && e.data.swn === "vorladen") holeMedien();
+});
+/* Wer die Seite einzeln öffnet und von Hand startet, braucht die
+   Dateien sofort — das hier läuft vor dem eigenen Starthandler. */
+document.addEventListener("click", function (e) {
+  const z = e.target;
+  if (z && z.closest && z.closest("#start-knopf, #start")) holeMedien();
+}, true);
 /* ===================================================================
    KONFIG
    Zeiten in Sekunden, jeweils ab Beginn der eigenen Tonspur.
@@ -454,7 +483,7 @@ const streckenElemente = KONFIG.strecke.map((s) => {
   const wrap = document.createElement("div");
   wrap.className = "kb";
   const img = document.createElement("img");
-  img.src = s.bild; img.alt = "";
+  img.alt = ""; spaeter(img, s.bild);
   // Fehlt ein Bild, wird dieser Schnitt uebersprungen statt schwarz zu bleiben
   s.fehlt = false;
   img.addEventListener("error", () => { s.fehlt = true; });
@@ -465,14 +494,14 @@ const streckenElemente = KONFIG.strecke.map((s) => {
   return wrap;
 });
 
-ident.src = KONFIG.ident;
-clip.src  = KONFIG.clip;
+spaeter(ident, KONFIG.ident);
+spaeter(clip, KONFIG.clip);
 clip.addEventListener("error", () => el("clip-fehlt").classList.add("zeig"));
 
 // Bilder vorladen
 KONFIG.strecke.map(x => x.bild)
   .concat(KONFIG.thema.reduce((a, t) => a.concat(t.bilder), []))
-  .forEach(p => { const v = new Image(); v.src = p; });
+  .forEach(p => { const v = new Image(); spaeter(v, p); });
 
 /* ---------- Themenkasten ---------- */
 /* ---------- Fahrt im Themenkasten ----------
@@ -507,7 +536,7 @@ function setzeThema(i) {
   themaBild.innerHTML = "";
   t.bilder.forEach((pfad) => {
     const img = document.createElement("img");
-    img.src = pfad; img.alt = "";
+    img.alt = ""; spaeter(img, pfad);
     img.addEventListener("error", () => { img.style.background = "#0b1a2e"; });
     if (t.ausschnitt && t.ausschnitt[t.bilder.indexOf(pfad)]) {
       img.style.objectPosition = t.ausschnitt[t.bilder.indexOf(pfad)];

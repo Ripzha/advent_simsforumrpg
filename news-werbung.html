@@ -297,6 +297,35 @@ html, body {
 <audio id="ton" preload="auto" style="display:none"></audio>
 
 <script>
+/* ---------- Ruhemodus ----------
+   Die Übersicht legt alle Blöcke schon beim Öffnen als Rahmen an, weil
+   Safari am Handy Ton nur in Rahmen erlaubt, die beim Tippen des
+   Zuschauers schon da waren. Ein Rahmen, der erst während der Sendung
+   entsteht, bleibt stumm. Damit beim Öffnen aber nicht alle Blöcke
+   zugleich ihre Dateien ziehen, hält eine Seite mit ?ruhig=1 jede
+   Quelle zurück, bis die Übersicht meldet, dass dieser Block dran ist. */
+const RUHIG = /[?&]ruhig=1/.test(location.search);
+const wartendeQuellen = [];
+function spaeter(element, pfad) {
+  if (RUHIG && !holeMedien.schon) { wartendeQuellen.push([element, pfad]); return element; }
+  element.src = pfad;
+  return element;
+}
+function holeMedien() {
+  if (holeMedien.schon) return;
+  holeMedien.schon = true;
+  wartendeQuellen.forEach(function (w) { try { w[0].src = w[1]; } catch (e) {} });
+  wartendeQuellen.length = 0;
+}
+window.addEventListener("message", function (e) {
+  if (e && e.data && e.data.swn === "vorladen") holeMedien();
+});
+/* Wer die Seite einzeln öffnet und von Hand startet, braucht die
+   Dateien sofort — das hier läuft vor dem eigenen Starthandler. */
+document.addEventListener("click", function (e) {
+  const z = e.target;
+  if (z && z.closest && z.closest("#start-knopf, #start")) holeMedien();
+}, true);
 /* ===================================================================
    KONFIG — ein Eintrag je Spot.
    art: punch, whip, whipL, kipp, fahrt, ruhig
@@ -427,7 +456,7 @@ el("wahl").addEventListener("change", function () {
 function ladeSpot(s) {
   spot = s;
   aktuell = -1;
-  ton.src = s.ton;
+  spaeter(ton, s.ton);
   el("werbemarke").textContent = s.marke || "Werbung";
   szene.innerHTML = "";
   ebenen = s.schnitte.map(function (sch) {
@@ -763,7 +792,7 @@ document.addEventListener("keydown", function (e) {
     const b = new Image();
     b.addEventListener("load", nachsehen);
     b.addEventListener("error", nachsehen);
-    b.src = u;
+    spaeter(b, u);
   });
   // Notbremse: nach 15 Sekunden geht es auch ohne
   setTimeout(freigeben, 15000);

@@ -101,6 +101,35 @@ button:hover { background: var(--messing-hell); }
 </div>
 
 <script>
+/* ---------- Ruhemodus ----------
+   Die Übersicht legt alle Blöcke schon beim Öffnen als Rahmen an, weil
+   Safari am Handy Ton nur in Rahmen erlaubt, die beim Tippen des
+   Zuschauers schon da waren. Ein Rahmen, der erst während der Sendung
+   entsteht, bleibt stumm. Damit beim Öffnen aber nicht alle Blöcke
+   zugleich ihre Dateien ziehen, hält eine Seite mit ?ruhig=1 jede
+   Quelle zurück, bis die Übersicht meldet, dass dieser Block dran ist. */
+const RUHIG = /[?&]ruhig=1/.test(location.search);
+const wartendeQuellen = [];
+function spaeter(element, pfad) {
+  if (RUHIG && !holeMedien.schon) { wartendeQuellen.push([element, pfad]); return element; }
+  element.src = pfad;
+  return element;
+}
+function holeMedien() {
+  if (holeMedien.schon) return;
+  holeMedien.schon = true;
+  wartendeQuellen.forEach(function (w) { try { w[0].src = w[1]; } catch (e) {} });
+  wartendeQuellen.length = 0;
+}
+window.addEventListener("message", function (e) {
+  if (e && e.data && e.data.swn === "vorladen") holeMedien();
+});
+/* Wer die Seite einzeln öffnet und von Hand startet, braucht die
+   Dateien sofort — das hier läuft vor dem eigenen Starthandler. */
+document.addEventListener("click", function (e) {
+  const z = e.target;
+  if (z && z.closest && z.closest("#start-knopf, #start")) holeMedien();
+}, true);
 /* ===================================================================
    KONFIG — zwei Abschnitte, die nacheinander laufen.
    14  Werbespot fürs Magazin, fertiges Video mit Stimme und Musik
@@ -124,7 +153,7 @@ let leisteAn = true;
 
 KONFIG.abschnitte.forEach(function (a) {
   const v = el(a.id);
-  v.src = a.datei;
+  spaeter(v, a.datei);
   v.addEventListener("error", function () { el("fehlt").classList.add("an"); });
 });
 

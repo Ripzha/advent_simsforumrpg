@@ -400,6 +400,35 @@ body.justiert .griff { display: block; }
 
 
 <script>
+/* ---------- Ruhemodus ----------
+   Die Übersicht legt alle Blöcke schon beim Öffnen als Rahmen an, weil
+   Safari am Handy Ton nur in Rahmen erlaubt, die beim Tippen des
+   Zuschauers schon da waren. Ein Rahmen, der erst während der Sendung
+   entsteht, bleibt stumm. Damit beim Öffnen aber nicht alle Blöcke
+   zugleich ihre Dateien ziehen, hält eine Seite mit ?ruhig=1 jede
+   Quelle zurück, bis die Übersicht meldet, dass dieser Block dran ist. */
+const RUHIG = /[?&]ruhig=1/.test(location.search);
+const wartendeQuellen = [];
+function spaeter(element, pfad) {
+  if (RUHIG && !holeMedien.schon) { wartendeQuellen.push([element, pfad]); return element; }
+  element.src = pfad;
+  return element;
+}
+function holeMedien() {
+  if (holeMedien.schon) return;
+  holeMedien.schon = true;
+  wartendeQuellen.forEach(function (w) { try { w[0].src = w[1]; } catch (e) {} });
+  wartendeQuellen.length = 0;
+}
+window.addEventListener("message", function (e) {
+  if (e && e.data && e.data.swn === "vorladen") holeMedien();
+});
+/* Wer die Seite einzeln öffnet und von Hand startet, braucht die
+   Dateien sofort — das hier läuft vor dem eigenen Starthandler. */
+document.addEventListener("click", function (e) {
+  const z = e.target;
+  if (z && z.closest && z.closest("#start-knopf, #start")) holeMedien();
+}, true);
 /* ===================================================================
    KONFIG — Eriks Geburt
 
@@ -574,7 +603,7 @@ KONFIG.teile.forEach((teil) => {
     wrap.className = "kb";
     wrap.style.display = "none";
     const img = document.createElement("img");
-    img.src = s.bild; img.alt = "";
+    img.alt = ""; spaeter(img, s.bild);
     s.fehlt = false;
     img.addEventListener("error", () => {
       s.fehlt = true;
@@ -595,17 +624,17 @@ KONFIG.teile.forEach((teil) => {
 /* Ton und Video aller Teile im Voraus holen, damit der Wechsel nicht
    stockt. Die Dateien liegen danach im Zwischenspeicher des Browsers. */
 KONFIG.teile.forEach(function (t) {
-  if (t.ton) { const a = new Audio(); a.preload = "auto"; a.src = t.ton; t.tonVor = a; }
+  if (t.ton) { const a = new Audio(); a.preload = "auto"; spaeter(a, t.ton); t.tonVor = a; }
   if (t.clip) {
     const v = document.createElement("video");
-    v.preload = "auto"; v.muted = true; v.src = t.clip; t.clipVor = v;
+    v.preload = "auto"; v.muted = true; spaeter(v, t.clip); t.clipVor = v;
   }
 });
 
 /* Bilder vorladen */
 KONFIG.teile.forEach((t) => {
-  if (t.art === "strecke") t.bilder.forEach(s => { const v = new Image(); v.src = s.bild; });
-  else (t.thema || []).forEach(x => x.bilder.forEach(p => { const v = new Image(); v.src = p; }));
+  if (t.art === "strecke") t.bilder.forEach(s => { const v = new Image(); spaeter(v, s.bild); });
+  else (t.thema || []).forEach(x => x.bilder.forEach(p => { const v = new Image(); spaeter(v, p); }));
 });
 
 /* ---------- Bewegung in Standbildern ---------- */
@@ -674,7 +703,7 @@ function setzeThema(i, liste) {
   satz.className = "satz";
   t.bilder.forEach((p, k) => {
     const img = document.createElement("img");
-    img.src = p; img.alt = "";
+    img.alt = ""; spaeter(img, p);
     img.addEventListener("error", () => {
       img.remove();
       const d = document.createElement("div");
@@ -767,7 +796,7 @@ function loeseStandbild() {
 const wischer  = el("wischer");
 const wischton = new Audio("clips/logo-wisch-ton.mp3");
 wischton.preload = "auto";
-wischer.src = "clips/globus-wisch.webm";
+spaeter(wischer, "clips/globus-wisch.webm");
 
 /* Innerhalb eines Blocks laeuft der Globus nicht mehr im Bild — er
    gehoert zwischen die Bloecke, nicht zwischen zwei Themen derselben

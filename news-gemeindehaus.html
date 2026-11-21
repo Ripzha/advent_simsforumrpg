@@ -479,6 +479,35 @@ body.justiert .griff { display: block; }
 </div>
 
 <script>
+/* ---------- Ruhemodus ----------
+   Die Übersicht legt alle Blöcke schon beim Öffnen als Rahmen an, weil
+   Safari am Handy Ton nur in Rahmen erlaubt, die beim Tippen des
+   Zuschauers schon da waren. Ein Rahmen, der erst während der Sendung
+   entsteht, bleibt stumm. Damit beim Öffnen aber nicht alle Blöcke
+   zugleich ihre Dateien ziehen, hält eine Seite mit ?ruhig=1 jede
+   Quelle zurück, bis die Übersicht meldet, dass dieser Block dran ist. */
+const RUHIG = /[?&]ruhig=1/.test(location.search);
+const wartendeQuellen = [];
+function spaeter(element, pfad) {
+  if (RUHIG && !holeMedien.schon) { wartendeQuellen.push([element, pfad]); return element; }
+  element.src = pfad;
+  return element;
+}
+function holeMedien() {
+  if (holeMedien.schon) return;
+  holeMedien.schon = true;
+  wartendeQuellen.forEach(function (w) { try { w[0].src = w[1]; } catch (e) {} });
+  wartendeQuellen.length = 0;
+}
+window.addEventListener("message", function (e) {
+  if (e && e.data && e.data.swn === "vorladen") holeMedien();
+});
+/* Wer die Seite einzeln öffnet und von Hand startet, braucht die
+   Dateien sofort — das hier läuft vor dem eigenen Starthandler. */
+document.addEventListener("click", function (e) {
+  const z = e.target;
+  if (z && z.closest && z.closest("#start-knopf, #start")) holeMedien();
+}, true);
 /* ===================================================================
    KONFIG — alle Zeiten in Sekunden des Videos
    =================================================================== */
@@ -563,7 +592,7 @@ const el = (id) => document.getElementById(id);
 const clip = el("clip");
 let leisteAn = true, zeitenAn = false, justierAn = false;
 
-clip.src = KONFIG.clip;
+spaeter(clip, KONFIG.clip);
 clip.addEventListener("error", () => el("clip-fehlt").classList.add("zeig"));
 el("uhr").textContent = KONFIG.uhrzeit;
 
@@ -576,7 +605,7 @@ el("uhr").textContent = KONFIG.uhrzeit;
 function baueKasten(rahmen, liste) {
   liste.forEach(e => {
     const img = document.createElement("img");
-    img.src = e.bild; img.alt = "";
+    img.alt = ""; spaeter(img, e.bild);
     e.fehlt = false;
     img.addEventListener("error", () => { e.fehlt = true; });
     rahmen.appendChild(img);
@@ -651,7 +680,7 @@ function waehle(liste, t, ende) {
 const regen = el("regen");
 const rCtx  = regen.getContext("2d");
 const regenton = el("regenton");
-regenton.src = KONFIG.regen.ton;
+spaeter(regenton, KONFIG.regen.ton);
 regenton.volume = 0;
 
 /* ---------- Regenschleife ohne Naht ----------

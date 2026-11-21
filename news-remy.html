@@ -500,6 +500,35 @@ body.justiert .thema, body.justiert .binde, body.justiert .monitor {
 </div>
 
 <script>
+/* ---------- Ruhemodus ----------
+   Die Übersicht legt alle Blöcke schon beim Öffnen als Rahmen an, weil
+   Safari am Handy Ton nur in Rahmen erlaubt, die beim Tippen des
+   Zuschauers schon da waren. Ein Rahmen, der erst während der Sendung
+   entsteht, bleibt stumm. Damit beim Öffnen aber nicht alle Blöcke
+   zugleich ihre Dateien ziehen, hält eine Seite mit ?ruhig=1 jede
+   Quelle zurück, bis die Übersicht meldet, dass dieser Block dran ist. */
+const RUHIG = /[?&]ruhig=1/.test(location.search);
+const wartendeQuellen = [];
+function spaeter(element, pfad) {
+  if (RUHIG && !holeMedien.schon) { wartendeQuellen.push([element, pfad]); return element; }
+  element.src = pfad;
+  return element;
+}
+function holeMedien() {
+  if (holeMedien.schon) return;
+  holeMedien.schon = true;
+  wartendeQuellen.forEach(function (w) { try { w[0].src = w[1]; } catch (e) {} });
+  wartendeQuellen.length = 0;
+}
+window.addEventListener("message", function (e) {
+  if (e && e.data && e.data.swn === "vorladen") holeMedien();
+});
+/* Wer die Seite einzeln öffnet und von Hand startet, braucht die
+   Dateien sofort — das hier läuft vor dem eigenen Starthandler. */
+document.addEventListener("click", function (e) {
+  const z = e.target;
+  if (z && z.closest && z.closest("#start-knopf, #start")) holeMedien();
+}, true);
 /* ===================================================================
    KONFIG
    =================================================================== */
@@ -641,7 +670,7 @@ const streckenElemente = KONFIG.strecke.map((s) => {
   const wrap = document.createElement("div");
   wrap.className = "kb";
   const img = document.createElement("img");
-  img.src = s.bild; img.alt = "";
+  img.alt = ""; spaeter(img, s.bild);
   img.addEventListener("error", () => { wrap.style.background = "#0b1a2e"; });
   wrap.appendChild(img);
   wrap.style.transformOrigin = s.ursprung;
@@ -650,14 +679,14 @@ const streckenElemente = KONFIG.strecke.map((s) => {
   return wrap;
 });
 
-ident.src = KONFIG.ident;
-clip.src  = KONFIG.clip;
+spaeter(ident, KONFIG.ident);
+spaeter(clip, KONFIG.clip);
 clip.addEventListener("error", () => el("clip-fehlt").classList.add("zeig"));
 
 // Alle Bilder im Voraus laden, damit beim Umschalten nichts aufblitzt
 KONFIG.strecke.map((x) => x.bild)
   .concat(KONFIG.thema.reduce((a, t) => a.concat(t.bilder), []))
-  .forEach((pfad) => { const v = new Image(); v.src = pfad; });
+  .forEach((pfad) => { const v = new Image(); spaeter(v, pfad); });
 
 // Setzt die vier Monitorwerte auf einmal
 function setzeRahmen(r) {
@@ -742,7 +771,7 @@ function setzeRahmen(r) {
   (KONFIG.monitor || []).forEach(function (m) {
     if (!m.bild || bilder[m.bild]) return;
     const v = new Image();
-    v.src = m.bild;
+    spaeter(v, m.bild);
     v.dataset.ok = "1";
     v.addEventListener("error", function () { v.dataset.ok = ""; });
     bilder[m.bild] = v;
@@ -894,7 +923,7 @@ function setzeThema(i) {
   themaBild.innerHTML = "";
   t.bilder.forEach((pfad) => {
     const img = document.createElement("img");
-    img.src = pfad; img.alt = "";
+    img.alt = ""; spaeter(img, pfad);
     img.addEventListener("error", () => { img.style.background = "#0b1a2e"; });
     if (t.ausschnitt && t.ausschnitt[t.bilder.indexOf(pfad)]) {
       img.style.objectPosition = t.ausschnitt[t.bilder.indexOf(pfad)];

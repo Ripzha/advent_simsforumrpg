@@ -52,6 +52,10 @@ html, body {
   pointer-events: none;
 }
 .feld iframe.vorn { opacity: 1; pointer-events: auto; }
+/* Rahmen, die weder laufen noch als naechste dran sind, werden ganz
+   aus der Darstellung genommen — sonst rechnen vierzehn Seiten
+   gleichzeitig an ihren Bildfahrten und das Handy wird heiss. */
+.feld iframe.schlaeft { display: none; }
 
 /* ---------- Übergangsblende ---------- */
 .blende {
@@ -405,14 +409,6 @@ document.addEventListener("touchstart", leisteWecken, { passive: true });
    stumme Wiedergabe loest die Sperre nicht. */
 function loeseTonsperre() {
   const alle = [wischton, wischer, kennvideo, rueckvideo];
-  rahmen.forEach((f) => {
-    if (!f) return;
-    try {
-      const d = f.contentDocument;
-      if (d) Array.prototype.push.apply(
-        alle, Array.prototype.slice.call(d.querySelectorAll("video, audio")));
-    } catch (e) {}
-  });
   alle.forEach((m) => {
     if (!m) return;
     if (!m.paused && m.currentTime > 0) return;        // laeuft schon
@@ -448,26 +444,65 @@ function baueKette() {
   });
 }
 
-/* ---------- Rahmen verwalten ---------- */
-function neuerRahmen() {
-  const f = document.createElement("iframe");
-  f.setAttribute("allow", "autoplay; fullscreen");
-  f.setAttribute("scrolling", "no");
-  feld.insertBefore(f, blende);
-  return f;
+/* ---------- Rahmen verwalten ----------
+   Jeder Block bekommt seinen eigenen Rahmen, und zwar schon beim
+   Oeffnen der Uebersicht. Der Grund ist das Handy: Safari erlaubt Ton
+   nur in Rahmen, die beim Tippen des Zuschauers bereits da waren. Ein
+   Rahmen, der erst waehrend der Sendung entsteht, bleibt stumm —
+   gemessen am iPhone, NotAllowedError, auch mit allow=autoplay.
+   Damit dabei nicht vierzehn Bloecke gleichzeitig ihr Material ziehen,
+   starten die Seiten im Ruhemodus (?ruhig=1) und holen ihre Dateien
+   erst, wenn die Uebersicht ihnen sagt, dass sie dran sind. */
+function baueRahmen() {
+  BLOECKE.forEach((b, i) => {
+    const f = document.createElement("iframe");
+    f.setAttribute("allow", "autoplay; fullscreen");
+    f.setAttribute("scrolling", "no");
+    f.dataset.block = String(i);
+    f.className = "schlaeft";
+    f.addEventListener("load", () => {
+      richteRahmenHer(f);
+      sendeVorladen(f);
+    }, { once: true });
+    f.src = b.datei + "?ruhig=1";
+    feld.insertBefore(f, blende);
+    rahmen[i] = f;
+  });
 }
 
-function ladeIn(rahmenNr, i) {
-  if (i < 0 || i >= BLOECKE.length) return null;
-  if (!rahmen[rahmenNr]) rahmen[rahmenNr] = neuerRahmen();
-  const f = rahmen[rahmenNr];
-  if (f.dataset.block !== String(i)) {
-    f.dataset.block = String(i);
-    f.dataset.bereit = "";
-    f.addEventListener("load", () => richteRahmenHer(f), { once: true });
-    f.src = BLOECKE[i].datei;
-  }
-  return f;
+/* Dem Block sagen, dass er seine Dateien holen soll. Kommt die
+   Aufforderung, bevor die Seite steht, wird sie beim Laden nachgereicht. */
+function sendeVorladen(f) {
+  if (!f || f.dataset.soll !== "1" || f.dataset.geholt === "1") return;
+  try {
+    const d = f.contentDocument;
+    if (!d || d.readyState === "loading" || !f.contentWindow) return;
+    f.contentWindow.postMessage({ swn: "vorladen" }, "*");
+    f.dataset.geholt = "1";
+    f.dataset.seit = String(Date.now());
+  } catch (e) {}
+}
+function vorladen(i) {
+  const f = rahmen[i];
+  if (!f) return;
+  f.dataset.soll = "1";
+  sendeVorladen(f);
+}
+
+/* Nur der laufende und der naechste Rahmen bleiben in der Darstellung. */
+let schlafUhr = null;
+function zeigeRahmen(i) {
+  rahmen.forEach((r, n) => {
+    if (!r) return;
+    if (n === i || n === i + 1) r.classList.remove("schlaeft");
+    r.classList.toggle("vorn", n === i);
+  });
+  clearTimeout(schlafUhr);
+  schlafUhr = setTimeout(() => {
+    rahmen.forEach((r, n) => {
+      if (r && n !== i && n !== i + 1) r.classList.add("schlaeft");
+    });
+  }, 900);
 }
 
 /* ---------- Jeden Block im Rahmen herrichten ----------
@@ -537,6 +572,11 @@ function starte(f) {
       .filter(istProgramm)
       .filter((x) => x.src && x.duration && isFinite(x.duration))
       .sort((a, b) => b.duration - a.duration)[0];
+    /* Im Ruhemodus hat die Seite noch gar keine Quellen gesetzt. Dann
+       ist "kein Medium" kein Freibrief zum Starten, sondern heisst:
+       die Aufforderung ist gerade erst raus. Eine Sekunde Geduld. */
+    if (!m && f.dataset.geholt === "1" &&
+        Date.now() - (+f.dataset.seit || 0) < 1000) return false;
     if (m) {
       if (m.readyState < 3) return false;
       const b = m.buffered;
@@ -604,16 +644,12 @@ function spiele(i) {
     zeigeLaden(i);
   }
 
-  // Läuft der Block schon im hinteren Rahmen? Dann nur tauschen.
-  const hinten = 1 - vorn;
-  let f;
-  if (rahmen[hinten] && rahmen[hinten].dataset.block === String(i)) {
-    f = rahmen[hinten];
-    vorn = hinten;
-  } else {
-    f = ladeIn(vorn, i);
-  }
-  rahmen.forEach((r, n) => r && r.classList.toggle("vorn", n === vorn));
+  // Jeder Block hat seinen festen Rahmen — nur noch zeigen und holen.
+  const f = rahmen[i];
+  if (!f) { fertig(); return; }
+  vorn = i;
+  vorladen(i);
+  zeigeRahmen(i);
 
   /* Reihenfolge: der Vorlauf laeuft ganz durch, blendet ab, und erst
      danach faengt der Block an. So beginnt nie eine Stimme, waehrend
@@ -657,10 +693,10 @@ function spiele(i) {
   }, 50);
 }
 
-/* Den nächsten Block still im zweiten Rahmen laden */
+/* Den nächsten Block seine Dateien holen lassen */
 function ladeVor(i) {
   if (i >= BLOECKE.length) return;
-  ladeIn(1 - vorn, i);
+  vorladen(i);
 }
 
 /* Auf das Ende des Blocks warten */
@@ -827,13 +863,13 @@ function taste(e) {
 }
 document.addEventListener("keydown", taste);
 
-/* ---------- Ersten Block vorladen ----------
-   Zwei Gruende. Erstens faengt die Sendung dann ohne Warten an.
-   Zweitens, und wichtiger: der Rahmen ist damit schon da, wenn der
-   Benutzer auf den Startknopf tippt — nur so kann derselbe Tipp die
-   Tonsperre fuer die Medien darin loesen. Ein Rahmen, der erst nach
-   dem Tippen entsteht, bekommt vom Tipp nichts mehr mit. */
-ladeIn(1, 0);
+/* ---------- Alle Rahmen anlegen, den ersten vorladen ----------
+   Die Rahmen muessen stehen, bevor der Zuschauer tippt — sonst
+   verweigert Safari am Handy jedem spaeteren Rahmen den Ton. Material
+   holt sich zunaechst nur der erste Block; die uebrigen warten im
+   Ruhemodus, bis sie an der Reihe sind. */
+baueRahmen();
+vorladen(0);
 </script>
 </body>
 </html>
