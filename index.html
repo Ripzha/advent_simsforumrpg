@@ -318,14 +318,25 @@
   <div class="ak-mond-overlay" aria-hidden="true">
     <svg viewBox="398 -52 204 204" xmlns="http://www.w3.org/2000/svg">
       <g id="moon">
+        <!-- Die Sichel entsteht als Ausschnitt, nicht als dunkler Kreis obendrauf.
+             Weiss im Schnittbild bleibt sichtbar, Schwarz wird weggenommen.
+             Der Schattenkreis hat denselben Radius wie der Mond, sonst bleibt
+             rundherum ein heller Ring stehen und es sieht nach Finsternis aus. -->
+        <mask id="moon-sichel">
+          <circle cx="500" cy="46" r="40" fill="#ffffff"/>
+          <circle id="moon-schatten" cx="488" cy="46" r="37" fill="#000000"/>
+        </mask>
+        <!-- Dunst in der Luft: bleibt rund, der gehört nicht zum Mond -->
         <circle cx="500" cy="46" r="94" fill="#e8d8a8" opacity="0.05" class="moon-glow"/>
         <circle cx="500" cy="46" r="70" fill="#e8d8a8" opacity="0.10" class="moon-glow"/>
-        <circle cx="500" cy="46" r="52" fill="#e8d8a8" opacity="0.18"/>
-        <circle cx="500" cy="46" r="37" fill="#f4e8c8"/>
-        <circle id="moon-schatten" cx="514" cy="43" r="34" fill="#0a1428"/>
-        <circle cx="481" cy="40" r="4" fill="#d8c89a" opacity="0.6"/>
-        <circle cx="473" cy="54" r="3" fill="#d8c89a" opacity="0.55"/>
-        <circle cx="486" cy="62" r="2.2" fill="#d8c89a" opacity="0.5"/>
+        <!-- Mond selbst: Scheibe und Krater folgen der Sichel. Ein enger Schein
+             darf hier nicht liegen, sonst leuchtet ein Ring um die dunkle Seite. -->
+        <g mask="url(#moon-sichel)">
+          <circle cx="500" cy="46" r="37" fill="#f4e8c8"/>
+          <circle cx="519" cy="40" r="4" fill="#d8c89a" opacity="0.6"/>
+          <circle cx="527" cy="54" r="3" fill="#d8c89a" opacity="0.55"/>
+          <circle cx="514" cy="62" r="2.2" fill="#d8c89a" opacity="0.5"/>
+        </g>
       </g>
     </svg>
   </div>
@@ -641,8 +652,11 @@
   // --- Mondphase: Schattenkreis wandert über die 24 Tage weg (Tag 1 schmale Sichel → Tag 24 Vollmond) ---
   function setzeMondphase(today) {
     const t = Math.max(1, Math.min(24, today || 1));
-    const offset = 14 + ((t - 1) / 23) * 68; // 14 (schmal) → 82 (weg = Vollmond)
-    document.getElementById('moon-schatten').setAttribute('cx', 500 + offset);
+    // Der Schatten wandert nach links und gibt den Mond von rechts frei —
+    // so wie der zunehmende Mond auf der Nordhalbkugel wirklich aussieht.
+    // 12 = schmale Sichel, 80 = Schatten ganz weg (Vollmond)
+    const offset = 12 + ((t - 1) / 23) * 68;
+    document.getElementById('moon-schatten').setAttribute('cx', 500 - offset);
   }
 
   // --- Sternschnuppen (ab 20.12. gelegentlich, im Finale als Burst) ---
