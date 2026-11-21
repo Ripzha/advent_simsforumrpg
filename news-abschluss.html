@@ -543,12 +543,12 @@ const KONFIG = {
            die Nummern im Kalender getauscht wurden, die Dateinamen aber nicht. */
         /* Die Montage am Anfang soll quer durch den Kalender gehen und
            nicht sechsmal denselben Beitragenden zeigen. Deshalb keine
-           fortlaufende Reihe mehr, sondern gemischt — darunter zwei
-           Tuerchen, die sonst nirgends laufen (08 und 24). Die 08 ist
+           fortlaufende Reihe mehr, sondern gemischt. Die 24 bleibt draussen,
+           das ist die Sendung selbst. Neu dabei ist die 08; sie ist
            ein Scan mit 4961 Pixeln Breite, die laeuft als verkleinerte
            Fassung, sonst stockt die Seite beim Laden. */
         { ein:  0.6, aus:  2.4, titel: "Der Kalender", ort: "Vierundzwanzig Türchen",
-          bilder: ["bilder/tuerchen-24.png"] },
+          bilder: ["bilder/tuerchen-06.png"] },
         { ein:  2.4, aus:  4.2, titel: "Der Kalender", ort: "",
           bilder: ["bilder/tuerchen-13.png"] },
         { ein:  4.2, aus:  6.0, titel: "Der Kalender", ort: "",
@@ -993,7 +993,12 @@ function setzeThema(i, liste) {
     el("thema-titel").textContent = t.titel;
     el("thema-ort").textContent   = t.ort || "";
   };
-  if (stand) {
+  /* Steht dieselbe Unterschrift schon da — etwa waehrend der Kalender-
+     montage, wo sechs Bilder nacheinander unter "Der Kalender" laufen —
+     bleibt sie einfach stehen. Sonst zuckt sie bei jedem Bildwechsel. */
+  const gleich = el("thema-titel").textContent === t.titel &&
+                 el("thema-ort").textContent === (t.ort || "");
+  if (stand && !gleich) {
     zeile.dataset.marke = String(i);
     zeile.classList.add("wechsel");
     setTimeout(() => {
@@ -1001,6 +1006,8 @@ function setzeThema(i, liste) {
       schreibe();
       zeile.classList.remove("wechsel");
     }, 170);
+  } else if (stand && gleich) {
+    zeile.classList.remove("wechsel");
   } else {
     schreibe();
     zeile.classList.remove("wechsel");

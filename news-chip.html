@@ -702,7 +702,12 @@ function setzeThema(i, liste) {
     el("thema-titel").textContent = t.titel;
     el("thema-ort").textContent   = t.ort || "";
   };
-  if (stand) {
+  /* Steht dieselbe Unterschrift schon da — etwa waehrend der Kalender-
+     montage, wo sechs Bilder nacheinander unter "Der Kalender" laufen —
+     bleibt sie einfach stehen. Sonst zuckt sie bei jedem Bildwechsel. */
+  const gleich = el("thema-titel").textContent === t.titel &&
+                 el("thema-ort").textContent === (t.ort || "");
+  if (stand && !gleich) {
     zeile.dataset.marke = String(i);
     zeile.classList.add("wechsel");
     setTimeout(() => {
@@ -710,6 +715,8 @@ function setzeThema(i, liste) {
       schreibe();
       zeile.classList.remove("wechsel");
     }, 170);
+  } else if (stand && gleich) {
+    zeile.classList.remove("wechsel");
   } else {
     schreibe();
     zeile.classList.remove("wechsel");
