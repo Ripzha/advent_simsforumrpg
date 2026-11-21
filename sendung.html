@@ -431,6 +431,7 @@ let rahmen = [];          // zwei Rahmen im Wechsel
 let vorn = 0;             // welcher gerade zu sehen ist
 let index = -1;           // laufender Block
 let uhr = null;
+let warteUhr = null;      // wartet darauf, dass ein Block startbereit ist
 let leisteAn = true;
 let leisteUhr = null;
 
@@ -569,11 +570,33 @@ function vorladen(i) {
   sendeVorladen(f);
 }
 
+/* Einen Rahmen zum Schweigen bringen. Noetig, seit die Rahmen stehen
+   bleiben statt neu geladen zu werden: ein Rahmen, den man nur
+   unsichtbar macht, spielt seinen Ton munter weiter. Wer vorspult,
+   hoerte sonst den alten Block unter dem neuen — und nach mehreren
+   Spruengen alle uebereinander. */
+function haltRahmen(f) {
+  if (!f) return;
+  try {
+    const d = f.contentDocument;
+    if (!d) return;
+    Array.prototype.slice.call(d.querySelectorAll("video, audio")).forEach((m) => {
+      try { m.pause(); } catch (e) {}
+      try { if (m.currentTime > 0) m.currentTime = 0; } catch (e) {}
+    });
+    /* Ton anhalten reicht nicht: das Skript der Blockseite laeuft
+       weiter und spielt von selbst den naechsten Teil an. Also sagen
+       wir ihr, dass sie still sein soll, bis sie wieder dran ist. */
+    if (f.contentWindow) f.contentWindow.postMessage({ swn: "halt" }, "*");
+  } catch (e) {}
+}
+
 /* Nur der laufende und der naechste Rahmen bleiben in der Darstellung. */
 let schlafUhr = null;
 function zeigeRahmen(i) {
   rahmen.forEach((r, n) => {
     if (!r) return;
+    if (n !== i) haltRahmen(r);
     if (n === i || n === i + 1) r.classList.remove("schlaeft");
     r.classList.toggle("vorn", n === i);
   });
@@ -719,6 +742,10 @@ function spiele(i) {
   selbstmelder = false;
 
   clearInterval(uhr);
+  /* Wer schnell mehrmals vorspult, hatte sonst mehrere Warteschleifen
+     nebeneinander laufen — und eine alte startete spaeter noch ihren
+     laengst verlassenen Block. */
+  clearInterval(warteUhr);
 
   // Vor dem ersten Block kein Vorlauf — da kommt das Intro der Sendung.
   const mitVorlauf = (i > 0 && !ohneWischer);
@@ -747,6 +774,9 @@ function spiele(i) {
   if (!f) { fertig(); return; }
   vorn = i;
   vorladen(i);
+  try {
+    if (f.contentWindow) f.contentWindow.postMessage({ swn: "weiter" }, "*");
+  } catch (e) {}
   zeigeRahmen(i);
 
   /* Reihenfolge: der Vorlauf laeuft ganz durch, blendet ab, und erst
@@ -762,7 +792,7 @@ function spiele(i) {
   let abgeblendet = false;
   let versuche = 0;
 
-  const warte = setInterval(() => {
+  const warte = warteUhr = setInterval(() => {
     versuche++;
     const uebrig = losAb - Date.now();
 
@@ -905,6 +935,7 @@ function versteckeLaden() { el("laden").classList.remove("an"); }
 
 function fertig() {
   clearInterval(uhr);
+  rahmen.forEach(haltRahmen);        // am Ende spielt nichts mehr nach
   // Zum Schluss die kurze Senderkennung, danach erst die Schlusstafel.
   kennvideo.currentTime = 0;
   kennvideo.classList.add("an");

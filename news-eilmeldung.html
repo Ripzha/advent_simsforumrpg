@@ -356,9 +356,11 @@ const RUHIG = /[?&]ruhig=1/.test(location.search);
    Zuschauer nicht in dieser Seite getippt hat —, soll die Übersicht
    es erfahren und die Tippaufforderung zeigen, statt dass die Absage
    stillschweigend verschluckt wird und nichts weiter passiert. */
+let gestoppt = false;
 (function () {
   const urspruenglich = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () {
+    if (gestoppt) { try { this.pause(); } catch (e) {} return Promise.resolve(); }
     const w = urspruenglich.apply(this, arguments);
     if (w && w.catch) w.catch(function (fehler) {
       if (fehler && fehler.name === "NotAllowedError" && parent !== window) {
@@ -382,6 +384,18 @@ function holeMedien() {
 }
 window.addEventListener("message", function (e) {
   if (!e || !e.data) return;
+  /* Die Übersicht stellt diese Seite still, weil ein anderer Block
+     dran ist. Nur anhalten genügt nicht — der eigene Ablauf würde
+     gleich den nächsten Teil anspielen. */
+  if (e.data.swn === "halt") {
+    gestoppt = true;
+    try {
+      Array.prototype.slice.call(document.querySelectorAll("video, audio"))
+        .forEach(function (m) { try { m.pause(); } catch (f) {} });
+    } catch (f) {}
+    return;
+  }
+  if (e.data.swn === "weiter") { gestoppt = false; return; }
   if (e.data.swn === "vorladen") { holeMedien(); return; }
   /* Die Übersicht lässt zu einem Teil dieser Seite springen. */
   if (e.data.swn === "springe") {
