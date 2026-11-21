@@ -762,18 +762,15 @@ const wischton = new Audio("clips/logo-wisch-ton.mp3");
 wischton.preload = "auto";
 wischer.src = "clips/globus-wisch.webm";
 
+/* Innerhalb eines Blocks laeuft der Globus nicht mehr im Bild — er
+   gehoert zwischen die Bloecke, nicht zwischen zwei Themen derselben
+   Moderation. Sein Ton bleibt: der markiert den Themenwechsel, ohne
+   das Bild zu unterbrechen. */
 function wische() {
   try {
-    wischer.currentTime = 0;
-    wischer.classList.add("an");
-    const p = wischer.play();
-    if (p && p.catch) p.catch(function () {});
     wischton.currentTime = 0;
     wischton.play().catch(function () {});
   } catch (e) {}
-  // Erst ausblenden, wenn der Wischer ganz durch ist — er ist am Ende
-  // am hellsten. Der laufende Teil liegt dann schon darunter.
-  setTimeout(function () { wischer.classList.remove("an"); }, 1000);
 }
 
 function starte(i) {
