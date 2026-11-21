@@ -248,8 +248,8 @@ html, body {
 <div class="leiste" id="leiste">
   <span class="stand" id="stand">—</span>
   <span class="kette" id="kette"></span>
-  <button id="knopf-zurueck">◀ Türchen</button>
-  <button id="knopf-weiter">Türchen ▶</button>
+  <button id="knopf-zurueck">◀ Zurück</button>
+  <button id="knopf-weiter">Weiter ▶</button>
   <button id="knopf-neu">Neu</button>
   <span class="hinweis">Leertaste pausiert · B blendet die Leiste ganz aus</span>
 </div>
@@ -299,7 +299,7 @@ const BLOECKE = [
   { nummer: "20b–24", titel: "Abschluss und Verabschiedung", datei: "news-abschluss.html", dauer: 129, vorlauf: "blende" }
 ];
 /* ---------- Sprungmarken ----------
-   Manche Bloecke tragen mehrere Tuerchen. Wo die Blockseite aus
+   Manche Bloecke tragen mehrere Beitraege. Wo die Blockseite aus
    getrennten Teilen besteht, laesst sich jeder Teil einzeln
    anspringen; die Laengen sind an den Tondateien gemessen. Bei 1–4
    und 8–9b laeuft alles in einer durchgehenden Aufnahme — die bleiben
@@ -492,7 +492,7 @@ function baueKette() {
   k.innerHTML = "";
   MARKEN.forEach((m, n) => {
     const s = document.createElement("span");
-    s.title = "Türchen " + m.nummer + " · " + m.titel;
+    s.title = m.nummer + " · " + m.titel;
     s.style.flex = m.dauer + " 1 0";      // breit wie lang
     s.innerHTML = "<i></i>";
     s.addEventListener("click", () => springe(n));
@@ -521,7 +521,7 @@ function zeigeFortschritt(block, verstrichen) {
     const b = s.querySelector("i");
     if (b) b.style.width = Math.min(100, im / (m.dauer || 1) * 100) + "%";
   }
-  el("stand").textContent = "Türchen " + m.nummer + " · " + m.titel +
+  el("stand").textContent = m.nummer + " · " + m.titel +
     "  " + laenge(Math.min(im, m.dauer)) + " / " + laenge(m.dauer);
 }
 

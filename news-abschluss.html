@@ -730,40 +730,40 @@ const KONFIG = {
         // Zu sehen gewesen: eigene Aufnahme, Themenkasten oder Bildstrecke
         // Jeder Name steht für sich auf einer eigenen Zeile
         { was: "Im Rückblick", wer: [
-            "Remy",
-            "Henry",
-            "Iona",
-            "Shane",
-            "Lorna",
+            "Remy LeBeau",
+            "Dr. Henry McCoy",
+            "Iona Hemsley",
+            "Shane McEven",
+            "Lorna Dane",
             "Yitzhak Hanan",
-            "Jack",
+            "Jack Elliot",
             "Boom Boom",
             "Bite",
-            "Dennah",
-            "Blaze",
+            "Dennah Delany",
+            "Sullivan 'Blaze' Blaisdell",
             "Vaas Del Toro",
-            "Veronika",
-            "Viktor",
-            "Lilly",
+            "Veronika Blanch",
+            "Viktor Nebeljäger",
+            "Lilly Nebeljäger",
             "Erik",
-            "Gary",
+            "Gerhard 'Gary' Bärenklau",
             "Misty",
-            "Chip",
+            "Adrian 'Chip' Töpfer",
             "Zoe",
-            "Viola",
+            "Viola Nebeljäger",
             "Delsyn Fisher",
-            "Maryama Loh-Se",
+            "Maryama 'Asha' Loh-Se",
             "Marina Winter",
             "Alma Garcia-Klein",
-            "Margarethe Töpfer",
-            "Theo",
-            "Jubilee",
-            "Eve",
+            "Margarethe "Marga" Töpfer",
+            "Theo Greentail",
+            "Jubilation Lee",
+            "Eve Monahr",
             "Jonah Omaciw Caleb Cheechoo",
             "Jake",
-            "Katherine",
+            "Katherine Pryde",
             "Rulo",
-            "Nicole",
+            "Nicole Bresk",
             "Die Haushälterin",
             "Frau Blücher"
           ] },
@@ -1310,7 +1310,29 @@ clip.addEventListener("error", () => {
   if (p && p.catch) p.catch(() => {});
 });
 
-clip.addEventListener("ended", () => { if (teilJetzt().art === "studio") starte(nr + 1); });
+/* ---------- Umschalten ins Vollbild ----------
+   Nicht auf "ended" warten: bis der nächste Ton wirklich klingt,
+   vergehen rund hundert Millisekunden, und die hört man als Stocken.
+   Also eine gute Zehntelsekunde früher umschalten — so lange ist am
+   Ende des Studioclips ohnehin nur noch stehendes Bild und Luft
+   (gemessen: mindestens 0,28 s, meist knapp eine Sekunde). */
+const TONVORLAUF = 0.24;
+let uebergeben = false;
+setInterval(function () {
+  const t = teilJetzt();
+  if (!t || t.art !== "studio") return;
+  if (!isFinite(clip.duration) || clip.duration <= 0) return;
+  const rest = clip.duration - clip.currentTime;
+  if (rest > TONVORLAUF + 0.4) { uebergeben = false; return; }   // neuer Studioteil
+  if (!uebergeben && !clip.paused && rest <= TONVORLAUF) {
+    uebergeben = true;
+    starte(nr + 1);
+  }
+}, 40);
+clip.addEventListener("ended", () => {
+  if (uebergeben) return;                      // schon vorher übergeben
+  if (teilJetzt().art === "studio") starte(nr + 1);
+});
 ton.addEventListener("ended",  () => { starte(nr + 1); });
 
 function ende() {

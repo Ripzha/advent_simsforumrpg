@@ -1011,7 +1011,29 @@ clip.addEventListener("error", () => {
   if (p && p.catch) p.catch(() => {});
 });
 
-clip.addEventListener("ended", () => { if (teilJetzt().art === "studio") starte(nr + 1); });
+/* ---------- Umschalten ins Vollbild ----------
+   Nicht auf "ended" warten: bis der nächste Ton wirklich klingt,
+   vergehen rund hundert Millisekunden, und die hört man als Stocken.
+   Also eine gute Zehntelsekunde früher umschalten — so lange ist am
+   Ende des Studioclips ohnehin nur noch stehendes Bild und Luft
+   (gemessen: mindestens 0,28 s, meist knapp eine Sekunde). */
+const TONVORLAUF = 0.24;
+let uebergeben = false;
+setInterval(function () {
+  const t = teilJetzt();
+  if (!t || t.art !== "studio") return;
+  if (!isFinite(clip.duration) || clip.duration <= 0) return;
+  const rest = clip.duration - clip.currentTime;
+  if (rest > TONVORLAUF + 0.4) { uebergeben = false; return; }   // neuer Studioteil
+  if (!uebergeben && !clip.paused && rest <= TONVORLAUF) {
+    uebergeben = true;
+    starte(nr + 1);
+  }
+}, 40);
+clip.addEventListener("ended", () => {
+  if (uebergeben) return;                      // schon vorher übergeben
+  if (teilJetzt().art === "studio") starte(nr + 1);
+});
 ton.addEventListener("ended",  () => { starte(nr + 1); });
 
 function ende() {

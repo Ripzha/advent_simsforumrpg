@@ -129,7 +129,7 @@ html, body {
 /* ---------- Regen über der Schalte ---------- */
 #regen {
   position: absolute; inset: 0; z-index: 10; width: 100%; height: 100%;
-  pointer-events: none; opacity: 0; transition: opacity 1.2s ease;
+  pointer-events: none; opacity: 0; transition: opacity 0.18s linear;
 }
 #regen.an { opacity: 1; }
 
@@ -583,7 +583,9 @@ const KONFIG = {
 
   /* Leichter, gleichmässiger Regen. Sehr leise, weil Rivas Mikrofon
      die Umgebung ohnehin unterdrückt.                                  */
-  regen: { ab: 15.4, bis: 85.9, tropfen: 230, staerke: 0.26, schraeg: 10,
+  /* Regen genau an den Bildschnitten: er ist da, sobald es ins Freie
+     geht, und vorbei, wenn es zurueck ins Studio schneidet. */
+  regen: { ab: 15.3, bis: 85.85, tropfen: 230, staerke: 0.26, schraeg: 10,
            ton: "clips/regen-loop.mp3", lautstaerke: 0.35 },
 
   ortmarke: { ab: 15.6, bis: 28.0, text: "Windenburg — Altes Gemeindehaus" },
@@ -808,7 +810,7 @@ function zeichneRegen(jetzt) {
   // Ton weich dazublenden, aber zügig weg — im Studio darf nichts übrig bleiben
   const imStudio = t < KONFIG.schalteAb || t >= KONFIG.studioAb;
   const ziel = (laeuft && !clip.paused && !imStudio) ? KONFIG.regen.lautstaerke : 0;
-  const tempo = ziel > regenLaut ? 1.2 : 4.5;
+  const tempo = ziel > regenLaut ? 16 : 14;   // am Schnitt da, am Schnitt weg
   regenLaut = Math.max(0, Math.min(1, regenLaut + (ziel - regenLaut) * Math.min(1, dt * tempo)));
   if (imStudio) regenLaut = 0;                             // kein Rest im Studio
   if (regenHahn) {
