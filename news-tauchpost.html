@@ -408,6 +408,24 @@ body.justiert .griff { display: block; }
    zugleich ihre Dateien ziehen, hält eine Seite mit ?ruhig=1 jede
    Quelle zurück, bis die Übersicht meldet, dass dieser Block dran ist. */
 const RUHIG = /[?&]ruhig=1/.test(location.search);
+
+/* ---------- Abgewiesenes Abspielen melden ----------
+   Weist der Browser play() ab — am Handy passiert das, wenn der
+   Zuschauer nicht in dieser Seite getippt hat —, soll die Übersicht
+   es erfahren und die Tippaufforderung zeigen, statt dass die Absage
+   stillschweigend verschluckt wird und nichts weiter passiert. */
+(function () {
+  const urspruenglich = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function () {
+    const w = urspruenglich.apply(this, arguments);
+    if (w && w.catch) w.catch(function (fehler) {
+      if (fehler && fehler.name === "NotAllowedError" && parent !== window) {
+        try { parent.postMessage({ swn: "tonsperre" }, "*"); } catch (e) {}
+      }
+    });
+    return w;
+  };
+})();
 const wartendeQuellen = [];
 function spaeter(element, pfad) {
   if (RUHIG && !holeMedien.schon) { wartendeQuellen.push([element, pfad]); return element; }
@@ -421,7 +439,18 @@ function holeMedien() {
   wartendeQuellen.length = 0;
 }
 window.addEventListener("message", function (e) {
-  if (e && e.data && e.data.swn === "vorladen") holeMedien();
+  if (!e || !e.data) return;
+  if (e.data.swn === "vorladen") { holeMedien(); return; }
+  /* Die Übersicht lässt zu einem Teil dieser Seite springen. */
+  if (e.data.swn === "springe") {
+    holeMedien();
+    if (typeof e.data.teil === "number") {
+      if (typeof starte === "function") starte(e.data.teil);
+      else if (typeof spiele === "function") spiele(e.data.teil);
+    } else if (typeof e.data.zeit === "number" && typeof springe === "function") {
+      springe(e.data.zeit);          // Seiten aus einem Stück spulen
+    }
+  }
 });
 /* Wer die Seite einzeln öffnet und von Hand startet, braucht die
    Dateien sofort — das hier läuft vor dem eigenen Starthandler. */
@@ -505,11 +534,12 @@ const KONFIG = {
         { bild: "bilder/tauchpost-ufer-nacht.jpg", ein:  0.3,
           zoom: [1.06, 1.22], schwenk: [4, -4], ursprung: "50% 45%",
           ort: "Evergreen Harbor — nachts" },
+        /* Das Bild aus dem Van ist raus — es steht schon im Themenkasten
+           im Studio, und zweimal dasselbe Auto hintereinander faellt auf.
+           Ufer und Ausruestung teilen sich die Luecke und fahren dafuer. */
         // Ihre wahren Absichten sind unbekannt
-        { bild: "bilder/tauchpost-van-innen.jpg",  ein:  6.8,
-          zoom: [1.22, 1.06], schwenk: [-4, 3], ursprung: "50% 50%", ort: "" },
         // Da an diesem Ort vermehrt verendete Tiere gefunden wurden
-        { bild: "bilder/tauchpost-ausruestung.jpg", ein: 10.28,
+        { bild: "bilder/tauchpost-ausruestung.jpg", ein: 8.5,
           zoom: [1.06, 1.20], schwenk: [3, -3], ursprung: "50% 50%",
           ort: "Das Ufer" },
         // suchte die Gruppe den Fluss und das umliegende Ufer ab

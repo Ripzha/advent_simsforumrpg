@@ -408,6 +408,24 @@ body.justiert .griff { display: block; }
    zugleich ihre Dateien ziehen, hält eine Seite mit ?ruhig=1 jede
    Quelle zurück, bis die Übersicht meldet, dass dieser Block dran ist. */
 const RUHIG = /[?&]ruhig=1/.test(location.search);
+
+/* ---------- Abgewiesenes Abspielen melden ----------
+   Weist der Browser play() ab — am Handy passiert das, wenn der
+   Zuschauer nicht in dieser Seite getippt hat —, soll die Übersicht
+   es erfahren und die Tippaufforderung zeigen, statt dass die Absage
+   stillschweigend verschluckt wird und nichts weiter passiert. */
+(function () {
+  const urspruenglich = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function () {
+    const w = urspruenglich.apply(this, arguments);
+    if (w && w.catch) w.catch(function (fehler) {
+      if (fehler && fehler.name === "NotAllowedError" && parent !== window) {
+        try { parent.postMessage({ swn: "tonsperre" }, "*"); } catch (e) {}
+      }
+    });
+    return w;
+  };
+})();
 const wartendeQuellen = [];
 function spaeter(element, pfad) {
   if (RUHIG && !holeMedien.schon) { wartendeQuellen.push([element, pfad]); return element; }
@@ -421,7 +439,18 @@ function holeMedien() {
   wartendeQuellen.length = 0;
 }
 window.addEventListener("message", function (e) {
-  if (e && e.data && e.data.swn === "vorladen") holeMedien();
+  if (!e || !e.data) return;
+  if (e.data.swn === "vorladen") { holeMedien(); return; }
+  /* Die Übersicht lässt zu einem Teil dieser Seite springen. */
+  if (e.data.swn === "springe") {
+    holeMedien();
+    if (typeof e.data.teil === "number") {
+      if (typeof starte === "function") starte(e.data.teil);
+      else if (typeof spiele === "function") spiele(e.data.teil);
+    } else if (typeof e.data.zeit === "number" && typeof springe === "function") {
+      springe(e.data.zeit);          // Seiten aus einem Stück spulen
+    }
+  }
 });
 /* Wer die Seite einzeln öffnet und von Hand startet, braucht die
    Dateien sofort — das hier läuft vor dem eigenen Starthandler. */
@@ -563,6 +592,9 @@ const KONFIG = {
       binde: { ein: 1.5, aus: 8.0 },
       thema: [
         { ein: 1.8, aus: 11.0, titel: "Vaas Del Toro", ort: "Die Werkstatt",
+          /* Vaas ist der mit den blauen Haaren, links im Bild. Ohne
+             festen Ausschnitt faehrt das Kaestchen auf den Blonden. */
+          nah: { ursprung: "22% 0%", zoom: [1.30, 1.46] },
           bilder: ["bilder/vaas-kasten-a.jpg"] }
       ]
     },
@@ -748,17 +780,29 @@ function fahrt(s, p) {
    Bild seine eigene Bewegung hat und sie bei jedem Durchlauf dieselbe
    ist. Die Weite waechst mit der Standzeit: ein Bild, das nur eine
    Sekunde steht, bewegt sich kaum, ein langes faehrt weiter. */
-function kastenFahrt(img, pfad, nr, dauer) {
+function kastenFahrt(img, pfad, nr, dauer, nah) {
   let h = nr * 2654435761;
   for (let k = 0; k < pfad.length; k++) h = (h * 31 + pfad.charCodeAt(k)) | 0;
   const a = Math.abs(h);
 
   const weite = Math.min(0.13, 0.022 * Math.max(1, dauer));
-  const hinein = (a % 2) === 0;
-  const klein = 1.012;
-  const gross = klein + weite;
-  const ox = 32 + (a >>> 3) % 36;        // 32 bis 67 Prozent
-  const oy = 30 + (a >>> 9) % 40;        // 30 bis 69 Prozent
+  let hinein = (a % 2) === 0;
+  let klein = 1.012;
+  let gross = klein + weite;
+  let ox = 32 + (a >>> 3) % 36;          // 32 bis 67 Prozent
+  let oy = 30 + (a >>> 9) % 40;          // 30 bis 69 Prozent
+
+  /* Von Hand gesetzter Ausschnitt. Braucht man, wenn im Bild mehrere
+     Leute stehen und das Kaestchen auf eine bestimmte zufahren soll —
+     sonst sucht sich die Fahrt ihre Stelle selbst. */
+  if (nah) {
+    if (nah.ursprung) {
+      const teile = String(nah.ursprung).replace(/%/g, "").trim().split(/\s+/);
+      ox = parseFloat(teile[0]);
+      oy = parseFloat(teile.length > 1 ? teile[1] : teile[0]);
+    }
+    if (nah.zoom) { klein = nah.zoom[0]; gross = nah.zoom[1]; hinein = true; }
+  }
 
   img.style.transformOrigin = ox + "% " + oy + "%";
   img.style.transition = "none";
@@ -789,7 +833,7 @@ function setzeThema(i, liste) {
       satz.appendChild(d);
     });
     satz.appendChild(img);
-    kastenFahrt(img, p, i * 7 + k, dauer);
+    kastenFahrt(img, p, i * 7 + k, dauer, t.nah);
   });
 
   const alte = Array.from(themaBild.querySelectorAll(".satz"));

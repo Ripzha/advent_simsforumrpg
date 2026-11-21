@@ -129,6 +129,10 @@ html, body {
 .leiste .kette span {
   flex: 1 1 0; height: 14px; background: rgba(201,214,228,0.16); cursor: pointer;
   position: relative; overflow: hidden;
+  /* Kurze Tuerchen wie 19b oder 20b waeren sonst zwei Pixel breit und
+     nicht anklickbar — die Breite richtet sich nach der Laenge, aber
+     eine Marke muss man treffen koennen. */
+  min-width: 9px;
 }
 .leiste .kette span.fertig { background: rgba(201,153,47,0.45); }
 .leiste .kette span.jetzt  { background: rgba(201,214,228,0.16); }
@@ -153,7 +157,7 @@ html, body {
   .leiste .hinweis { display: none; }
   .leiste .stand { order: 1; min-width: 0; flex: 1 1 auto; font-size: 11px; }
   .leiste .kette { order: 3; flex: 1 1 100%; }
-  .leiste .kette span { height: 18px; }
+  .leiste .kette span { height: 22px; min-width: 14px; }
   .leiste button {
     order: 2; font-size: 13px; padding: 0.7em 1.05em;
     min-width: 3.6em; min-height: 44px;      /* Fingerbreite */
@@ -244,8 +248,8 @@ html, body {
 <div class="leiste" id="leiste">
   <span class="stand" id="stand">—</span>
   <span class="kette" id="kette"></span>
-  <button id="knopf-zurueck">◀ Block</button>
-  <button id="knopf-weiter">Block ▶</button>
+  <button id="knopf-zurueck">◀ Türchen</button>
+  <button id="knopf-weiter">Türchen ▶</button>
   <button id="knopf-neu">Neu</button>
   <span class="hinweis">Leertaste pausiert · B blendet die Leiste ganz aus</span>
 </div>
@@ -294,6 +298,56 @@ const BLOECKE = [
   { nummer: "20",   titel: "Wetter mit Artjom",       datei: "wetterkarte.html",       dauer:  84, vorlauf: "blende" },
   { nummer: "20b–24", titel: "Abschluss und Verabschiedung", datei: "news-abschluss.html", dauer: 129, vorlauf: "blende" }
 ];
+/* ---------- Sprungmarken ----------
+   Manche Bloecke tragen mehrere Tuerchen. Wo die Blockseite aus
+   getrennten Teilen besteht, laesst sich jeder Teil einzeln
+   anspringen; die Laengen sind an den Tondateien gemessen. Bei 1–4
+   und 8–9b laeuft alles in einer durchgehenden Aufnahme — die bleiben
+   je eine Marke, weil sich da nichts sauber trennen laesst. */
+const MARKEN = [
+  /* Der Remy-Block laeuft in einem Stueck. Die Begruessung geht bis
+     Sekunde 27 des Studioclips, danach faengt Remy an — gesprungen
+     wird hier also auf eine Sekunde, nicht auf einen Teil. */
+  { nummer: "Start", titel: "Ident und Begrüssung", block: 0, zeit:  0, ab:  0, dauer:  27 },
+  { nummer: "1–4",   titel: "Remy",                 block: 0, zeit: 27, ab: 27, dauer: 105 },
+  { nummer: "5",     titel: "Tauchpost",                block:  1, dauer:  79 },
+  { nummer: "6",     titel: "Gemeindehaus",             block:  2, dauer: 111 },
+  { nummer: "7",     titel: "Werbung ATLAS",            block:  3, dauer:  25 },
+  { nummer: "8–9b",  titel: "Boom Boom und Bite",       block:  4, dauer: 102 },
+  { nummer: "10",    titel: "Jahresbogen Jack",         block:  5, teil: 0, dauer:  90 },
+  { nummer: "11",    titel: "Jahresbogen Vaas",         block:  5, teil: 2, dauer:  82 },
+  { nummer: "12",    titel: "Eriks Geburt",             block:  6, dauer:  44 },
+  { nummer: "13",    titel: "Eilmeldung",               block:  7, dauer: 157 },
+  { nummer: "14–15", titel: "Werbung Magazin",          block:  8, dauer:  33 },
+  { nummer: "16",    titel: "Chip und das System",      block:  9, dauer:  38 },
+  { nummer: "17",    titel: "Camp Firefly",             block: 10, dauer:  87 },
+  { nummer: "18",    titel: "Dennah und Blaze",         block: 11, teil: 0, dauer:  57 },
+  { nummer: "19",    titel: "Jake",                     block: 11, teil: 2, dauer:  59 },
+  { nummer: "19b",   titel: "Anmoderation Wetter",      block: 11, teil: 4, dauer:  10 },
+  { nummer: "20",    titel: "Wetter mit Artjom",        block: 12, dauer:  84 },
+  { nummer: "20b",   titel: "Rückgabe ans Studio",      block: 13, teil: 0, dauer:   9 },
+  { nummer: "21",    titel: "Kalender-Bilanz",          block: 13, teil: 1, dauer:  31 },
+  { nummer: "23",    titel: "Verabschiedung",           block: 13, teil: 2, dauer:  76 },
+  { nummer: "24",    titel: "Hinweis",                  block: 13, teil: 3, dauer:  12 }
+];
+/* Wo im Block die Marke anfaengt — ergibt sich aus den Marken davor. */
+(function setzeAb() {
+  let b = -1, ab = 0;
+  MARKEN.forEach((m) => {
+    if (m.block !== b) { b = m.block; ab = 0; }
+    /* Eine Marke darf ihre Stelle im Block selbst setzen — bei Seiten
+       aus einem Stueck ist das die Sekunde im Studioclip. */
+    if (m.ab === undefined) m.ab = ab;
+    ab = m.ab + m.dauer;
+  });
+})();
+function markeVon(block, verstrichen) {
+  let treffer = -1;
+  MARKEN.forEach((m, k) => {
+    if (m.block === block && verstrichen >= m.ab - 0.5) treffer = k;
+  });
+  return treffer;
+}
 
 /* =================================================================== */
 
@@ -435,13 +489,39 @@ function laenge(s) {
 function baueKette() {
   const k = el("kette");
   k.innerHTML = "";
-  BLOECKE.forEach((b, i) => {
+  MARKEN.forEach((m, n) => {
     const s = document.createElement("span");
-    s.title = b.titel;
+    s.title = "Türchen " + m.nummer + " · " + m.titel;
+    s.style.flex = m.dauer + " 1 0";      // breit wie lang
     s.innerHTML = "<i></i>";
-    s.addEventListener("click", () => spiele(i));
+    s.addEventListener("click", () => springe(n));
     k.appendChild(s);
   });
+}
+
+/* ---------- Fortschritt in der Kette ---------- */
+let markeJetzt = -1;
+function zeigeMarke(k) {
+  Array.prototype.forEach.call(el("kette").children, (s, n) => {
+    s.classList.toggle("jetzt", n === k);
+    const b = s.querySelector("i");
+    if (n < k) { s.classList.add("fertig"); if (b) b.style.width = "100%"; }
+    if (n > k) { s.classList.remove("fertig"); if (b) b.style.width = "0"; }
+  });
+}
+function zeigeFortschritt(block, verstrichen) {
+  const k = markeVon(block, verstrichen);
+  if (k < 0) return;
+  const m = MARKEN[k];
+  if (k !== markeJetzt) { markeJetzt = k; zeigeMarke(k); }
+  const im = Math.max(0, verstrichen - m.ab);
+  const s = el("kette").children[k];
+  if (s) {
+    const b = s.querySelector("i");
+    if (b) b.style.width = Math.min(100, im / (m.dauer || 1) * 100) + "%";
+  }
+  el("stand").textContent = "Türchen " + m.nummer + " · " + m.titel +
+    "  " + laenge(Math.min(im, m.dauer)) + " / " + laenge(m.dauer);
 }
 
 /* ---------- Rahmen verwalten ----------
@@ -541,6 +621,7 @@ function istProgramm(m) {
   return true;
 }
 
+let zuletztAktiv = null;      // was zuletzt wirklich lief
 function medium(f) {
   try {
     const d = f.contentDocument;
@@ -554,11 +635,18 @@ function medium(f) {
       if (!spielend && !m.paused && m.currentTime > 0) spielend = m;
       if (!best || m.duration > best.duration) best = m;
     });
-    return spielend || best;
+    if (spielend) { zuletztAktiv = spielend; return spielend; }
+    /* Steht gerade nichts, war es die Leertaste. Dann muss dasselbe
+       Medium zurueckkommen, das eben noch lief — sonst greift die Uhr
+       beim Studioteil die schon vorgeladene naechste Tonspur, und beim
+       Weiterspielen kommt Ton, aber das Bild bleibt stehen. */
+    if (zuletztAktiv && alle.indexOf(zuletztAktiv) >= 0 &&
+        zuletztAktiv.currentTime > 0 && !zuletztAktiv.ended) return zuletztAktiv;
+    return best;
   } catch (e) { return null; }
 }
 
-function starte(f) {
+function starte(f, nr, zwingen) {
   try {
     const d = f.contentDocument;
     if (!d) return false;
@@ -575,9 +663,17 @@ function starte(f) {
     /* Im Ruhemodus hat die Seite noch gar keine Quellen gesetzt. Dann
        ist "kein Medium" kein Freibrief zum Starten, sondern heisst:
        die Aufforderung ist gerade erst raus. Eine Sekunde Geduld. */
-    if (!m && f.dataset.geholt === "1" &&
+    if (!zwingen && !m && f.dataset.geholt === "1" &&
         Date.now() - (+f.dataset.seit || 0) < 1000) return false;
-    if (m) {
+    if (m && !zwingen) {
+      /* Manche Bloecke bringen ihre eigene kurze Kennung mit. Kennt der
+         Hauptclip seine Laenge noch nicht, ist das laengste geladene
+         Medium diese Kennung — und der Block waere nach fuenf Sekunden
+         scheinbar zu Ende. Also erst anfangen, wenn das Geladene auch
+         nach dem ganzen Block aussieht. Die Warteschleife in spiele()
+         gibt nach sechzehn Sekunden ohnehin auf. */
+      const soll = (BLOECKE[nr] && BLOECKE[nr].dauer) || 0;
+      if (soll && m.duration < soll * 0.3) return false;
       if (m.readyState < 3) return false;
       const b = m.buffered;
       /* Bei einer kurzen Datei reicht, was es gibt — sonst wartet die
@@ -605,10 +701,12 @@ window.addEventListener("message", (e) => {
   const d = e.data;
   if (!d || typeof d !== "object") return;
   if (d.swn === "selbstmelder") { selbstmelder = true; return; }
+  /* Der Browser hat das Abspielen wirklich abgewiesen — nur dann
+     kommt die Tippaufforderung. Frueher kam sie nach einer Wartezeit
+     und damit auch beim Pausieren von Hand. */
+  if (d.swn === "tonsperre") { letzteSperre = Date.now(); zeigeTipp(true); return; }
   if (d.swn === "ende") {
     clearInterval(uhr);
-    const s = el("kette").children[index];
-    if (s) { s.classList.remove("jetzt"); s.classList.add("fertig"); }
     spiele(index + 1);
   }
 });
@@ -680,20 +778,66 @@ function spiele(i) {
     }
     if (uebrig > 0 && versuche <= 160) return;
 
-    if (starte(f) || versuche > 160) {
+    /* Nach zwoelf Sekunden wird der Block gestartet, auch wenn noch
+       nicht genug geladen ist — lieber ein stockender Anfang als ein
+       schwarzes Bild. Frueher ging die Schleife an dieser Stelle
+       einfach weiter, ohne je den Startknopf zu druecken. */
+    if (starte(f, i, versuche > 240) || versuche > 480) {
       clearInterval(warte);
       blende.classList.remove("an");
       vorlaufWeg();
       clearTimeout(ladeAnzeige);
       versteckeLaden();
       ueberwache(f, i);
-      beobachteStart(f, i);
+      if (zielTeil > 0 && zielMarke >= 0 && MARKEN[zielMarke] &&
+          MARKEN[zielMarke].block === i) {
+        sageTeil(f, zielTeil);
+        blockBegonnen = Date.now() - MARKEN[zielMarke].ab * 1000;
+      }
+      if (zielZeit > 0) sageZeit(f, zielZeit);
+      zielTeil = -1; zielZeit = -1; zielMarke = -1;
       ladeVor(i + 1);
     }
   }, 50);
 }
 
 /* Den nächsten Block seine Dateien holen lassen */
+/* ---------- Zu einer Marke springen ----------
+   Laeuft der Block schon, wird nur der Teil gewechselt. Sonst wird
+   der Block gestartet und der Teil nachgereicht, sobald er laeuft. */
+let zielTeil = -1, zielZeit = -1, zielMarke = -1;
+function sageZeit(f, sek) {
+  try {
+    if (!f || !f.contentWindow) return false;
+    f.contentWindow.postMessage({ swn: "springe", zeit: sek }, "*");
+    return true;
+  } catch (e) { return false; }
+}
+function sageTeil(f, teil) {
+  try {
+    if (!f || !f.contentWindow) return false;
+    f.contentWindow.postMessage({ swn: "springe", teil: teil }, "*");
+    return true;
+  } catch (e) { return false; }
+}
+function springe(k) {
+  const m = MARKEN[k];
+  if (!m) return;
+  ohneWischer = true;
+  if (m.block === index && typeof m.teil === "number" &&
+      rahmen[m.block] && sageTeil(rahmen[m.block], m.teil)) {
+    blockBegonnen = Date.now() - m.ab * 1000;
+    markeJetzt = -1;
+    return;
+  }
+  if (m.block === index && typeof m.zeit === "number" && rahmen[m.block] &&
+      sageZeit(rahmen[m.block], m.zeit)) { markeJetzt = -1; return; }
+  zielTeil  = (typeof m.teil === "number") ? m.teil : -1;
+  zielZeit  = (typeof m.zeit === "number") ? m.zeit : -1;
+  zielMarke = k;
+  spiele(m.block);
+}
+
 function ladeVor(i) {
   if (i >= BLOECKE.length) return;
   vorladen(i);
@@ -708,29 +852,22 @@ function ueberwache(f, i) {
   letztesMedium = null; letzteZeit = -1; steht = 0;
   uhr = setInterval(() => {
     const m = medium(f);
-    const s = el("kette").children[i];
 
-    // Laeuft es, ist die Tippaufforderung erledigt
-    if (selbstmelder || (m && !m.paused && m.currentTime > 0.1)) zeigeTipp(false);
+    /* Laeuft es, ist die Tippaufforderung erledigt — aber nicht
+       sofort: es kann der Ton laufen und das Bild abgewiesen worden
+       sein. Nach einer Abweisung bleibt die Aufforderung vier Sekunden
+       stehen, damit der Zuschauer sie ueberhaupt treffen kann. */
+    if ((selbstmelder || (m && !m.paused && m.currentTime > 0.1)) &&
+        Date.now() - letzteSperre > 4000) zeigeTipp(false);
 
     // Selbstmelder: Fortschritt an der Uhr, Ende kommt per Meldung
     if (selbstmelder) {
-      const t = (Date.now() - blockBegonnen) / 1000;
-      const d = BLOECKE[i].dauer || 1;
-      zeigeStand(i, Math.min(t, d), d);
-      if (s) {
-        const b = s.querySelector("i");
-        if (b) b.style.width = Math.min(100, t / d * 100) + "%";
-      }
+      zeigeFortschritt(i, (Date.now() - blockBegonnen) / 1000);
       return;
     }
 
-    if (!m) { zeigeStand(i, 0, BLOECKE[i].dauer); return; }
-    zeigeStand(i, m.currentTime, m.duration);
-    if (s) {
-      const b = s.querySelector("i");
-      if (b) b.style.width = (m.currentTime / m.duration * 100) + "%";
-    }
+    if (!m) { zeigeFortschritt(i, 0); return; }
+    zeigeFortschritt(i, m.currentTime);
     /* Ende erreicht. Die Tonspuren haben am Schluss eine Sekunde Luft —
        die soll auch wirklich laufen, bevor der Wischer kommt.
 
@@ -752,22 +889,11 @@ function ueberwache(f, i) {
 
     if (m.ended || haengt || (m.duration && m.currentTime >= m.duration - 0.05)) {
       clearInterval(uhr);
-      if (s) { s.classList.remove("jetzt"); s.classList.add("fertig"); }
       spiele(i + 1);
     }
   }, 200);
 
-  Array.prototype.forEach.call(el("kette").children, (s, n) => {
-    s.classList.toggle("jetzt", n === i);
-    if (n < i) s.classList.add("fertig");
-    if (n > i) { s.classList.remove("fertig"); const b = s.querySelector("i"); if (b) b.style.width = "0"; }
-  });
-}
-
-function zeigeStand(i, t, d) {
-  const b = BLOECKE[i];
-  el("stand").textContent = "Block " + b.nummer + " · " + b.titel +
-    "  " + t.toFixed(0) + "/" + (d || b.dauer).toFixed(0) + " s";
+  markeJetzt = -1;          // der naechste Takt setzt die Kette neu
 }
 
 function zeigeLaden(i) {
@@ -809,37 +935,36 @@ el("start-knopf").addEventListener("click", () => {
    nichts passiert. Dann kommt diese Flaeche: ein echter Tipp darauf
    loest die Sperre fuer den gerade geladenen Rahmen und startet ihn
    neu. Lieber ein Tipp als eine Sendung, die stumm steht. */
-let tippUhr = null;
+let letzteSperre = 0;
 function zeigeTipp(an) {
   el("tipp").classList.toggle("an", !!an);
-}
-function beobachteStart(f, i) {
-  clearTimeout(tippUhr);
-  tippUhr = setTimeout(() => {
-    const m = medium(f);
-    const laeuft = m && !m.paused && m.currentTime > 0.1;
-    if (!laeuft) zeigeTipp(true);
-  }, 3500);
 }
 el("tipp").addEventListener("click", () => {
   zeigeTipp(false);
   const f = rahmen[vorn];
   if (!f) return;
   loeseTonsperre();
+  /* Mitten im Block nur weiterspielen. Den Startknopf noch einmal zu
+     druecken wuerde den Block von vorne anfangen lassen. */
+  const m = medium(f);
+  if (m && m.currentTime > 0) {
+    try { const w = m.play(); if (w && w.catch) w.catch(function () {}); } catch (e) {}
+    return;
+  }
   try {
     const d = f.contentDocument;
     const k = d && d.getElementById("start-knopf");
     if (k) k.click();
   } catch (e) {}
-  clearTimeout(tippUhr);
-  tippUhr = setTimeout(() => {
-    const m = medium(f);
-    if (!(m && !m.paused && m.currentTime > 0.1)) zeigeTipp(true);
-  }, 3500);
 });
-el("knopf-weiter").addEventListener("click", () => spiele(index + 1));
-el("knopf-zurueck").addEventListener("click", () => { ohneWischer = true; spiele(Math.max(0, index - 1)); });
-el("knopf-neu").addEventListener("click", () => { ohneWischer = true; spiele(index); });
+function markeWeiter(richtung) {
+  const k = (markeJetzt >= 0 ? markeJetzt : markeVon(index, 0)) + richtung;
+  if (k >= MARKEN.length) { fertig(); return; }
+  springe(Math.max(0, k));
+}
+el("knopf-weiter").addEventListener("click", () => markeWeiter(1));
+el("knopf-zurueck").addEventListener("click", () => markeWeiter(-1));
+el("knopf-neu").addEventListener("click", () => springe(markeJetzt >= 0 ? markeJetzt : 0));
 
 function taste(e) {
   if (e.key === "b" || e.key === "B") {
@@ -852,8 +977,8 @@ function taste(e) {
     if (m) m.paused ? m.play() : m.pause();
     return;
   }
-  if (e.key === "ArrowRight" && e.shiftKey) { e.preventDefault(); spiele(index + 1); return; }
-  if (e.key === "ArrowLeft"  && e.shiftKey) { e.preventDefault(); spiele(Math.max(0, index - 1)); return; }
+  if (e.key === "ArrowRight" && e.shiftKey) { e.preventDefault(); markeWeiter(1); return; }
+  if (e.key === "ArrowLeft"  && e.shiftKey) { e.preventDefault(); markeWeiter(-1); return; }
   // einfache Pfeile an den laufenden Block weiterreichen
   const m = medium(rahmen[vorn]);
   if (!m) return;
