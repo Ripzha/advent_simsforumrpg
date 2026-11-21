@@ -603,9 +603,12 @@ function ladeVor(i) {
 }
 
 /* Auf das Ende des Blocks warten */
+let letztesMedium = null, letzteZeit = -1, steht = 0;
+
 function ueberwache(f, i) {
   clearInterval(uhr);
   blockBegonnen = Date.now();
+  letztesMedium = null; letzteZeit = -1; steht = 0;
   uhr = setInterval(() => {
     const m = medium(f);
     const s = el("kette").children[i];
@@ -628,10 +631,26 @@ function ueberwache(f, i) {
       const b = s.querySelector("i");
       if (b) b.style.width = (m.currentTime / m.duration * 100) + "%";
     }
-    // Ende erreicht
-    // Die Tonspuren haben am Schluss eine Sekunde Luft — die soll auch
-    // wirklich laufen, bevor der Wischer kommt.
-    if (m.duration && m.currentTime >= m.duration - 0.05) {
+    /* Ende erreicht. Die Tonspuren haben am Schluss eine Sekunde Luft —
+       die soll auch wirklich laufen, bevor der Wischer kommt.
+
+       Auf die Uhr allein ist kein Verlass: eine mp4 meldet oft eine
+       laengere Dauer, als sie Bilder hat. Der Remy-Block etwa haelt
+       bei 132,0 s an, obwohl die Datei 132,8 s angibt — die Uebersicht
+       wartete dann ewig auf eine Zehntelsekunde, die nie kommt, und
+       der Block blieb haengen. Deshalb zaehlt zuerst, ob das Medium
+       selbst fertig ist. */
+    /* Manche Dateien feuern nicht einmal "ended" — sie bleiben einfach
+       stehen. Deshalb zusaetzlich: steht die Zeit laenger als eine
+       Sekunde still und ist das Ende in Sichtweite, ist der Block
+       durch. */
+    if (m !== letztesMedium) { letztesMedium = m; letzteZeit = -1; steht = 0; }
+    if (Math.abs(m.currentTime - letzteZeit) < 0.01) steht += 200; else steht = 0;
+    letzteZeit = m.currentTime;
+    const haengt = steht >= 1000 && m.duration &&
+                   m.currentTime >= m.duration - 2.0 && m.currentTime > 0;
+
+    if (m.ended || haengt || (m.duration && m.currentTime >= m.duration - 0.05)) {
       clearInterval(uhr);
       if (s) { s.classList.remove("jetzt"); s.classList.add("fertig"); }
       spiele(i + 1);
